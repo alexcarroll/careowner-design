@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>VetVet DS · Guidelines</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="vetvet-ds.css?v=2" />
+  <style>
+    :root { --nav-w: 240px; --header-h: 56px; }
+    body { font-family: var(--font-sans); }
+    .app { display: grid; grid-template-columns: var(--nav-w) 1fr; min-height: 100vh; }
+    .nav { background:#fff; border-right:1px solid var(--color-neutral-border); padding:16px 12px; position:sticky; top:0; height:100vh; overflow-y:auto; }
+    .nav__brand { display:flex; align-items:center; gap:10px; padding:6px 8px 18px; }
+    .nav__logo { width:28px; height:28px; border-radius:6px; background:var(--color-brand-primary); color:#fff; display:grid; place-items:center; font:700 11px/1 var(--font-sans); }
+    .nav__brand-text { font:600 14px/1.2 var(--font-sans); }
+    .nav__brand-sub { font:var(--font-caption); color:var(--color-subtext-color); }
+    .nav__section { font:var(--font-caption-bold); color:var(--color-neutral-500); text-transform:uppercase; letter-spacing:0.06em; padding:14px 8px 6px; }
+    .nav a { display:flex; align-items:center; gap:10px; padding:7px 10px; border-radius:6px; color:var(--color-neutral-700); text-decoration:none; font:var(--font-body); }
+    .nav a:hover { background:var(--color-neutral-100); color:var(--color-neutral-900); }
+    .nav a.is-active { background:var(--color-brand-50); color:var(--color-brand-800); font-weight:500; }
+    .nav a .dot { width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.35; }
+
+    .topbar { height:var(--header-h); display:flex; align-items:center; justify-content:space-between; padding:0 32px; border-bottom:1px solid var(--color-neutral-border); background:#fff; position:sticky; top:0; z-index:10; }
+    .topbar__left { display:flex; align-items:center; gap:8px; font:var(--font-caption); color:var(--color-subtext-color); }
+    .topbar__left svg { width:14px; height:14px; color:var(--color-neutral-400); }
+    .main { min-width: 0; }
+
+    .content { padding: 40px 48px 120px; max-width: 920px; }
+    .page-head h1 { font:600 32px/40px var(--font-sans); letter-spacing:-0.02em; margin:0 0 8px; }
+    .page-head p { font:400 16px/24px var(--font-sans); color:var(--color-subtext-color); margin:0; max-width:640px; }
+
+    section.block { margin: 48px 0; scroll-margin-top: 80px; }
+    section.block h2 { font: 600 22px/28px var(--font-sans); letter-spacing:-0.01em; margin: 0 0 4px; }
+    section.block .lede { font: var(--font-caption); color: var(--color-subtext-color); margin: 0 0 20px; }
+    section.block h3 { font: 600 15px/1.2 var(--font-sans); margin: 24px 0 8px; }
+
+    .do-dont { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+    .dd { border-radius: 12px; padding: 20px; border: 1px solid; }
+    .dd--do { background: var(--color-success-50); border-color: var(--color-success-200); }
+    .dd--dont { background: var(--color-error-50); border-color: var(--color-error-200); }
+    .dd__tag { font:var(--font-caption-bold); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:12px; display:inline-flex; align-items:center; gap:6px; }
+    .dd--do .dd__tag { color: var(--color-success-800); }
+    .dd--dont .dd__tag { color: var(--color-error-800); }
+    .dd__preview { background: #fff; border-radius: 8px; padding: 16px; min-height: 90px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.04); }
+    .dd__text { font: var(--font-caption); color: var(--color-default-font); }
+
+    .panel { background:#fff; border:1px solid var(--color-neutral-border); border-radius:12px; padding:24px; margin-top: 12px; }
+    .panel p { font: var(--font-body); color: var(--color-default-font); line-height: 1.6; margin: 0 0 12px; }
+    .panel ul, .panel ol { font: var(--font-body); color: var(--color-default-font); line-height: 1.7; margin: 8px 0; padding-left: 22px; }
+    .panel li { margin-bottom: 6px; }
+
+    .ratio-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-top: 12px; }
+    .ratio-card { border: 1px solid var(--color-neutral-border); border-radius: 10px; padding: 14px 16px; background: #fff; display: flex; justify-content: space-between; align-items: center; }
+    .ratio-card__sample { font: 600 16px/1 var(--font-sans); }
+    .ratio-card__meta { font: var(--font-monospace); font-size: 11px; color: var(--color-neutral-600); text-align: right; }
+
+    pre { margin: 0; background: var(--color-neutral-900); color: #E7E5E4; padding: 16px 18px; border-radius: 8px; overflow: auto; font: 400 12px/1.6 var(--font-mono); }
+    pre .kw { color: #96CBCF; } pre .str { color: #FBBF24; } pre .cm { color: #78716C; }
+
+    .check-row { display:flex; gap:10px; align-items:flex-start; padding: 10px 0; border-bottom: 1px solid var(--color-neutral-100); }
+    .check-row:last-child { border-bottom: 0; }
+    .check-row__mark { width: 18px; height: 18px; border-radius: 5px; background: var(--color-success-100); color: var(--color-success-800); display:grid; place-items:center; flex-shrink:0; margin-top: 2px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="nav">
+      <div class="nav__brand">
+        <div class="nav__logo">VV</div>
+        <div>
+          <div class="nav__brand-text">VetVet DS</div>
+          <div class="nav__brand-sub">v1.0 · Apr 2026</div>
+        </div>
+      </div>
+
+      <div class="nav__section">Getting started</div>
+      <a href="index.html"><span class="dot"></span>Overview</a>
+      <a href="guidelines.html" class="is-active"><span class="dot"></span>Guidelines</a>
+      <a href="guidelines.html#developers"><span class="dot"></span>For developers</a>
+
+      <div class="nav__section">Foundations</div>
+      <a href="tokens.html#colors"><span class="dot"></span>Color</a>
+      <a href="tokens.html#typography"><span class="dot"></span>Typography</a>
+      <a href="tokens.html#spacing"><span class="dot"></span>Spacing & layout</a>
+      <a href="tokens.html#radius"><span class="dot"></span>Radius</a>
+      <a href="tokens.html#shadows"><span class="dot"></span>Elevation</a>
+
+      <div class="nav__section">Components</div>
+      <a href="components.html#buttons"><span class="dot"></span>Buttons & actions</a>
+      <a href="components.html#forms"><span class="dot"></span>Forms & inputs</a>
+      <a href="components.html#feedback"><span class="dot"></span>Feedback & status</a>
+      <a href="components.html#data"><span class="dot"></span>Data display</a>
+      <a href="components.html#navigation"><span class="dot"></span>Navigation</a>
+      <a href="components.html#overlays"><span class="dot"></span>Overlays</a>
+      <a href="components.html#patterns"><span class="dot"></span>Product patterns</a>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar__left">
+          <span>Design System</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          <span style="color:var(--color-default-font)">Guidelines</span>
+        </div>
+        <div class="topbar__right">
+          <nav class="vv-theme-toggle" aria-label="Theme">
+            <a href="index.html" class="is-active" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>Light</a>
+            <a href="dark-mode.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>Dark</a>
+          </nav>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="page-head">
+          <h1>Guidelines &amp; handoff</h1>
+          <p>How to use the system day-to-day — voice, accessibility, composition rules, and a cheatsheet for developers and Claude.</p>
+        </div>
+
+        <section class="block" id="voice">
+          <h2>Voice &amp; tone</h2>
+          <p class="lede">VetVet operates in a high-trust, high-stakes space: veterinarians sell the practice of their careers here. We write like a trusted broker — clear, warm, never casual, never salesy.</p>
+          <div class="do-dont">
+            <div class="dd dd--do">
+              <div class="dd__tag">✓ Do</div>
+              <div class="dd__preview"><span class="text-body" style="max-width:240px; text-align:center">&ldquo;Your listing is under review. You&rsquo;ll hear back within 2 business days.&rdquo;</span></div>
+              <div class="dd__text">Plain, specific, sets a clear expectation.</div>
+            </div>
+            <div class="dd dd--dont">
+              <div class="dd__tag">✕ Don&rsquo;t</div>
+              <div class="dd__preview"><span class="text-body" style="max-width:240px; text-align:center">&ldquo;🎉 Awesome! Your listing is on its way to stardom!&rdquo;</span></div>
+              <div class="dd__text">Emoji, hype, vague timelines — breaks trust.</div>
+            </div>
+          </div>
+
+          <h3>Copy rules</h3>
+          <div class="panel">
+            <ul>
+              <li><strong>Sentence case</strong> for all UI copy including buttons and headings.</li>
+              <li><strong>No exclamation points</strong> in product UI. Warmth comes from precision, not punctuation.</li>
+              <li>Use <strong>dollars, not $</strong> in marketing copy; use <code>$1,250,000</code> in data contexts.</li>
+              <li>Say <em>listing</em>, not <em>practice listing</em>. Say <em>buyer</em>, not <em>prospect</em>.</li>
+              <li>Button verbs commit: <em>Submit listing</em>, <em>Request access</em>, <em>Withdraw offer</em>. Avoid &ldquo;Click here.&rdquo;</li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="block" id="composition">
+          <h2>Composition rules</h2>
+          <p class="lede">How to arrange the components so every screen feels like the same product.</p>
+
+          <div class="panel">
+            <ol>
+              <li><strong>One primary action per screen.</strong> If you feel two are needed, step back — the screen probably has two jobs.</li>
+              <li><strong>Left-align by default.</strong> Center alignment reserved for empty states, marketing pages, and modal CTAs.</li>
+              <li><strong>Scan the page top-to-bottom in 3 seconds.</strong> If a user can&rsquo;t identify the primary task from scale + color alone, rework hierarchy before adding copy.</li>
+              <li><strong>Cards are containers, not shadows.</strong> Use borders (<code>neutral-border</code>) first; reach for <code>--shadow-default</code> only when a card must float.</li>
+              <li><strong>Semantic color = state.</strong> Green means success. Amber means attention. Red means destructive. Never use them decoratively.</li>
+            </ol>
+          </div>
+
+          <h3>Primary vs. secondary action</h3>
+          <div class="do-dont">
+            <div class="dd dd--do">
+              <div class="dd__tag">✓ Do</div>
+              <div class="dd__preview" style="gap:8px"><button class="btn btn--neutral-secondary">Cancel</button><button class="btn btn--brand-primary">Submit listing</button></div>
+              <div class="dd__text">One committed action; alternative action is quiet.</div>
+            </div>
+            <div class="dd dd--dont">
+              <div class="dd__tag">✕ Don&rsquo;t</div>
+              <div class="dd__preview" style="gap:8px"><button class="btn btn--brand-primary">Save draft</button><button class="btn btn--brand-primary">Submit listing</button></div>
+              <div class="dd__text">Two primary buttons dilute the CTA and confuse users.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="block" id="accessibility">
+          <h2>Accessibility</h2>
+          <p class="lede">We target WCAG 2.2 AA. Follow these and you&rsquo;ll pass by default.</p>
+
+          <div class="panel">
+            <ol>
+              <li><strong>Color contrast.</strong> All text on white is at minimum 4.5:1. <code>subtext-color</code> (#78716C) on white is 4.67:1 — use at 14 px+.</li>
+              <li><strong>Focus rings.</strong> Every interactive element uses the <code>--shadow-focus</code> token on focus-visible. Don&rsquo;t remove it.</li>
+              <li><strong>Hit targets.</strong> Interactive elements are at least 32×32 px; 44×44 on touch surfaces.</li>
+              <li><strong>Never color alone.</strong> Status uses color + icon + text. Error fields get <code>aria-invalid="true"</code> + descriptive message.</li>
+              <li><strong>Motion.</strong> Animations under 250 ms; respect <code>prefers-reduced-motion</code>.</li>
+            </ol>
+          </div>
+
+          <h3>Contrast spot-check</h3>
+          <div class="ratio-grid">
+            <div class="ratio-card" style="background:#fff"><span class="ratio-card__sample" style="color:#1C1917">Default on white</span><span class="ratio-card__meta">16.1 : 1 ✓ AAA</span></div>
+            <div class="ratio-card" style="background:#fff"><span class="ratio-card__sample" style="color:#78716C">Subtext on white</span><span class="ratio-card__meta">4.67 : 1 ✓ AA</span></div>
+            <div class="ratio-card" style="background:#14535A"><span class="ratio-card__sample" style="color:#fff">White on brand 800</span><span class="ratio-card__meta" style="color:#C0DFE2">8.11 : 1 ✓ AAA</span></div>
+            <div class="ratio-card" style="background:#E6F2F3"><span class="ratio-card__sample" style="color:#14535A">Brand 800 on brand 50</span><span class="ratio-card__meta">7.22 : 1 ✓ AAA</span></div>
+          </div>
+        </section>
+
+        <section class="block" id="developers">
+          <h2>For developers</h2>
+          <p class="lede">Wire the system into your app in four steps.</p>
+
+          <div class="panel">
+            <ol>
+              <li>Drop <code>vetvet-ds.css</code> into your static assets (or import from the package — see the Engineering wiki).</li>
+              <li>Reference it once in your app shell (see snippet below).</li>
+              <li>Use semantic classes (<code>.btn</code>, <code>.input</code>, <code>.badge</code>) or the CSS variables directly.</li>
+              <li>Add your own product CSS <em>on top</em> — never override the DS from inside it. Ship a DS patch instead.</li>
+            </ol>
+          </div>
+
+<pre style="margin-top:12px">
+<span class="cm">// 1. link the stylesheet (once)</span>
+<span class="kw">&lt;link</span> rel=<span class="str">"stylesheet"</span> href=<span class="str">"/ds/vetvet-ds.css"</span><span class="kw">/&gt;</span>
+
+<span class="cm">// 2. use primitives</span>
+<span class="kw">&lt;button</span> class=<span class="str">"btn btn--brand-primary"</span><span class="kw">&gt;</span>Submit listing<span class="kw">&lt;/button&gt;</span>
+
+<span class="cm">// 3. or reference tokens in your own CSS</span>
+.listing-card {
+  background: <span class="str">var(--color-surface)</span>;
+  border: 1px solid <span class="str">var(--color-neutral-border)</span>;
+  border-radius: <span class="str">var(--radius-lg)</span>;
+  padding: <span class="str">var(--space-6)</span>;
+  box-shadow: <span class="str">var(--shadow-default)</span>;
+}
+</pre>
+        </section>
+
+        <section class="block" id="claude">
+          <h2>For Claude &amp; designers</h2>
+          <p class="lede">The minimum context to give Claude when building a new VetVet screen. Copy-paste into your prompt.</p>
+
+          <div class="panel" style="padding: 0">
+            <pre style="border-radius:12px">
+<span class="cm">// Design system: VetVet v1.0</span>
+<span class="cm">// Aesthetic: calm, high-trust, precise. Forest teal + stone neutrals.</span>
+<span class="cm">// Radius: small (4–8 px). No gradients. No emoji in product UI.</span>
+<span class="cm">// Type: Inter. H1 24/600, H2 20/600, Body 14/400, Caption 12/400.</span>
+
+<span class="cm">// Core semantic tokens (CSS vars in vetvet-ds.css):</span>
+--color-brand-primary     #14535A   <span class="cm">// primary buttons, headlines</span>
+--color-brand-secondary   #299198   <span class="cm">// interactive accents</span>
+--color-brand-tertiary    #E6F2F3   <span class="cm">// brand tints, badge bg</span>
+--color-default-font      #1C1917
+--color-subtext-color     #78716C
+--color-neutral-border    #E7E5E4
+--color-surface           #FFFFFF
+--color-default-background #FBFBF9
+
+<span class="cm">// Layout rules</span>
+- 4 px spacing grid; use --space-* tokens
+- One primary action per screen (.btn--brand-primary)
+- Cards: 1px border, radius-lg, 24 px padding
+- Tables: dense, hover row, neutral-50 header
+- Shadows: sm for inputs, md for menus, overlay for modals
+</pre>
+          </div>
+        </section>
+
+        <section class="block" id="governance">
+          <h2>Governance</h2>
+          <p class="lede">How the system evolves without breaking what ships.</p>
+          <div class="panel">
+            <div class="check-row"><div class="check-row__mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div><div><strong>Need something new?</strong> Open a <code>ds-request</code> issue with a screenshot and the use case. Triaged weekly.</div></div>
+            <div class="check-row"><div class="check-row__mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div><div><strong>One-off exception?</strong> Allowed inside your feature only, tagged with a <code>// ds-exception</code> comment linking the issue.</div></div>
+            <div class="check-row"><div class="check-row__mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div><div><strong>Breaking changes</strong> are shipped as major versions with a 2-sprint deprecation window. No silent rug-pulls.</div></div>
+            <div class="check-row"><div class="check-row__mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div><div><strong>Ownership.</strong> Design Systems team owns tokens + primitives. Product teams own compositions (listing card, deal room, etc.).</div></div>
+            <div class="check-row"><div class="check-row__mark"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></div><div><strong>Contact.</strong> <code>#design-system</code> on Slack · ds@vetvet.co · office hours Thursdays 2pm PT.</div></div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>
