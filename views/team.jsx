@@ -36,6 +36,56 @@ const TEAM_BENEFITS_SEED = {
   ],
 };
 
+const DOCTORS_SEED = [
+  {
+    id: 1,
+    name: "Dr. Sarah Mitchell",
+    role: "Lead Veterinarian & Practice Owner",
+    age: "42",
+    yearsExperience: "18",
+    employment: "part",
+    compensation: "180000",
+    specialty: "Small Animals, General Practice",
+    license: "#TX-VET-8472",
+    licenseState: "Texas",
+    complaints: "None",
+    education: [
+      { degree: "Doctor of Veterinary Medicine (DVM)", institution: "Cornell University College of Veterinary Medicine", year: "2006" },
+      { degree: "Bachelor of Science, Animal Biology", institution: "University of California, Davis", year: "2002" },
+      { degree: "Advanced Certification, Small Animal Emergency & Critical Care", institution: "VECCS", year: "2010" },
+    ],
+    experience: [
+      { employer: "Sunny Paws Veterinary Clinic", role: "Founder & Owner", startYear: "2015", endYear: "Present", bullets: ["Founded the practice; built it to 18 years of veterinary experience.", "Specializes in emergency medicine, small animal surgery, and practice management.", "Mentored 20+ veterinary students; presents nationally on emergency procedures."] },
+      { employer: "Metropolitan Animal Hospital, Dallas", role: "Chief of Surgery", startYear: "2010", endYear: "2015", bullets: ["Developed innovative trauma care protocols and emergency surgical techniques.", "Managed thousands of emergency procedures."] },
+    ],
+    bio: "Active member of the American Veterinary Medical Association (AVMA) and the Veterinary Emergency and Critical Care Society (VECCS).",
+  },
+  {
+    id: 2,
+    name: "Dr. James Chen",
+    role: "Associate Veterinarian — Internal Medicine",
+    age: "35",
+    yearsExperience: "9",
+    employment: "part",
+    compensation: "130000",
+    specialty: "Small Animals, General Practice",
+    license: "#TX-VET-9283",
+    licenseState: "Texas",
+    complaints: "None",
+    education: [
+      { degree: "Doctor of Veterinary Medicine (DVM)", institution: "University of Pennsylvania School of Veterinary Medicine", year: "2015" },
+      { degree: "Bachelor of Science, Animal Science", institution: "Penn State University", year: "2011" },
+      { degree: "Board Certification, Small Animal Internal Medicine (ACVIM)", institution: "American College of Veterinary Internal Medicine", year: "2019" },
+    ],
+    experience: [
+      { employer: "Sunny Paws Veterinary Clinic", role: "Associate Veterinarian", startYear: "2018", endYear: "Present", bullets: ["Premier specialist for complex medical cases at the practice.", "Particular passion for feline medicine; published peer-reviewed research on feline diabetes management.", "Areas of expertise: endocrine disorders, GI disease, immune-mediated conditions, chronic disease management."] },
+      { employer: "University of Georgia Veterinary Teaching Hospital", role: "Internal Medicine Residency", startYear: "2016", endYear: "2018", bullets: ["Focused on endocrinology and gastroenterology."] },
+      { employer: "North Carolina State University College of Veterinary Medicine", role: "Small Animal Internship", startYear: "2015", endYear: "2016", bullets: [] },
+    ],
+    bio: "Serves on the Internal Medicine Committee of the Texas Veterinary Medical Association. Known for a methodical diagnostic approach and exceptional client communication.",
+  },
+];
+
 const STAFF_SEED = [
   { id: 1,  name: "Ashley Williams",   role: "Veterinary Technician",        startDate: "2020-09-13", type: "full", salaryType: "annual", salary: "47000", hours: "40" },
   { id: 2,  name: "Brian O'Connor",    role: "Kennel Supervisor",            startDate: "2019-06-30", type: "full", salaryType: "annual", salary: "44000", hours: "40" },
@@ -482,6 +532,426 @@ const StaffTableRow = ({ member, detailSaved, onChange, onDetails }) => (
   </tr>
 );
 
+// ─── Doctor helpers ───────────────────────────────────────────────────────────
+
+const fmtMoney = (s) => {
+  if (!s) return "—";
+  const n = parseFloat(String(s).replace(/[^0-9.]/g, ""));
+  if (isNaN(n)) return "—";
+  return `$${n.toLocaleString()}`;
+};
+
+const yearRange = (a, b) => {
+  if (!a && !b) return "";
+  if (a && b) return `${a} – ${b}`;
+  return a || b;
+};
+
+// ─── Doctor Profile Card ──────────────────────────────────────────────────────
+
+const DoctorProfileCard = ({ doctor, onEdit }) => {
+  const lblStyle = { font: "500 11px/1 Inter", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--stone-500)", marginBottom: 8 };
+  const factStyle = { display: "inline-flex", alignItems: "center", gap: 6, font: "500 14px/1 Inter", color: "var(--stone-700)" };
+  const sectionTitle = { font: "600 14px/1 Inter", color: "var(--stone-900)", display: "flex", alignItems: "center", gap: 8, marginBottom: 12 };
+
+  return (
+    <div className="co-card" style={{ padding: 24, position: "relative", marginBottom: 16 }}>
+      <button
+        onClick={onEdit}
+        title="Edit doctor"
+        style={{ position: "absolute", top: 16, right: 16, background: "none", border: 0, cursor: "pointer", padding: 6, borderRadius: 6, color: "var(--stone-500)", display: "grid", placeItems: "center" }}
+        onMouseEnter={e => { e.currentTarget.style.background = "var(--stone-100)"; e.currentTarget.style.color = "var(--stone-900)"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = "var(--stone-500)"; }}
+      >
+        <Icon name="edit" size={16} />
+      </button>
+
+      {/* Header */}
+      <div style={{ marginBottom: 18, paddingRight: 36 }}>
+        <h3 style={{ font: "700 20px/1.2 Inter", margin: "0 0 4px", color: "var(--stone-900)" }}>{doctor.name}</h3>
+        <div style={{ font: "500 14px/1.2 Inter", color: "var(--teal-brand)" }}>{doctor.role}</div>
+      </div>
+
+      {/* Quick facts strip */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 22px", marginBottom: 22, paddingBottom: 18, borderBottom: "1px solid var(--stone-100)" }}>
+        <span style={factStyle}><Icon name="users" size={14} style={{ color: "var(--stone-500)" }} /> Age {doctor.age || "—"}</span>
+        <span style={factStyle}><Icon name="briefcase" size={14} style={{ color: "var(--stone-500)" }} /> {doctor.yearsExperience || "—"} years experience</span>
+        <span style={factStyle}><Icon name="clock" size={14} style={{ color: "var(--stone-500)" }} /> {doctor.employment === "full" ? "Full-time" : "Part-time"}</span>
+        <span style={factStyle}><Icon name="dollarSign" size={14} style={{ color: "var(--stone-500)" }} /> {fmtMoney(doctor.compensation)}</span>
+      </div>
+
+      {/* Two-column meta grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px 32px", marginBottom: 22 }}>
+        <div>
+          <div style={lblStyle}><Icon name="award" size={12} style={{ verticalAlign: "-2px", marginRight: 5 }} />Specialty</div>
+          <div style={{ font: "400 14px/1.4 Inter", color: "var(--stone-900)" }}>{doctor.specialty || "—"}</div>
+        </div>
+        <div>
+          <div style={lblStyle}><Icon name="checkCircle" size={12} style={{ verticalAlign: "-2px", marginRight: 5 }} />License</div>
+          <div style={{ font: "400 14px/1.4 Inter", color: "var(--stone-900)" }}>
+            {doctor.license || "—"}{doctor.licenseState ? ` (${doctor.licenseState})` : ""}
+          </div>
+        </div>
+        <div>
+          <div style={lblStyle}><Icon name="info" size={12} style={{ verticalAlign: "-2px", marginRight: 5 }} />Complaints</div>
+          <div style={{ font: "400 14px/1.4 Inter", color: doctor.complaints && doctor.complaints.toLowerCase() !== "none" ? "#BE123C" : "var(--stone-900)" }}>
+            {doctor.complaints || "None"}
+          </div>
+        </div>
+      </div>
+
+      {/* Education — resume style */}
+      <div style={{ marginBottom: 22 }}>
+        <div style={sectionTitle}>
+          <Icon name="award" size={15} style={{ color: "var(--teal-brand)" }} /> Education
+        </div>
+        {doctor.education && doctor.education.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {doctor.education.map((ed, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "baseline" }}>
+                <div>
+                  <div style={{ font: "600 14px/1.4 Inter", color: "var(--stone-900)" }}>{ed.degree}</div>
+                  <div style={{ font: "400 14px/1.4 Inter", color: "var(--stone-500)" }}>{ed.institution}</div>
+                </div>
+                <div style={{ font: "500 14px/1.4 Inter", color: "var(--stone-500)", whiteSpace: "nowrap" }}>{ed.year}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ font: "400 14px/1.4 Inter", color: "var(--stone-500)" }}>No education added.</div>
+        )}
+      </div>
+
+      {/* Experience — resume style */}
+      <div style={{ marginBottom: doctor.bio ? 22 : 0 }}>
+        <div style={sectionTitle}>
+          <Icon name="briefcase" size={15} style={{ color: "var(--teal-brand)" }} /> Professional Experience
+        </div>
+        {doctor.experience && doctor.experience.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {doctor.experience.map((ex, i) => (
+              <div key={i}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "baseline" }}>
+                  <div>
+                    <div style={{ font: "600 14px/1.4 Inter", color: "var(--stone-900)" }}>{ex.role}</div>
+                    <div style={{ font: "400 14px/1.4 Inter", color: "var(--stone-500)" }}>{ex.employer}</div>
+                  </div>
+                  <div style={{ font: "500 14px/1.4 Inter", color: "var(--stone-500)", whiteSpace: "nowrap" }}>{yearRange(ex.startYear, ex.endYear)}</div>
+                </div>
+                {ex.bullets && ex.bullets.filter(Boolean).length > 0 && (
+                  <ul style={{ margin: "6px 0 0", paddingLeft: 20, font: "400 14px/1.5 Inter", color: "var(--stone-700)" }}>
+                    {ex.bullets.filter(Boolean).map((b, j) => <li key={j} style={{ marginTop: j === 0 ? 0 : 4 }}>{b}</li>)}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ font: "400 14px/1.4 Inter", color: "var(--stone-500)" }}>No experience added.</div>
+        )}
+      </div>
+
+      {/* Bio / Notes */}
+      {doctor.bio && (
+        <div>
+          <div style={sectionTitle}>
+            <Icon name="fileText" size={15} style={{ color: "var(--teal-brand)" }} /> Bio / Notes
+          </div>
+          <div style={{ font: "400 14px/1.5 Inter", color: "var(--stone-700)" }}>{doctor.bio}</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Doctor Edit / Add Slideout ───────────────────────────────────────────────
+
+const blankDoctor = () => ({
+  name: "", role: "", age: "", yearsExperience: "", employment: "full", compensation: "",
+  specialty: "", license: "", licenseState: "", complaints: "None",
+  education: [], experience: [], bio: "",
+});
+
+const DoctorSlideout = ({ doctor, isNew, onSave, onRemove, onClose }) => {
+  const [form, setForm] = React.useState(() => ({
+    ...blankDoctor(),
+    ...(doctor || {}),
+    education: (doctor?.education ? doctor.education.map(e => ({ ...e })) : []),
+    experience: (doctor?.experience ? doctor.experience.map(e => ({ ...e, bullets: [...(e.bullets || [])] })) : []),
+  }));
+
+  const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }));
+
+  const updateEd = (i, patch) => setForm(prev => ({ ...prev, education: prev.education.map((ed, idx) => idx === i ? { ...ed, ...patch } : ed) }));
+  const addEd = () => setForm(prev => ({ ...prev, education: [...prev.education, { degree: "", institution: "", year: "" }] }));
+  const removeEd = (i) => setForm(prev => ({ ...prev, education: prev.education.filter((_, idx) => idx !== i) }));
+
+  const updateEx = (i, patch) => setForm(prev => ({ ...prev, experience: prev.experience.map((ex, idx) => idx === i ? { ...ex, ...patch } : ex) }));
+  const addEx = () => setForm(prev => ({ ...prev, experience: [...prev.experience, { employer: "", role: "", startYear: "", endYear: "", bullets: [""] }] }));
+  const removeEx = (i) => setForm(prev => ({ ...prev, experience: prev.experience.filter((_, idx) => idx !== i) }));
+
+  const updateBullet = (exIdx, bIdx, val) => setForm(prev => ({
+    ...prev,
+    experience: prev.experience.map((ex, idx) => idx === exIdx ? { ...ex, bullets: ex.bullets.map((b, j) => j === bIdx ? val : b) } : ex),
+  }));
+  const addBullet = (exIdx) => setForm(prev => ({
+    ...prev,
+    experience: prev.experience.map((ex, idx) => idx === exIdx ? { ...ex, bullets: [...(ex.bullets || []), ""] } : ex),
+  }));
+  const removeBullet = (exIdx, bIdx) => setForm(prev => ({
+    ...prev,
+    experience: prev.experience.map((ex, idx) => idx === exIdx ? { ...ex, bullets: ex.bullets.filter((_, j) => j !== bIdx) } : ex),
+  }));
+
+  const handleSave = () => {
+    onSave({
+      ...form,
+      experience: form.experience.map(ex => ({ ...ex, bullets: (ex.bullets || []).filter(b => b && b.trim()) })),
+    });
+    onClose();
+  };
+
+  const sectionLabel = { font: "600 14px/1 Inter", color: "var(--stone-900)", marginTop: 24, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 };
+  const subCard = { background: "var(--stone-50)", border: "1px solid var(--stone-200)", borderRadius: 8, padding: "14px 14px 4px", marginBottom: 12 };
+
+  return (
+    <>
+      <div className="co-slideout-overlay" onClick={onClose} />
+      <div className="co-slideout" style={{ width: 560 }}>
+        <div className="co-slideout__header">
+          <div style={{ flex: 1 }}>
+            <div style={{ font: "500 11px/1 Inter", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Doctor</div>
+            <h2 style={{ margin: 0 }}>{isNew ? "Add Doctor" : (form.name || "Edit Doctor")}</h2>
+          </div>
+          <button className="co-modal__close" onClick={onClose}><Icon name="x" size={18} /></button>
+        </div>
+
+        <div className="co-slideout__body">
+          {/* Identity */}
+          <div className="co-field">
+            <label>Name</label>
+            <input value={form.name} onChange={e => set("name", e.target.value)} placeholder="Dr. Jane Doe" />
+          </div>
+          <div className="co-field">
+            <label>Title / Role</label>
+            <input value={form.role} onChange={e => set("role", e.target.value)} placeholder="e.g. Associate Veterinarian — Internal Medicine" />
+          </div>
+
+          {/* Quick facts */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="co-field" style={{ margin: 0 }}>
+              <label>Age</label>
+              <input value={form.age} onChange={e => set("age", e.target.value)} placeholder="—" />
+            </div>
+            <div className="co-field" style={{ margin: 0 }}>
+              <label>Years of Experience</label>
+              <input value={form.yearsExperience} onChange={e => set("yearsExperience", e.target.value)} placeholder="—" />
+            </div>
+            <div className="co-field" style={{ margin: 0 }}>
+              <label>Employment</label>
+              <select value={form.employment} onChange={e => set("employment", e.target.value)}>
+                <option value="full">Full-time</option>
+                <option value="part">Part-time</option>
+              </select>
+            </div>
+            <div className="co-field" style={{ margin: 0 }}>
+              <label>Compensation (annual $)</label>
+              <input value={form.compensation} onChange={e => set("compensation", e.target.value)} placeholder="0" />
+            </div>
+          </div>
+
+          <div className="co-field" style={{ marginTop: 16 }}>
+            <label>Specialty</label>
+            <input value={form.specialty} onChange={e => set("specialty", e.target.value)} placeholder="e.g. Small Animals, General Practice" />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+            <div className="co-field" style={{ margin: 0 }}>
+              <label>License Number</label>
+              <input value={form.license} onChange={e => set("license", e.target.value)} placeholder="#TX-VET-0000" />
+            </div>
+            <div className="co-field" style={{ margin: 0 }}>
+              <label>State</label>
+              <input value={form.licenseState} onChange={e => set("licenseState", e.target.value)} placeholder="Texas" />
+            </div>
+          </div>
+
+          <div className="co-field" style={{ marginTop: 16 }}>
+            <label>Complaints</label>
+            <input value={form.complaints} onChange={e => set("complaints", e.target.value)} placeholder="None" />
+          </div>
+
+          {/* Education */}
+          <div style={sectionLabel}>
+            <Icon name="award" size={15} style={{ color: "var(--teal-brand)" }} /> Education
+          </div>
+          {form.education.map((ed, i) => (
+            <div key={i} style={subCard}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ font: "500 13px/1 Inter", color: "var(--stone-500)" }}>Entry {i + 1}</div>
+                <button onClick={() => removeEd(i)} style={{ background: "none", border: 0, cursor: "pointer", color: "#BE123C", font: "500 13px/1 Inter", padding: 4 }}>Remove</button>
+              </div>
+              <div className="co-field">
+                <label>Degree / Certification</label>
+                <input value={ed.degree} onChange={e => updateEd(i, { degree: e.target.value })} placeholder="Doctor of Veterinary Medicine (DVM)" />
+              </div>
+              <div className="co-field">
+                <label>Institution</label>
+                <input value={ed.institution} onChange={e => updateEd(i, { institution: e.target.value })} placeholder="Cornell University College of Veterinary Medicine" />
+              </div>
+              <div className="co-field">
+                <label>Year</label>
+                <input value={ed.year} onChange={e => updateEd(i, { year: e.target.value })} placeholder="2015" style={{ width: 120 }} />
+              </div>
+            </div>
+          ))}
+          <button className="co-add-row" onClick={addEd} style={{ marginBottom: 6 }}>
+            <Icon name="plus" size={14} /> Add education
+          </button>
+
+          {/* Experience */}
+          <div style={sectionLabel}>
+            <Icon name="briefcase" size={15} style={{ color: "var(--teal-brand)" }} /> Professional Experience
+          </div>
+          {form.experience.map((ex, i) => (
+            <div key={i} style={subCard}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ font: "500 13px/1 Inter", color: "var(--stone-500)" }}>Entry {i + 1}</div>
+                <button onClick={() => removeEx(i)} style={{ background: "none", border: 0, cursor: "pointer", color: "#BE123C", font: "500 13px/1 Inter", padding: 4 }}>Remove</button>
+              </div>
+              <div className="co-field">
+                <label>Role / Title</label>
+                <input value={ex.role} onChange={e => updateEx(i, { role: e.target.value })} placeholder="Associate Veterinarian" />
+              </div>
+              <div className="co-field">
+                <label>Employer</label>
+                <input value={ex.employer} onChange={e => updateEx(i, { employer: e.target.value })} placeholder="Sunny Paws Veterinary Clinic" />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="co-field" style={{ margin: 0 }}>
+                  <label>Start Year</label>
+                  <input value={ex.startYear} onChange={e => updateEx(i, { startYear: e.target.value })} placeholder="2018" />
+                </div>
+                <div className="co-field" style={{ margin: 0 }}>
+                  <label>End Year</label>
+                  <input value={ex.endYear} onChange={e => updateEx(i, { endYear: e.target.value })} placeholder="Present" />
+                </div>
+              </div>
+              <div className="co-field" style={{ marginTop: 12 }}>
+                <label>Highlights</label>
+                {(ex.bullets || []).map((b, j) => (
+                  <div key={j} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "flex-start" }}>
+                    <span style={{ font: "400 14px/1.6 Inter", color: "var(--stone-500)", flexShrink: 0 }}>•</span>
+                    <input value={b} onChange={e => updateBullet(i, j, e.target.value)} placeholder="One accomplishment, area of focus, or note…" />
+                    <button onClick={() => removeBullet(i, j)} title="Remove" style={{ background: "none", border: 0, cursor: "pointer", color: "var(--stone-500)", padding: 6, display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name="x" size={14} /></button>
+                  </div>
+                ))}
+                <button onClick={() => addBullet(i)} style={{ background: "none", border: 0, cursor: "pointer", color: "var(--teal-brand)", font: "500 13px/1 Inter", padding: "4px 0", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <Icon name="plus" size={12} /> Add highlight
+                </button>
+              </div>
+            </div>
+          ))}
+          <button className="co-add-row" onClick={addEx} style={{ marginBottom: 6 }}>
+            <Icon name="plus" size={14} /> Add experience
+          </button>
+
+          {/* Bio / Notes */}
+          <div style={sectionLabel}>
+            <Icon name="fileText" size={15} style={{ color: "var(--teal-brand)" }} /> Bio / Notes
+          </div>
+          <textarea
+            style={{ width: "100%", border: "1px solid var(--stone-200)", borderRadius: 8, padding: "10px 12px", font: "400 14px/1.5 Inter", minHeight: 100, resize: "vertical", background: "#fff", outline: "none" }}
+            value={form.bio}
+            onChange={e => set("bio", e.target.value)}
+            placeholder="Memberships, awards, areas of interest, or any other notes about this doctor…"
+          />
+        </div>
+
+        <div className="co-slideout__footer">
+          {!isNew && (
+            <button
+              onClick={() => { onRemove(); onClose(); }}
+              style={{ background: "none", border: 0, cursor: "pointer", font: "500 14px/1 Inter", color: "#BE123C", padding: "0 4px", marginRight: "auto" }}
+            >
+              Remove Doctor
+            </button>
+          )}
+          <button className="co-btn co-btn--ghost" onClick={onClose}>Cancel</button>
+          <button className="co-btn co-btn--primary" onClick={handleSave}>{isNew ? "Add Doctor" : "Save Doctor"}</button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// ─── Doctors Tab ──────────────────────────────────────────────────────────────
+
+const DoctorsTab = ({ doctors, setDoctors }) => {
+  const [editingId, setEditingId] = React.useState(null);
+  const [showAdd, setShowAdd] = React.useState(false);
+  const [nextId, setNextId] = React.useState(() => doctors.reduce((m, d) => Math.max(m, d.id), 0) + 1);
+
+  const editing = doctors.find(d => d.id === editingId);
+
+  const updateDoctor = (updated) => setDoctors(prev => prev.map(d => d.id === updated.id ? updated : d));
+  const removeDoctor = (id) => setDoctors(prev => prev.filter(d => d.id !== id));
+  const addDoctor = (doc) => {
+    setDoctors(prev => [...prev, { ...doc, id: nextId }]);
+    setNextId(n => n + 1);
+  };
+
+  return (
+    <>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, paddingTop: 10, paddingBottom: 10, gap: 16 }}>
+        <div>
+          <h2 style={{ font: "700 18px/1 Inter", margin: "0 0 6px" }}>Doctors ({doctors.length})</h2>
+          <p style={{ font: "400 14px/1.4 Inter", color: "var(--stone-500)", margin: 0 }}>
+            Profiles for each veterinarian on staff. Click the edit icon on a profile to update fields.
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+          <button className="co-btn-solid" onClick={() => setShowAdd(true)}>
+            <Icon name="plus" size={14} /> Add Doctor
+          </button>
+        </div>
+      </div>
+
+      {doctors.length === 0 ? (
+        <div className="co-coming-soon">
+          <div className="co-coming-soon__icon"><Icon name="user" size={22} /></div>
+          <h3>No doctors yet</h3>
+          <p>Click "Add Doctor" to create the first profile.</p>
+        </div>
+      ) : (
+        doctors.map(d => (
+          <DoctorProfileCard key={d.id} doctor={d} onEdit={() => setEditingId(d.id)} />
+        ))
+      )}
+
+      {editing && (
+        <DoctorSlideout
+          doctor={editing}
+          isNew={false}
+          onSave={updateDoctor}
+          onRemove={() => removeDoctor(editing.id)}
+          onClose={() => setEditingId(null)}
+        />
+      )}
+
+      {showAdd && (
+        <DoctorSlideout
+          doctor={null}
+          isNew={true}
+          onSave={addDoctor}
+          onRemove={() => {}}
+          onClose={() => setShowAdd(false)}
+        />
+      )}
+    </>
+  );
+};
+
 // ─── Staff Tab ────────────────────────────────────────────────────────────────
 
 const StaffTab = ({ benefits, staff, setStaff, memberDetails, setMemberDetails }) => {
@@ -669,6 +1139,7 @@ const TeamSection = () => {
   const TABS = ["Owners", "Doctors", "Staff", "Consultants", "Payroll", "Benefits"];
   const [activeTab, setActiveTab] = React.useState("staff");
   const [staff, setStaff] = React.useState(STAFF_SEED);
+  const [doctors, setDoctors] = React.useState(DOCTORS_SEED);
   const [benefits] = React.useState(TEAM_BENEFITS_SEED);
   const [memberDetails, setMemberDetails] = React.useState({});
   const [showBenefitsEdit, setShowBenefitsEdit] = React.useState(false);
@@ -697,7 +1168,11 @@ const TeamSection = () => {
         />
       )}
 
-      {(activeTab === "owners" || activeTab === "doctors" || activeTab === "consultants") && (
+      {activeTab === "doctors" && (
+        <DoctorsTab doctors={doctors} setDoctors={setDoctors} />
+      )}
+
+      {(activeTab === "owners" || activeTab === "consultants") && (
         <div className="co-coming-soon">
           <div className="co-coming-soon__icon" style={{ marginTop: 10 }}><Icon name="users" size={22} /></div>
           <h3>{TABS.find(t => t.toLowerCase() === activeTab)} — coming soon</h3>
