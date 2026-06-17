@@ -36,22 +36,25 @@ const TopNav = ({ active, onNav, textSize, onTextSize }) => {
   );
 };
 
-const SubHeader = ({ crumbs, title, actions }) => (
+const SubHeader = ({ crumbs, title, subtitle, actions }) => (
   <div className="co-sub">
     <div className="co-sub__wrap">
       <div>
-        <div className="co-crumb">
-          <Icon name="home" size={14} />
-          {crumbs.map((c, i) => (
-            <React.Fragment key={i}>
-              <Icon name="chevronRight" size={12} />
-              {i === crumbs.length - 1
-                ? <span className="co-crumb__current">{c}</span>
-                : <a href="#">{c}</a>}
-            </React.Fragment>
-          ))}
-        </div>
+        {crumbs && crumbs.length > 0 && (
+          <div className="co-crumb">
+            <Icon name="home" size={14} />
+            {crumbs.map((c, i) => (
+              <React.Fragment key={i}>
+                <Icon name="chevronRight" size={12} />
+                {i === crumbs.length - 1
+                  ? <span className="co-crumb__current">{c}</span>
+                  : <a href="#">{c}</a>}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
         <h1>{title}</h1>
+        {subtitle && <p className="co-sub__subtitle">{subtitle}</p>}
       </div>
       <div className="co-sub__actions">{actions}</div>
     </div>
@@ -92,36 +95,75 @@ const Toast = ({ message }) => (
   </div>
 );
 
-const LeftRail = ({ section, onSection }) => {
-  const items = [
-    { id: "overview", label: "Overview", icon: "home" },
-    { id: "financials", label: "Financials", icon: "dollarSign" },
-    { id: "operations", label: "Operations", icon: "activity" },
-    { id: "services", label: "Services", icon: "settings" },
-    { id: "facilities", label: "Facilities", icon: "building" },
-    { id: "team", label: "Team", icon: "users" },
-    { id: "documents", label: "Documents", icon: "fileText" },
-    { id: "reviews", label: "Reviews", icon: "star" },
-    { id: "questions", label: "Questions", icon: "helpCircle" },
-    { id: "meetings", label: "Meetings", icon: "calendar" },
+const LeftRail = () => {
+  const { area, section } = useRoute();
+
+  const profile = [
+    { id: "overview", label: "Overview", icon: "home", status: "attention", path: "/practice" },
+    { id: "financials", label: "Financials", icon: "dollarSign", status: "complete", path: "/practice/financials" },
+    { id: "operations", label: "Operations", icon: "activity", status: "complete", path: "/practice/operations" },
+    { id: "services", label: "Services", icon: "settings", status: "attention", path: "/practice/services" },
+    { id: "facilities", label: "Facilities", icon: "building", status: "attention", path: "/practice/facilities" },
+    { id: "team", label: "Team", icon: "users", status: "attention", path: "/practice/team" },
+    { id: "documents", label: "Documents", icon: "fileText", status: "attention", path: "/practice/documents" },
+    { id: "questions", label: "Questions", icon: "helpCircle", path: "/practice/questions" },
   ];
+  const shortcuts = [
+    { id: "meetings", label: "Meetings", icon: "calendar", path: "/meetings" },
+    { id: "messages", label: "Messages", icon: "message", badge: 3, path: "/messages" },
+    { id: "offers", label: "Offers", icon: "dollarSign", badge: 4, path: "/offers" },
+    { id: "inquiries", label: "Inquiries", icon: "inbox", badge: 5, path: "/inquiries" },
+    { id: "people", label: "People", icon: "user", locked: true },
+  ];
+  const deals = [
+    { id: "market-check", label: "Market Check", icon: "searchCheck", path: "/practice/market-check" },
+    { id: "deal-preparation", label: "Deal Preparation", icon: "briefcase", locked: true },
+    { id: "deal-team", label: "Deal Team", icon: "users", locked: true },
+  ];
+
+  const isActive = (it) => {
+    if (it.locked) return false;
+    if (area === "practice") return it.id === "overview" ? section === "overview" : section === it.id;
+    return area === it.id;
+  };
+
+  const renderItem = (it) => {
+    if (it.locked) return (
+      <div key={it.id} className="co-rail__item is-locked">
+        <Icon name={it.icon} size={16} />
+        <span className="co-rail__label">{it.label}</span>
+        <Icon name="lock" size={13} className="co-rail__lock" />
+      </div>
+    );
+    return (
+      <button key={it.id} className={`co-rail__item ${isActive(it) ? "is-active" : ""}`} onClick={() => navigateTo(it.path)}>
+        <Icon name={it.icon} size={16} />
+        <span className="co-rail__label">{it.label}</span>
+        {it.status && <span className={`co-rail__dot co-rail__dot--${it.status}`} />}
+        {it.badge != null && <span className="co-rail__badge">{it.badge}</span>}
+      </button>
+    );
+  };
+
   return (
     <aside className="co-rail">
       <div className="co-rail__card">
         <div className="co-rail__header">
           <div className="co-rail__header-logo" style={{ backgroundImage: "url(assets/practice-hero.jpg)" }} />
           <div className="co-rail__header-text">
-            <div className="co-rail__header-name">AnimalCare</div>
-            <div className="co-rail__header-sub">Lakeside, IL</div>
+            <div className="co-rail__header-name">{PRACTICE.name}</div>
+            <div className="co-rail__header-sub">{PRACTICE.location}</div>
           </div>
           <Icon name="chevronsUpDown" size={16} />
         </div>
-        {items.map(it => (
-          <button key={it.id} className={`co-rail__item ${section === it.id ? "is-active" : ""}`} onClick={() => onSection(it.id)}>
-            <Icon name={it.icon} size={16} />
-            {it.label}
-          </button>
-        ))}
+        <div className="co-rail__group-items">
+          {profile.map(renderItem)}
+          {shortcuts.map(renderItem)}
+        </div>
+        <div className="co-rail__group">Deals</div>
+        <div className="co-rail__group-items">
+          {deals.map(renderItem)}
+        </div>
       </div>
       <div className="co-help">
         <h3><Icon name="helpCircle" /> Need Help?</h3>

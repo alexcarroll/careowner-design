@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "careowner",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-l", "3456", "."],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js", "3456"],
       "port": 3456
     }
   ]

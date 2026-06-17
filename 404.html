@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>CareOwner</title>
+  <script>
+    // GitHub Pages SPA fallback (rafgraph/spa-github-pages technique).
+    // Redirects a deep path like /careowner-design/practice/market-check into
+    // /careowner-design/?/practice/market-check so index.html can restore it.
+    (function () {
+      var pathSegmentsToKeep = 1; // project page: keep "/<repo>"
+      var l = window.location;
+      l.replace(
+        l.protocol + "//" + l.hostname + (l.port ? ":" + l.port : "") +
+        l.pathname.split("/").slice(0, 1 + pathSegmentsToKeep).join("/") + "/?/" +
+        l.pathname.slice(1).split("/").slice(pathSegmentsToKeep).join("/").replace(/&/g, "~and~") +
+        (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+        l.hash
+      );
+    })();
+  </script>
+</head>
+<body></body>
+</html>

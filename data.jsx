@@ -116,8 +116,66 @@ const ACTIVITY = [
   { id: 6, kind: "view",  text: "Listing appeared in <b>18 searches</b>", time: "3d ago", icon: "trend", tint: "indigo" },
 ];
 
+// ─── Market Check ───────────────────────────────────────────────────────────
+
+// The platform's modeled valuation estimate (in $M) — buyers' responses are
+// compared against this to show "market vs model".
+const MODELED_ESTIMATE = { low: 2.5, high: 3.5 };
+
+// Everything that *could* go into an anonymized snapshot. provenance:
+// "verified" (pulled from a connected account/doc) | "self" (manual) | "none".
+const MARKET_METRICS = [
+  { group: "Financials", items: [
+    { id: "revenue",   label: "High-Level Revenue",      value: "$2.45M",          provenance: "verified" },
+    { id: "ebitda",    label: "EBITDA",                  value: "$612K",           provenance: "verified" },
+    { id: "adjMargin", label: "Adjusted EBITDA Margin",  value: "20%",             provenance: "verified" },
+    { id: "sales",     label: "Annual Sales + Growth",   value: "$2.45M · +8% YoY", provenance: "verified" },
+  ]},
+  { group: "Production", items: [
+    { id: "prodByDoctor", label: "Production by Doctor",        value: "$612K avg / DVM",    provenance: "verified" },
+    { id: "dvm",          label: "DVM Concentration + # DVMs",  value: "5 DVMs · top DVM 28%", provenance: "self" },
+  ]},
+  { group: "Practice Attributes", items: [
+    { id: "locationType", label: "Location Type",            value: "Suburban",              provenance: "verified" },
+    { id: "geo",          label: "Geography + Demographics",  value: "Midwest · HH income $96K", provenance: "self" },
+    { id: "pricing",      label: "Pricing",                  value: "Exam $68 · ~12% above region", provenance: "self" },
+  ]},
+  { group: "People", items: [
+    { id: "turnover", label: "Staff Turnover", value: "14% annual", provenance: "self" },
+  ]},
+  { group: "Facilities", items: [
+    { id: "facilities", label: "Space / Facilities", value: "2,300 sq ft · 5 exam rooms", provenance: "verified" },
+  ]},
+];
+
+// Ranges are in $M (numbers) for charting.
+const MARKET_CHECK_RESPONSES = [
+  { id: 1, buyer: "Corporate Acquirer", buyerType: "Corporate Group", verified: true, interest: "High", low: 2.8, high: 3.2,
+    feedback: "Strong financial performance and location. Would recommend updating facilities to modern standards to increase value by 10–15%.",
+    recs: ["Modernize waiting room and exam rooms", "Install digital X-ray system if not already in place"], submitted: "Apr 14" },
+  { id: 2, buyer: "Individual Veterinarian", buyerType: "Individual Vet", verified: true, interest: "Medium", low: 2.5, high: 2.9,
+    feedback: "Good practice fundamentals. Consider formalizing team training programs and documenting SOPs more thoroughly to reduce transition risk.",
+    recs: ["Create comprehensive SOP documentation", "Implement formal onboarding program"], submitted: "Apr 13" },
+  { id: 3, buyer: "Private Equity Group", buyerType: "PE Firm", verified: true, interest: "High", low: 3.0, high: 3.5,
+    feedback: "Excellent EBITDA margins and growth trajectory. Strengthening financial reporting systems would support higher valuation multiples.",
+    recs: ["Implement monthly financial dashboards", "Establish KPI tracking system"], submitted: "Apr 12" },
+  { id: 4, buyer: "Regional Chain", buyerType: "Regional Group", verified: false, interest: "Medium", low: 2.6, high: 3.0,
+    feedback: "Great market position. Owner transition plan could be more detailed to ensure continuity of client relationships.",
+    recs: ["Document key client relationships", "Develop 12-month transition timeline"], submitted: "Apr 11" },
+];
+
+const MARKET_CHECK_REQUESTS = [
+  { id: 1, name: "Full Practice Snapshot", sent: "Apr 8, 2026", status: "collecting", metrics: 8, verifiedMix: "6 verified · 2 self-reported", buyersSent: 6, responded: 4, deadline: "Apr 22, 2026" },
+  { id: 2, name: "Financials-Only Teaser", sent: "Mar 24, 2026", status: "closed", metrics: 4, verifiedMix: "4 verified", buyersSent: 5, responded: 5, deadline: "Apr 7, 2026" },
+  { id: 3, name: "Quick Manual Check", sent: null, status: "draft", metrics: 5, verifiedMix: "5 self-reported", buyersSent: 0, responded: 0, deadline: null },
+];
+
 window.PRACTICE = PRACTICE;
 window.BUYERS = BUYERS;
+window.MODELED_ESTIMATE = MODELED_ESTIMATE;
+window.MARKET_METRICS = MARKET_METRICS;
+window.MARKET_CHECK_RESPONSES = MARKET_CHECK_RESPONSES;
+window.MARKET_CHECK_REQUESTS = MARKET_CHECK_REQUESTS;
 window.INQUIRIES = INQUIRIES;
 window.OFFERS = OFFERS;
 window.THREADS = THREADS;

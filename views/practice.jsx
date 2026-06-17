@@ -1,7 +1,7 @@
 // My Practice view — 4 tabs: Overview, Practice Details, Ownership, Deal Preferences
 
-const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection }) => {
-  const [tab, setTab] = React.useState("overview");
+const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection, tab }) => {
+  const activeTab = tab || "overview";
   const isTeam = section === "team";
 
   return (
@@ -38,14 +38,14 @@ const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection }) => {
                   { id: "ownership", label: "Ownership" },
                   { id: "deal", label: "Deal Preferences" },
                 ].map(t => (
-                  <button key={t.id} className={tab === t.id ? "is-active" : ""} onClick={() => setTab(t.id)}>{t.label}</button>
+                  <button key={t.id} className={activeTab === t.id ? "is-active" : ""} onClick={() => navigateTo(`/practice/${section || "overview"}#${t.id}`)}>{t.label}</button>
                 ))}
               </div>
 
-              {tab === "overview" && <OverviewTab pub={pub} onTogglePub={onTogglePub} onEdit={onEdit} />}
-              {tab === "details" && <DetailsTab onEdit={onEdit} />}
-              {tab === "ownership" && <OwnershipTab onEdit={onEdit} />}
-              {tab === "deal" && <DealTab onEdit={onEdit} />}
+              {activeTab === "overview" && <OverviewTab pub={pub} onTogglePub={onTogglePub} onEdit={onEdit} />}
+              {activeTab === "details" && <DetailsTab onEdit={onEdit} />}
+              {activeTab === "ownership" && <OwnershipTab onEdit={onEdit} />}
+              {activeTab === "deal" && <DealTab onEdit={onEdit} />}
             </div>
             <RightRail />
           </>

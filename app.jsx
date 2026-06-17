@@ -1,15 +1,19 @@
 // Root app: routing, state, edit modal
 
 const App = () => {
-  const [route, setRoute] = React.useState(() => localStorage.getItem("co.route") || "practice");
-  const [section, setSection] = React.useState(() => localStorage.getItem("co.section") || "overview");
+  const route = useRoute(); // { area, section, sub, tab }
   const [textSize, setTextSize] = React.useState(() => localStorage.getItem("co.ts") || "md");
   const [pub, setPub] = React.useState(true);
   const [modal, setModal] = React.useState(null);
   const [toast, setToast] = React.useState(null);
 
-  React.useEffect(() => { localStorage.setItem("co.route", route); }, [route]);
-  React.useEffect(() => { localStorage.setItem("co.section", section); }, [section]);
+  // Send the bare root to the default workspace.
+  React.useEffect(() => {
+    const base = window.__APP_BASE__ || "";
+    const p = window.location.pathname.replace(/\/index\.html$/, "");
+    if (p === "/" || p === "" || p === base || p === base + "/") navigateTo("/practice", { replace: true });
+  }, []);
+
   React.useEffect(() => {
     localStorage.setItem("co.ts", textSize);
     document.documentElement.style.fontSize = textSize === "sm" ? "14px" : textSize === "lg" ? "17px" : "16px";
@@ -26,18 +30,25 @@ const App = () => {
 
   const onTogglePub = (v) => { setPub(v); showToast(v ? "Listing is now Public" : "Listing is now Private"); };
 
-  const props = { section, onSection: setSection, onEdit, onNav: setRoute };
+  // Back-compat nav helpers so existing views keep their onNav(area)/onSection(section) calls.
+  const onNav = (area) => navigateTo("/" + area);
+  const onSection = (section) => navigateTo("/practice/" + section);
+
+  const { area, section, sub, tab } = route;
+  const props = { section, sub, tab, onSection, onEdit, onNav };
+  const isMarketCheck = area === "practice" && section === "market-check";
 
   return (
     <>
-      <TopNav active={route} onNav={setRoute} textSize={textSize} onTextSize={setTextSize} />
-      {route === "home" && <HomeView {...props} />}
-      {route === "practice" && <PracticeView pub={pub} onTogglePub={onTogglePub} {...props} />}
-      {route === "buyers" && <BuyersView {...props} />}
-      {route === "inquiries" && <InquiriesView {...props} />}
-      {route === "offers" && <OffersView {...props} />}
-      {route === "messages" && <MessagesView {...props} />}
-      {route === "meetings" && <MeetingsView {...props} />}
+      <TopNav active={area} onNav={onNav} textSize={textSize} onTextSize={setTextSize} />
+      {area === "home" && <HomeView {...props} />}
+      {area === "practice" && !isMarketCheck && <PracticeView pub={pub} onTogglePub={onTogglePub} {...props} />}
+      {isMarketCheck && <MarketCheckView pub={pub} onTogglePub={onTogglePub} {...props} />}
+      {area === "buyers" && <BuyersView {...props} />}
+      {area === "inquiries" && <InquiriesView {...props} />}
+      {area === "offers" && <OffersView {...props} />}
+      {area === "messages" && <MessagesView {...props} />}
+      {area === "meetings" && <MeetingsView {...props} />}
       {modal && <EditModal modal={modal} onClose={() => setModal(null)} onSubmit={onSubmit} />}
       {toast && <Toast message={toast} />}
     </>
