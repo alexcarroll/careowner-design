@@ -7,6 +7,7 @@ const MC_TABS = [
   { id: "requests", label: "Requests" },
   { id: "market-profile", label: "Market Profile" },
   { id: "preferences", label: "Preferences" },
+  { id: "buyer-response", label: "Buyer Response" },
 ];
 
 const fmtRange = (lo, hi) => `$${lo.toFixed(1)}M – $${hi.toFixed(1)}M`;
@@ -19,6 +20,12 @@ const InterestBadge = ({ i, long }) => {
 
 const fmtM = (v) => "$" + v.toFixed(1) + "M";                       // 3 → "$3.0M"
 const fmtMid = (v) => "$" + v.toFixed(2).replace(/0$/, "") + "M";   // 3.25 → "$3.25M", 3 → "$3.0M"
+// A value in $M → friendly dollars: "$2.5M" / "$650K" (Buyer Response math).
+const fmtUSD = (m) => {
+  const d = Math.round(m * 1e6);
+  if (Math.abs(d) >= 1e6) return "$" + (Math.round(d / 1e5) / 10).toString() + "M";
+  return "$" + Math.round(d / 1e3) + "K";
+};
 
 const effortBadge = (e) => {
   const cls = e === "High" ? "co-badge--amber" : e === "Medium" ? "co-badge--blue" : "co-badge--green";
@@ -128,6 +135,7 @@ const ProvChip = ({ p }) => {
 const MarketCheckView = ({ tab, sub }) => {
   const [completed, setCompleted] = React.useState(true);
   if (sub === "new") return <NewRequestFlow />;
+  if (sub === "respond") return <BuyerRespondFlow reqId={tab} />;
   const activeTab = tab || "responses";
   return (
     <>
@@ -152,6 +160,7 @@ const MarketCheckView = ({ tab, sub }) => {
           {activeTab === "requests" && <MCRequests />}
           {activeTab === "market-profile" && <MCMarketProfile completed={completed} />}
           {activeTab === "preferences" && <MCPreferences />}
+          {activeTab === "buyer-response" && <MCBuyerResponse />}
         </div>
       </div>
     </>
@@ -1093,6 +1102,251 @@ const NewRequestFlow = () => {
             {step < 3
               ? <button className="co-btn co-btn--primary" onClick={next} disabled={step === 2 && buyerMode === "manual" && buyerSel.length === 0}>Continue <Icon name="chevronRight" size={14} /></button>
               : <button className="co-btn co-btn--primary" onClick={send}><Icon name="send" size={14} /> {buyerMode === "auto" ? "Send to curated buyers" : `Send to ${buyerSel.length} buyers`}</button>}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// ─── Buyer Response tab (buyer-simulation: inbox → snapshot → respond) ─────────
+
+const MCBuyerResponse = () => {
+  const [selId, setSelId] = React.useState(null);
+  const sel = selId ? MC_INCOMING_REQUESTS.find(r => r.id === selId) : null;
+  if (sel) return <MCBuyerDetail req={sel} onBack={() => setSelId(null)} />;
+
+  return (
+    <>
+      <div className="mc-intro">
+        <div className="mc-intro__text">
+          <h3 className="mc-intro__title">Incoming market-check requests</h3>
+          <p className="mc-intro__desc">A buyer's-eye simulation: this is how buyers receive an anonymized snapshot of a practice and respond with an indicative valuation.</p>
+        </div>
+      </div>
+      <div className="mc-callout mc-callout--info">
+        <Icon name="eye" size={16} />
+        <div>You're previewing CareOwner as a <b>buyer</b>. Open a request to see the anonymized snapshot, then respond with your valuation.</div>
+      </div>
+      <div className="mc-br-list">
+        {MC_INCOMING_REQUESTS.map(r => (
+          <button key={r.id} className="mc-br-item" onClick={() => setSelId(r.id)}>
+            <span className="mc-br-item__icon"><Icon name="inbox" /></span>
+            <span className="mc-br-item__main">
+              <span className="mc-br-item__title">{r.type} · {r.region}{r.status === "new" && <span className="co-badge co-badge--blue">New</span>}</span>
+              <span className="mc-br-item__sub">{r.requestedBy} · Received {r.received}</span>
+            </span>
+            <span className="mc-br-item__facts">
+              <span><span className="mc-br-fact__label">Revenue</span><span className="mc-br-fact__value">{r.revenueBand}</span></span>
+              <span><span className="mc-br-fact__label">Respond by</span><span className="mc-br-fact__value">{r.deadline}</span></span>
+            </span>
+            <Icon name="chevronRight" className="mc-br-item__arrow" />
+          </button>
+        ))}
+      </div>
+    </>
+  );
+};
+
+const MCBuyerDetail = ({ req, onBack }) => {
+  const respond = () => navigateTo("/practice/market-check/respond#" + req.id);
+  return (
+    <>
+      <button className="mc-back" onClick={onBack}><Icon name="chevronRight" /> Back to requests</button>
+      <div className="mc-resp-head">
+        <div>
+          <h2 className="mc-resp-head__title">{req.type}</h2>
+          <p className="mc-resp-head__sub">{req.region} · {req.requestedBy}</p>
+        </div>
+        <div className="mc-resp-head__actions">
+          <button className="co-btn-solid" onClick={respond}><Icon name="send" size={14} /> Respond</button>
+        </div>
+      </div>
+
+      <div className="mc-preview-card" style={{ marginBottom: 20, padding: "14px 18px" }}>
+        <span className="mc-preview-card__tag" style={{ marginBottom: 0 }}>
+          <Icon name="eye" size={14} /> Anonymized snapshot — practice name, exact location and identifying details are hidden until the seller accepts your interest.
+        </span>
+      </div>
+
+      <div className="co-deals" style={{ marginBottom: 20 }}>
+        <div><div className="co-deal__label">Revenue</div><div className="co-deal__value">{req.revenueBand}</div></div>
+        <div><div className="co-deal__label">Data</div><div className="co-deal__value" style={{ fontSize: 14 }}>{req.verifiedMix}</div></div>
+        <div><div className="co-deal__label">Received</div><div className="co-deal__value" style={{ fontSize: 14 }}>{req.received}</div></div>
+        <div><div className="co-deal__label">Respond by</div><div className="co-deal__value" style={{ fontSize: 14 }}>{req.deadline}</div></div>
+      </div>
+
+      {req.coverNote && (
+        <div className="mc-callout mc-callout--info">
+          <Icon name="message" size={16} />
+          <div><b>Seller note:</b> {req.coverNote}</div>
+        </div>
+      )}
+
+      {req.groups.map(g => (
+        <div className="co-card" key={g.group}>
+          <div className="co-card__head" style={{ marginBottom: 6 }}><h3 className="co-card__title">{g.group}</h3></div>
+          {g.items.map((m, i) => (
+            <div className="mc-snap-metric" key={i}>
+              <span className="mc-snap-metric__k">{m.label}</span>
+              <span className="mc-snap-metric__v">{m.value} {m.provenance ? <ProvChip p={m.provenance} /> : null}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+        <button className="co-btn-solid" onClick={respond}><Icon name="send" size={14} /> Respond to this request</button>
+      </div>
+    </>
+  );
+};
+
+// ─── Buyer Respond flow (/practice/market-check/respond#<reqId>) ───────────────
+
+const MC_RATINGS = [
+  { key: "up", icon: "thumbsUp", label: "Adds value" },
+  { key: "neutral", icon: "minus", label: "Neutral" },
+  { key: "down", icon: "thumbsDown", label: "Limits value" },
+];
+
+const BuyerRespondFlow = ({ reqId }) => {
+  const req = MC_INCOMING_REQUESTS.find(r => r.id === reqId) || MC_INCOMING_REQUESTS[0];
+  const [low, setLow] = React.useState(String(req.defaultLow));
+  const [high, setHigh] = React.useState(String(req.defaultHigh));
+  const [scores, setScores] = React.useState({});
+  const [summary, setSummary] = React.useState("");
+  const [questions, setQuestions] = React.useState("");
+  const [interested, setInterested] = React.useState(false);
+  const [submitted, setSubmitted] = React.useState(false);
+
+  const lowN = parseFloat(low) || 0;
+  const highN = parseFloat(high) || 0;
+  const setScore = (g, patch) => setScores(s => ({ ...s, [g]: { rating: null, note: "", pct: "", ...(s[g] || {}), ...patch } }));
+
+  const groupImprove = (g) => {
+    const sc = scores[g];
+    const p = sc && sc.rating === "down" ? (parseFloat(sc.pct) || 0) / 100 : 0;
+    return { lo: lowN * p, hi: highN * p };
+  };
+  let totLo = 0, totHi = 0;
+  req.groups.forEach(g => { const im = groupImprove(g.group); totLo += im.lo; totHi += im.hi; });
+  const anyImprove = totHi > 0;
+  const back = () => navigateTo("/practice/market-check#buyer-response");
+
+  if (submitted) {
+    return (
+      <>
+        <SubHeader title="Response submitted" subtitle={`Your indicative valuation for the ${req.type} has been sent.`} />
+        <div className="co-body">
+          <div style={{ maxWidth: 720 }}>
+            <div className="co-card" style={{ textAlign: "center", padding: "44px 24px" }}>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#ECFDF5", color: "#047857", display: "grid", placeItems: "center", margin: "0 auto 16px" }}><Icon name="checkCircle" size={28} /></div>
+              <h3 style={{ font: "600 18px/1.3 Inter", margin: "0 0 8px" }}>Response sent to the seller</h3>
+              <p style={{ font: "400 14px/1.6 Inter", color: "var(--stone-700)", maxWidth: 460, margin: "0 auto" }}>
+                Indicative value <b>{fmtUSD(lowN)}–{fmtUSD(highN)}</b>{anyImprove && <> · improvement opportunity <b style={{ color: "#047857" }}>+{fmtUSD(totLo)}–{fmtUSD(totHi)}</b></>}.
+              </p>
+              {interested && <p style={{ font: "400 14px/1.6 Inter", color: "var(--stone-700)", maxWidth: 460, margin: "10px auto 0" }}>We've flagged your interest — the seller can choose to un-anonymize the practice so you can see the full profile.</p>}
+              <button className="co-btn co-btn--primary" onClick={back} style={{ marginTop: 20 }}>Back to requests</button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SubHeader
+        title="Respond to Market Check"
+        subtitle={`${req.type} · ${req.region} · anonymized snapshot`}
+        actions={<button className="co-btn-outline" onClick={back}><Icon name="x" /> Cancel</button>}
+      />
+      <div className="co-body">
+        <div style={{ maxWidth: 920 }}>
+
+          {/* Value range */}
+          <div className="co-card">
+            <div className="co-card__head"><div><h3 className="co-card__title">Your indicative valuation</h3><div className="mc-card-sub">What do you think this practice is worth today?</div></div></div>
+            <div className="mc-vr">
+              <div>
+                <div className="co-deal__label" style={{ marginBottom: 6 }}>Low</div>
+                <span className="mc-money-input"><span className="mc-money-input__pre">$</span><input value={low} onChange={e => setLow(e.target.value)} inputMode="decimal" aria-label="Low value" /><span className="mc-money-input__suf">M</span></span>
+              </div>
+              <span className="mc-vr__dash">–</span>
+              <div>
+                <div className="co-deal__label" style={{ marginBottom: 6 }}>High</div>
+                <span className="mc-money-input"><span className="mc-money-input__pre">$</span><input value={high} onChange={e => setHigh(e.target.value)} inputMode="decimal" aria-label="High value" /><span className="mc-money-input__suf">M</span></span>
+              </div>
+            </div>
+          </div>
+
+          {/* Score the snapshot */}
+          <div className="co-card">
+            <div className="co-card__head"><div><h3 className="co-card__title">Score the snapshot</h3><div className="mc-card-sub">Rate how each area affects value, and where there's room to improve.</div></div></div>
+            {req.groups.map(g => {
+              const sc = scores[g.group] || { rating: null, note: "", pct: "" };
+              const im = groupImprove(g.group);
+              return (
+                <div className="mc-score" key={g.group}>
+                  <div className="mc-score__head">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="mc-score__title">{g.group}</div>
+                      <div className="mc-score__metrics">
+                        {g.items.map((m, i) => <span className="mc-score__chip" key={i}>{m.label} <b>{m.value}</b></span>)}
+                      </div>
+                    </div>
+                    <div className="mc-rate">
+                      {MC_RATINGS.map(rt => (
+                        <button key={rt.key} className={`mc-rate__btn ${rt.key} ${sc.rating === rt.key ? "is-active" : ""}`} title={rt.label} onClick={() => setScore(g.group, { rating: sc.rating === rt.key ? null : rt.key })}><Icon name={rt.icon} /></button>
+                      ))}
+                    </div>
+                  </div>
+                  {sc.rating && (
+                    <div style={{ marginTop: 14 }}>
+                      <textarea className="mc-why" value={sc.note} onChange={e => setScore(g.group, { note: e.target.value })} placeholder={sc.rating === "up" ? "What about this adds value?" : sc.rating === "down" ? "What's holding this back?" : "Why is this neutral?"} />
+                      {sc.rating === "down" && (
+                        <div className="mc-improve">
+                          <span className="mc-improve__label">Value change with improvements</span>
+                          <span className="mc-pct-input"><input value={sc.pct} onChange={e => setScore(g.group, { pct: e.target.value })} inputMode="decimal" placeholder="0" aria-label="Improvement percent" /><span className="mc-pct-input__suf">%</span></span>
+                          {parseFloat(sc.pct) > 0 && <span className="mc-improve__eq"><Icon name="arrowRight" /> +{fmtUSD(im.lo)}–{fmtUSD(im.hi)}</span>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {anyImprove && (
+              <div className="mc-total" style={{ marginTop: 16 }}>
+                <span className="mc-total__label">Total improvement opportunity</span>
+                <span className="mc-total__value">+{fmtUSD(totLo)}–{fmtUSD(totHi)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Summary & open questions */}
+          <div className="co-card">
+            <div className="co-card__head"><h3 className="co-card__title">Summary &amp; open questions</h3></div>
+            <div className="co-field"><label>Summary / notes</label><textarea value={summary} onChange={e => setSummary(e.target.value)} placeholder="Your overall thoughts on the practice…" /></div>
+            <div className="co-field" style={{ marginBottom: 0 }}><label>Open questions</label><textarea value={questions} onChange={e => setQuestions(e.target.value)} placeholder="Anything the profile didn't answer that you'd want to know…" /></div>
+          </div>
+
+          {/* Interest callout */}
+          <div className="mc-interested">
+            <div className="mc-interested__body">
+              <div className="mc-interested__title"><Icon name="checkCircle" /> I'm interested in this practice</div>
+              <div className="mc-interested__desc">Send a formal expression of interest with your response. If the seller accepts, the practice is un-anonymized and you'll see the full profile and identity.</div>
+            </div>
+            <button className={`co-btn ${interested ? "co-btn--primary" : "co-btn--ghost"}`} onClick={() => setInterested(v => !v)}>
+              {interested ? <><Icon name="check" size={14} /> Interest added</> : "Express interest"}
+            </button>
+          </div>
+
+          {/* Footer */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+            <button className="co-btn co-btn--ghost" onClick={back}>Cancel</button>
+            <button className="co-btn co-btn--primary" onClick={() => { setSubmitted(true); window.scrollTo(0, 0); }} disabled={!(lowN > 0 && highN > 0)}><Icon name="send" size={14} /> Submit response</button>
           </div>
         </div>
       </div>

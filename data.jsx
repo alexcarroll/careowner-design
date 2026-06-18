@@ -236,6 +236,103 @@ const MC_IMPACT_DRIVERS = [
   { label: "Aging imaging equipment",      value: -160 },
 ];
 
+// ── Buyer Response simulation ─────────────────────────────────────────────────
+// Incoming market-check requests as a *buyer* would receive them: an anonymized
+// snapshot grouped by category. defaultLow/High (in $M) prefill the buyer's value
+// range. Each group is what the buyer scores (thumbs up / down / neutral).
+const MC_INCOMING_REQUESTS = [
+  {
+    id: "inc-1", type: "Small Animal Practice", region: "Suburban · Midwest",
+    requestedBy: "Anonymous seller · via CareOwner", received: "6/14/26", deadline: "6/28/26",
+    status: "new", revenueBand: "$2M – $3M", verifiedMix: "7 verified · 4 self-reported",
+    defaultLow: 2.5, defaultHigh: 3.0,
+    coverNote: "Established practice with a loyal client base; owner planning a transition over the next 1–2 years.",
+    groups: [
+      { group: "Financials", items: [
+        { label: "High-Level Revenue", value: "$2M – $3M", provenance: "verified" },
+        { label: "Adjusted EBITDA Margin", value: "~20%", provenance: "verified" },
+        { label: "Annual Growth", value: "+8% YoY", provenance: "verified" },
+      ]},
+      { group: "Production", items: [
+        { label: "Production / DVM", value: "~$610K avg", provenance: "verified" },
+        { label: "# of DVMs", value: "5 DVMs", provenance: "self" },
+      ]},
+      { group: "Practice Attributes", items: [
+        { label: "Location", value: "Suburban · Midwest", provenance: "verified" },
+        { label: "Pricing", value: "~12% above regional median", provenance: "self" },
+      ]},
+      { group: "People", items: [
+        { label: "Staff Turnover", value: "14% / yr", provenance: "self" },
+        { label: "Avg Tenure", value: "~5 yrs", provenance: "verified" },
+      ]},
+      { group: "Facilities", items: [
+        { label: "Space", value: "~2,300 sq ft · 5 exam rooms", provenance: "verified" },
+        { label: "Lease", value: "Through 2030", provenance: "verified" },
+      ]},
+    ],
+  },
+  {
+    id: "inc-2", type: "Multi-Doctor Practice", region: "Urban · Mountain West",
+    requestedBy: "Anonymous seller · via CareOwner", received: "6/12/26", deadline: "6/26/26",
+    status: "new", revenueBand: "$3M – $4M", verifiedMix: "9 verified · 1 self-reported",
+    defaultLow: 3.2, defaultHigh: 3.9,
+    coverNote: "High-growth, multi-doctor practice in a dense metro; modern facility and strong specialty mix.",
+    groups: [
+      { group: "Financials", items: [
+        { label: "High-Level Revenue", value: "$3M – $4M", provenance: "verified" },
+        { label: "Adjusted EBITDA Margin", value: "~24%", provenance: "verified" },
+        { label: "Annual Growth", value: "+12% YoY", provenance: "verified" },
+      ]},
+      { group: "Production", items: [
+        { label: "Production / DVM", value: "~$680K avg", provenance: "verified" },
+        { label: "# of DVMs", value: "7 DVMs", provenance: "verified" },
+      ]},
+      { group: "Practice Attributes", items: [
+        { label: "Location", value: "Urban · Mountain West", provenance: "verified" },
+        { label: "Pricing", value: "~at regional median", provenance: "self" },
+      ]},
+      { group: "People", items: [
+        { label: "Staff Turnover", value: "9% / yr", provenance: "verified" },
+        { label: "Avg Tenure", value: "~7 yrs", provenance: "verified" },
+      ]},
+      { group: "Facilities", items: [
+        { label: "Space", value: "~3,600 sq ft · 7 exam rooms", provenance: "verified" },
+        { label: "Lease", value: "Through 2032", provenance: "verified" },
+      ]},
+    ],
+  },
+  {
+    id: "inc-3", type: "Mixed-Animal Practice", region: "Rural · Pacific NW",
+    requestedBy: "Anonymous seller · via CareOwner", received: "6/9/26", deadline: "6/23/26",
+    status: "viewed", revenueBand: "$1M – $2M", verifiedMix: "5 self-reported",
+    defaultLow: 1.2, defaultHigh: 1.8,
+    coverNote: "Community mixed-animal practice with room to modernize; sole owner exploring options.",
+    groups: [
+      { group: "Financials", items: [
+        { label: "High-Level Revenue", value: "$1M – $2M", provenance: "self" },
+        { label: "Adjusted EBITDA Margin", value: "~16%", provenance: "self" },
+        { label: "Annual Growth", value: "+5% YoY", provenance: "self" },
+      ]},
+      { group: "Production", items: [
+        { label: "Production / DVM", value: "~$520K avg", provenance: "self" },
+        { label: "# of DVMs", value: "3 DVMs", provenance: "self" },
+      ]},
+      { group: "Practice Attributes", items: [
+        { label: "Location", value: "Rural · Pacific NW", provenance: "self" },
+        { label: "Pricing", value: "~8% below regional median", provenance: "self" },
+      ]},
+      { group: "People", items: [
+        { label: "Staff Turnover", value: "18% / yr", provenance: "self" },
+        { label: "Avg Tenure", value: "~4 yrs", provenance: "self" },
+      ]},
+      { group: "Facilities", items: [
+        { label: "Space", value: "~1,900 sq ft · 4 exam rooms", provenance: "self" },
+        { label: "Lease", value: "Through 2028", provenance: "self" },
+      ]},
+    ],
+  },
+];
+
 const MARKET_CHECK_REQUESTS = [
   { id: 1, name: "Full Practice Snapshot", sent: "Apr 8, 2026", status: "collecting", metrics: 8, verifiedMix: "6 verified · 2 self-reported", buyersSent: 6, responded: 4, deadline: "Apr 22, 2026" },
   { id: 2, name: "Financials-Only Teaser", sent: "Mar 24, 2026", status: "closed", metrics: 4, verifiedMix: "4 verified", buyersSent: 5, responded: 5, deadline: "Apr 7, 2026" },
@@ -292,6 +389,7 @@ window.MC_BUYER_MIX = MC_BUYER_MIX;
 window.MC_SNAPSHOT_RESULTS = MC_SNAPSHOT_RESULTS;
 window.MC_RECOMMENDED_ACTIONS = MC_RECOMMENDED_ACTIONS;
 window.MC_IMPACT_DRIVERS = MC_IMPACT_DRIVERS;
+window.MC_INCOMING_REQUESTS = MC_INCOMING_REQUESTS;
 window.MARKET_PROFILE_STAFF = MARKET_PROFILE_STAFF;
 window.INQUIRIES = INQUIRIES;
 window.OFFERS = OFFERS;
