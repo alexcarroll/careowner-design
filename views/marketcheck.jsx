@@ -12,9 +12,109 @@ const MC_TABS = [
 const fmtRange = (lo, hi) => `$${lo.toFixed(1)}M – $${hi.toFixed(1)}M`;
 const mcMid = (r) => (r.low + r.high) / 2;
 
-const InterestBadge = ({ i }) => {
+const InterestBadge = ({ i, long }) => {
   const cls = i === "High" ? "co-badge--green" : i === "Medium" ? "co-badge--blue" : "co-badge--gray";
-  return <span className={`co-badge ${cls}`}>{i}</span>;
+  return <span className={`co-badge ${cls}`}>{long ? i + " interest" : i}</span>;
+};
+
+const fmtM = (v) => "$" + v.toFixed(1) + "M";                       // 3 → "$3.0M"
+const fmtMid = (v) => "$" + v.toFixed(2).replace(/0$/, "") + "M";   // 3.25 → "$3.25M", 3 → "$3.0M"
+
+const effortBadge = (e) => {
+  const cls = e === "High" ? "co-badge--amber" : e === "Medium" ? "co-badge--blue" : "co-badge--green";
+  return <span className={`co-badge ${cls}`}>{e} effort</span>;
+};
+
+// Small filled up/down triangle for delta pills.
+const Tri = ({ up }) => (
+  <svg width="9" height="9" viewBox="0 0 8 8" aria-hidden="true">
+    <path d={up ? "M4 0 L8 7 L0 7 Z" : "M4 8 L0 1 L8 1 Z"} fill="currentColor" />
+  </svg>
+);
+
+// Results filter dropdown (label + styled select).
+const MCFilter = ({ label, options }) => (
+  <div className="mc-filter">
+    <span className="mc-filter__label">{label}</span>
+    <span className="mc-select">
+      <select defaultValue={options[0]}>{options.map(o => <option key={o}>{o}</option>)}</select>
+      <Icon name="chevronDown" />
+    </span>
+  </div>
+);
+
+// "Valuation change by period" line chart. SVG fills the card (preserveAspectRatio
+// none → strokes use non-scaling-stroke); dots + labels are HTML so they stay crisp.
+const MCLineChart = ({ periods, series }) => {
+  const N = series.length;
+  const padL = 7, padR = 7, padT = 16, padB = 14;
+  const min = Math.min(...series), max = Math.max(...series), span = (max - min) || 1;
+  const xs = series.map((_, i) => padL + (i * (100 - padL - padR)) / (N - 1));
+  const ys = series.map(v => padT + (1 - (v - min) / span) * (100 - padT - padB));
+  const pts = xs.map((x, i) => `${x.toFixed(2)},${ys[i].toFixed(2)}`).join(" ");
+  return (
+    <div>
+      <div className="mc-linechart">
+        <svg className="mc-linechart__svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+          {[20, 40, 60, 80].map(y => <line key={y} className="grid" x1="0" y1={y} x2="100" y2={y} vectorEffect="non-scaling-stroke" />)}
+          <polyline className="line" points={pts} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+        </svg>
+        {xs.map((x, i) => <span key={i} className="mc-linechart__dot" style={{ left: x + "%", top: ys[i] + "%" }} />)}
+      </div>
+      <div className="mc-linechart__xlabels">
+        {periods.map((p, i) => <span key={p} style={{ left: xs[i] + "%" }}>{p}</span>)}
+      </div>
+    </div>
+  );
+};
+
+// Results by Snapshot Type — "Connected Data" lens (verified vs self-reported).
+const MCSnapConnected = () => {
+  const s = MC_SNAPSHOT_RESULTS.connected;
+  const row = (dot, name, val, delta) => (
+    <div className="mc-snap-row">
+      <span className={`mc-snap-row__dot mc-snap-row__dot--${dot}`} />
+      <span className="mc-snap-row__name">{name}</span>
+      {delta && <span className="mc-trend mc-trend--up"><Tri up />{delta}</span>}
+      <span className="mc-snap-row__val">{val}</span>
+    </div>
+  );
+  return (
+    <>
+      <p className="mc-snap-desc">Response results for sharing connected and verified data vs. self-entered data</p>
+      <div className="mc-snap-eyebrow">Average Valuation</div>
+      {row("v", "Verified", s.valuation.verified, s.valuation.verifiedDelta)}
+      {row("s", "Self-Reported", s.valuation.self)}
+      <div className="mc-snap-eyebrow">Response Rate</div>
+      {row("v", "Verified", s.responseRate.verified, s.responseRate.verifiedDelta)}
+      {row("s", "Self-Reported", s.responseRate.self)}
+    </>
+  );
+};
+
+// Results by Snapshot Type — "Amount Shared" lens. Completeness bands × data source.
+const MCSnapShared = () => {
+  const s = MC_SNAPSHOT_RESULTS.amountShared;
+  const group = (label, dot, rows) => (
+    <div className="mc-share-group">
+      <div className="mc-share-grouplabel"><span className={`mc-snap-row__dot mc-snap-row__dot--${dot}`} />{label}</div>
+      <div className="mc-share-head"><span>Completeness</span><span>Est. value</span><span>Resp.</span></div>
+      {rows.map(r => (
+        <div className="mc-share-row" key={r.band}>
+          <span className="mc-share-row__band">{r.band}</span>
+          <span className="mc-share-row__val">{r.valuation}</span>
+          <span className="mc-share-row__rate">{r.rate}</span>
+        </div>
+      ))}
+    </div>
+  );
+  return (
+    <>
+      <p className="mc-snap-desc">How much of your profile you share moves the estimate. Completeness = share of available metrics included, grouped by whether that data is connected/verified or self-reported.</p>
+      {group("Connected / Verified", "v", s.verified)}
+      {group("Self-Reported", "s", s.self)}
+    </>
+  );
 };
 
 const ProvChip = ({ p }) => {
@@ -62,114 +162,222 @@ const MarketCheckView = ({ tab, sub }) => {
 
 const MCResponses = () => {
   const [selected, setSelected] = React.useState(null);
-  const [view, setView] = React.useState("table");
+  const [trendView, setTrendView] = React.useState("consensus");
+  const [snapView, setSnapView] = React.useState("connected");
   const R = MARKET_CHECK_RESPONSES;
+  const C = MC_CONSENSUS;
+  const mix = MC_BUYER_MIX;
+  const pct = (v) => ((v - mix.axisMin) / (mix.axisMax - mix.axisMin)) * 100;
 
-  const sent = MARKET_CHECK_REQUESTS.find(r => r.status === "collecting")?.buyersSent || R.length;
-  const highCount = R.filter(r => r.interest === "High").length;
-  const avgMid = R.reduce((s, r) => s + mcMid(r), 0) / R.length;
-  const consensusLow = Math.min(...R.map(r => r.low));
-  const consensusHigh = Math.max(...R.map(r => r.high));
+  const ticks = [];
+  for (let t = mix.axisMin; t <= mix.axisMax + 1e-9; t += mix.tickStep) ticks.push(Math.round(t * 10) / 10);
 
-  // chart domain
-  const domLow = Math.min(...R.map(r => r.low), MODELED_ESTIMATE.low);
-  const domHigh = Math.max(...R.map(r => r.high), MODELED_ESTIMATE.high);
-  const span = domHigh - domLow || 1;
-  const pct = (v) => ((v - domLow) / span) * 100;
+  const maxUplift = Math.max(...MC_RECOMMENDED_ACTIONS.map(a => a.uplift));
+  const drivers = MC_IMPACT_DRIVERS;
+  const maxPos = Math.max(...drivers.filter(d => d.value > 0).map(d => d.value));
+  const maxNeg = Math.max(...drivers.filter(d => d.value < 0).map(d => -d.value));
 
   return (
     <>
-      <div className="co-kpi-grid">
-        <div className="co-kpi"><div className="co-kpi__label">Responses</div><div className="co-kpi__value">{R.length}<small style={{ font: "500 14px/1 Inter", color: "var(--stone-500)", marginLeft: 4 }}>/ {sent}</small></div><div className="co-kpi__delta up"><Icon name="arrowUp" size={12} />Strong response rate</div></div>
-        <div className="co-kpi"><div className="co-kpi__label">Consensus Range</div><div className="co-kpi__value" style={{ fontSize: 22 }}>{fmtRange(consensusLow, consensusHigh)}</div></div>
-        <div className="co-kpi"><div className="co-kpi__label">High Interest</div><div className="co-kpi__value">{highCount}<small style={{ font: "500 14px/1 Inter", color: "var(--stone-500)", marginLeft: 4 }}>buyers</small></div></div>
-        <div className="co-kpi"><div className="co-kpi__label">Avg Midpoint</div><div className="co-kpi__value" style={{ fontSize: 22 }}>${avgMid.toFixed(2)}M</div></div>
-      </div>
-
-      <div className="co-card">
-        <div className="co-card__head">
-          <h3 className="co-card__title"><Icon name="barChart" /> Indicative Valuation Ranges</h3>
-          <span className="co-card__meta">Buyer ranges vs. platform model</span>
-        </div>
+      {/* In-tab header */}
+      <div className="mc-resp-head">
         <div>
-          <div className="mc-vrow">
-            <div className="mc-vlabel">Platform Model<small>Modeled estimate</small></div>
-            <div className="mc-vtrack"><div className="mc-vbar" style={{ left: pct(MODELED_ESTIMATE.low) + "%", width: (pct(MODELED_ESTIMATE.high) - pct(MODELED_ESTIMATE.low)) + "%", background: "#9CA3AF", opacity: 1 }} /></div>
-            <div className="mc-vval">{fmtRange(MODELED_ESTIMATE.low, MODELED_ESTIMATE.high)}</div>
-          </div>
-          {R.map(r => (
-            <div className="mc-vrow" key={r.id}>
-              <div className="mc-vlabel">{r.buyer}<small>{r.interest} interest</small></div>
-              <div className="mc-vtrack">
-                <div className="mc-vmark" style={{ left: pct(MODELED_ESTIMATE.low) + "%" }} />
-                <div className="mc-vmark" style={{ left: pct(MODELED_ESTIMATE.high) + "%" }} />
-                <div className="mc-vbar" style={{ left: pct(r.low) + "%", width: (pct(r.high) - pct(r.low)) + "%" }} />
-              </div>
-              <div className="mc-vval">{fmtRange(r.low, r.high)}</div>
+          <h2 className="mc-resp-head__title">Responses</h2>
+          <p className="mc-resp-head__sub">{C.responses} buyers responded to your anonymized market check · model midpoint {C.modelMidpoint}</p>
+        </div>
+        <div className="mc-resp-head__actions">
+          <button className="co-btn-outline"><Icon name="download" /> Export</button>
+          <button className="co-btn-outline"><Icon name="upload" /> Share snapshot</button>
+        </div>
+      </div>
+
+      {/* Filter bar */}
+      <div className="mc-filterbar">
+        <MCFilter label="Period" options={["All", "Q1 2026", "Q4 2025", "Q3 2025"]} />
+        <MCFilter label="Buyer type" options={["All types", "Private Equity", "Specialty Group / DSO", "Corporate Group", "Regional Group", "Individual Vet"]} />
+        <MCFilter label="Interest" options={["All levels", "High interest", "Medium interest", "Low interest"]} />
+        <MCFilter label="Source" options={["All sources", "Verified", "Self-reported"]} />
+        <button className="mc-clear">Clear</button>
+      </div>
+
+      {/* KPI strip */}
+      <div className="mc-kpi-grid">
+        <div className="mc-kpi">
+          <div className="mc-kpi__label">Consensus Valuation</div>
+          <div className="mc-kpi__value">{C.valuation}</div>
+          <div className="mc-kpi__foot"><span className="mc-trend mc-trend--up"><Tri up />{C.delta}</span> {C.deltaVs}</div>
+        </div>
+        <div className="mc-kpi">
+          <div className="mc-kpi__label">Indicative Range</div>
+          <div className="mc-kpi__value mc-kpi__value--sm">{C.range}</div>
+          <div className="mc-kpi__sub">{C.rangeSub}</div>
+        </div>
+        <div className="mc-kpi">
+          <div className="mc-kpi__label">Buyers Responses</div>
+          <div className="mc-kpi__value">{C.responses}</div>
+          <div className="mc-kpi__foot">{C.sent} sent <span className="mc-trend mc-trend--up">{C.responseRate} response rate</span></div>
+        </div>
+        <div className="mc-kpi">
+          <div className="mc-kpi__label">Growth Opportunities</div>
+          <div className="mc-kpi__value">{C.growthUpside}</div>
+          <div className="mc-kpi__sub">{C.growthSub}</div>
+        </div>
+        <div className="mc-kpi">
+          <div className="mc-kpi__label">Highest Offer</div>
+          <div className="mc-kpi__value">{C.highestOffer}</div>
+          <button className="mc-kpi__link" onClick={() => setSelected(R[0])}>{C.highestOfferBuyer} <Icon name="chevronRight" /></button>
+        </div>
+      </div>
+
+      {/* Trend + Snapshot type */}
+      <div className="mc-cols mc-cols--wide-left" style={{ marginTop: 0 }}>
+        <div className="co-card" style={{ marginTop: 0 }}>
+          <div className="co-card__head">
+            <div>
+              <h3 className="co-card__title">Valuation change by period</h3>
+              <div className="mc-card-sub">Consensus midpoint and full buyer range across market-check periods</div>
             </div>
-          ))}
-          <div style={{ display: "flex", gap: 18, marginTop: 14, font: "400 12px/1 Inter", color: "var(--stone-500)" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ width: 14, height: 8, borderRadius: 4, background: "var(--teal-button)", display: "inline-block" }} /> Buyer range</span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ width: 14, height: 8, borderRadius: 4, background: "#9CA3AF", display: "inline-block" }} /> Platform model</span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span style={{ width: 2, height: 12, background: "#BE123C", display: "inline-block" }} /> Model bounds</span>
+            <div className="mc-seg">
+              <button className={trendView === "consensus" ? "is-active" : ""} onClick={() => setTrendView("consensus")}>Consensus</button>
+              <button className={trendView === "highest" ? "is-active" : ""} onClick={() => setTrendView("highest")}>Highest Offer</button>
+            </div>
+          </div>
+          <MCLineChart periods={MC_VALUATION_TREND.periods} series={trendView === "consensus" ? MC_VALUATION_TREND.consensus : MC_VALUATION_TREND.highestOffer} />
+        </div>
+
+        <div className="co-card" style={{ marginTop: 0 }}>
+          <div className="co-card__head" style={{ marginBottom: 12 }}>
+            <div>
+              <h3 className="co-card__title">Results by Snapshot Type</h3>
+              <div className="mc-card-sub">Average median estimated value</div>
+            </div>
+          </div>
+          <div className="mc-seg mc-seg--full">
+            <button className={snapView === "connected" ? "is-active" : ""} onClick={() => setSnapView("connected")}>Connected Data</button>
+            <button className={snapView === "shared" ? "is-active" : ""} onClick={() => setSnapView("shared")}>Amount Shared</button>
+          </div>
+          {snapView === "connected" ? <MCSnapConnected /> : <MCSnapShared />}
+        </div>
+      </div>
+
+      {/* Buyer mix & valuation ranges */}
+      <div className="co-card" style={{ marginTop: 24 }}>
+        <div className="co-card__head" style={{ marginBottom: 10 }}>
+          <div>
+            <h3 className="co-card__title">Buyer mix &amp; valuation ranges</h3>
+            <div className="mc-card-sub">Every buyer's indicative range on one scale — the shaded band is where the middle 50% agree</div>
+          </div>
+        </div>
+        <div className="mc-mix">
+          <div className="mc-mix__rows">
+            <div className="mc-mix__overlay">
+              <div className="mc-mix__band" style={{ left: pct(mix.bandLow) + "%", width: (pct(mix.bandHigh) - pct(mix.bandLow)) + "%" }} />
+              <div className="mc-mix__median" style={{ left: pct(mix.median) + "%" }}>
+                <span className="mc-mix__median-pill">Median {fmtM(mix.median)}</span>
+              </div>
+            </div>
+            {R.map(r => (
+              <div className="mc-mix__row" key={r.id}>
+                <div>
+                  <div className="mc-mix__label"><span className="mc-mix__label-dot" style={{ background: r.color }} />{r.buyer} ({r.count})</div>
+                  <div className="mc-mix__sub">{fmtRange(r.low, r.high)}</div>
+                </div>
+                <div className="mc-mix__lane">
+                  <div className="mc-mix__bar" style={{ left: pct(r.low) + "%", width: (pct(r.high) - pct(r.low)) + "%", background: r.color }} />
+                  <div className="mc-mix__dot" style={{ left: pct(mcMid(r)) + "%", border: "3px solid " + r.color }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mc-mix__axis">
+            {ticks.map(t => <span key={t} className="mc-mix__tick" style={{ left: pct(t) + "%" }}>{fmtM(t)}</span>)}
           </div>
         </div>
       </div>
 
-      <div className="co-card">
-        <div className="co-card__head">
-          <h3 className="co-card__title">Buyer Responses <span className="co-card__meta">{R.length} responses</span></h3>
-          <div className="co-tabs" style={{ marginBottom: 0 }}>
-            <button className={view === "table" ? "is-active" : ""} onClick={() => setView("table")}>Table</button>
-            <button className={view === "cards" ? "is-active" : ""} onClick={() => setView("cards")}>Cards</button>
+      {/* Recommended actions + Impact drivers */}
+      <div className="mc-cols mc-cols--even">
+        <div className="co-card" style={{ marginTop: 0 }}>
+          <div className="co-card__head">
+            <div>
+              <h3 className="co-card__title">Recommended actions to raise value</h3>
+              <div className="mc-card-sub">Aggregated from buyer notes, ranked by estimated uplift</div>
+            </div>
+            <span className="mc-actions__total">{C.growthUpside} total upside</span>
+          </div>
+          <div>
+            {MC_RECOMMENDED_ACTIONS.map(a => (
+              <div className="mc-action" key={a.rank}>
+                <div className="mc-action__rank">{a.rank}</div>
+                <div>
+                  <div className="mc-action__title">{a.title}</div>
+                  <div className="mc-action__bar"><span style={{ width: (a.uplift / maxUplift * 100) + "%" }} /></div>
+                  <div className="mc-action__flag">{a.flagged} buyers flagged</div>
+                </div>
+                <div className="mc-action__right">
+                  <div className="mc-action__uplift">+${a.uplift}K</div>
+                  <div className="mc-action__effort">{effortBadge(a.effort)}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {view === "table" ? (
-          <table className="co-table">
-            <thead>
-              <tr><th>Buyer</th><th>Source</th><th>Interest</th><th>Indicative Range</th><th>Midpoint</th><th>Submitted</th></tr>
-            </thead>
-            <tbody>
-              {R.map(r => (
-                <tr key={r.id} onClick={() => setSelected(r)} style={{ cursor: "pointer" }}>
-                  <td className="co-table__name">{r.buyer}</td>
-                  <td>{r.verified ? <ProvChip p="verified" /> : <ProvChip p="self" />}</td>
-                  <td><InterestBadge i={r.interest} /></td>
-                  <td style={{ font: "600 14px/1 Inter", color: "#047857" }}>{fmtRange(r.low, r.high)}</td>
-                  <td>${mcMid(r).toFixed(2)}M</td>
-                  <td>{r.submitted}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {R.map(r => <MCResponseCard key={r.id} r={r} onOpen={() => setSelected(r)} />)}
+        <div className="co-card" style={{ marginTop: 0 }}>
+          <div className="co-card__head" style={{ marginBottom: 18 }}>
+            <div>
+              <h3 className="co-card__title">Valuation impact drivers</h3>
+              <div className="mc-card-sub">Estimated impact of each value driver, from buyer feedback</div>
+            </div>
           </div>
-        )}
+          <div>
+            {drivers.map(d => {
+              const positive = d.value > 0;
+              const w = positive ? (d.value / maxPos) * 60 : (-d.value / maxNeg) * 40;
+              return (
+                <div className="mc-driver" key={d.label}>
+                  <div className="mc-driver__label">{d.label}</div>
+                  <div className="mc-driver__plot">
+                    <div className="mc-driver__zero" />
+                    <div className={"mc-driver__bar " + (positive ? "mc-driver__bar--pos" : "mc-driver__bar--neg")} style={{ width: w + "%" }} />
+                  </div>
+                  <div className={"mc-driver__val " + (positive ? "mc-driver__val--pos" : "mc-driver__val--neg")}>{positive ? "+" : "−"}${Math.abs(d.value)}K</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Buyer responses table */}
+      <div className="co-card" style={{ marginTop: 24 }}>
+        <div className="co-card__head">
+          <h3 className="co-card__title">Buyer responses <span className="co-card__meta" style={{ marginLeft: 4 }}>{R.length} responses</span></h3>
+        </div>
+        <table className="co-table mc-rtable">
+          <thead>
+            <tr><th>Buyer</th><th>Data</th><th>Interest</th><th>Indicative Range</th><th>Midpoint</th><th>Submitted</th><th></th></tr>
+          </thead>
+          <tbody>
+            {R.map(r => (
+              <tr key={r.id} onClick={() => setSelected(r)} style={{ cursor: "pointer" }}>
+                <td className="co-table__name"><span className="mc-rtable__dot" style={{ background: r.color }} />{r.buyer}</td>
+                <td>{r.verified ? <ProvChip p="verified" /> : <ProvChip p="self" />}</td>
+                <td><InterestBadge i={r.interest} long /></td>
+                <td><span className="mc-rtable__range">{fmtRange(r.low, r.high)}</span></td>
+                <td>{fmtMid(mcMid(r))}</td>
+                <td style={{ color: "var(--stone-500)" }}>{r.submitted}</td>
+                <td style={{ textAlign: "right" }}><Icon name="chevronRight" size={16} className="mc-rtable__arrow" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {selected && <MCResponseSlideout r={selected} onClose={() => setSelected(null)} />}
     </>
   );
 };
-
-const MCResponseCard = ({ r, onOpen }) => (
-  <button className="co-card" onClick={onOpen} style={{ textAlign: "left", cursor: "pointer", border: "1px solid var(--stone-200)", background: "#fff", margin: 0 }}>
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
-      <div>
-        <div style={{ font: "600 16px/1.2 Inter" }}>{r.buyer}</div>
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}><InterestBadge i={r.interest} />{r.verified ? <ProvChip p="verified" /> : <ProvChip p="self" />}</div>
-      </div>
-      <div style={{ textAlign: "right" }}>
-        <div style={{ font: "500 11px/1 Inter", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--stone-500)", marginBottom: 6 }}>Indicative Offer Range</div>
-        <div style={{ font: "700 20px/1 Inter", color: "#047857" }}>{fmtRange(r.low, r.high)}</div>
-      </div>
-    </div>
-    <div style={{ font: "400 14px/1.5 Inter", color: "var(--stone-700)", marginTop: 14 }}>{r.feedback}</div>
-  </button>
-);
 
 const MCResponseSlideout = ({ r, onClose }) => (
   <>
@@ -694,12 +902,23 @@ const MCPreferences = () => {
 
 // ─── New Request flow (/practice/market-check/new) ────────────────────────────
 
-const MC_STEPS = ["Select metrics", "Anonymize & preview", "Choose buyers", "Options", "Review & send"];
+// What buyers see for a given metric once anonymized. Most figures pass through
+// exactly; identifying fields (geography, pricing, size) are generalized.
+const anonValue = (m, regionLabel) => {
+  if (m.id === "geo") return regionLabel + " · ~$95K median HH income";
+  if (m.id === "pricing") return "~12% above regional median";
+  if (m.id === "facilities") return "~2,300 sq ft · 5 exam rooms";
+  return m.value;
+};
+
+const MC_STEPS = ["Metrics & preview", "Options", "Review & send"];
 
 const NewRequestFlow = () => {
   const allItems = MARKET_METRICS.flatMap(g => g.items);
   const [step, setStep] = React.useState(1);
   const [metricSel, setMetricSel] = React.useState(() => Object.fromEntries(allItems.map(m => [m.id, true])));
+  const [snapshotMode, setSnapshotMode] = React.useState("current");
+  const [buyerMode, setBuyerMode] = React.useState("auto");
   const [buyerSel, setBuyerSel] = React.useState([1, 3, 5]);
   const [granularity, setGranularity] = React.useState("Region + density");
   const [deadline, setDeadline] = React.useState("14 days");
@@ -714,7 +933,7 @@ const NewRequestFlow = () => {
 
   const toggleMetric = (id) => setMetricSel(s => ({ ...s, [id]: !s[id] }));
   const toggleBuyer = (id) => setBuyerSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-  const next = () => setStep(s => Math.min(5, s + 1));
+  const next = () => setStep(s => Math.min(3, s + 1));
   const back = () => step === 1 ? navigateTo("/practice/market-check#requests") : setStep(s => s - 1);
   const send = () => navigateTo("/practice/market-check#requests");
 
@@ -746,25 +965,45 @@ const NewRequestFlow = () => {
           <div className="co-card">
             {step === 1 && (
               <>
-                <div className="co-card__head"><h3 className="co-card__title">Select metrics to share</h3><span className="co-card__meta">{selectedMetrics.length} of {allItems.length} selected</span></div>
-                <div style={{ marginBottom: 18 }}>
+                <div className="co-card__head"><h3 className="co-card__title">Metrics &amp; buyer preview</h3><span className="co-card__meta">{selectedMetrics.length} of {allItems.length} shared</span></div>
+
+                <div className="mc-group-title" style={{ marginTop: 0 }}>How to share</div>
+                <div className="mc-radio-cards" style={{ marginBottom: 8 }}>
+                  <button type="button" className={`mc-radio-card ${snapshotMode === "current" ? "is-selected" : ""}`} onClick={() => setSnapshotMode("current")}>
+                    <span className="mc-radio-card__radio" />
+                    <span><span className="mc-radio-card__title">Send current snapshot</span><span className="mc-radio-card__desc">A point-in-time snapshot of your live data, exactly as it is today.</span></span>
+                  </button>
+                  <button type="button" className={`mc-radio-card ${snapshotMode === "feed" ? "is-selected" : ""}`} onClick={() => setSnapshotMode("feed")}>
+                    <span className="mc-radio-card__radio" />
+                    <span><span className="mc-radio-card__title">Share continuous data feed</span><span className="mc-radio-card__desc">Automatically updates the connected data in real time for as long as the buyer has access.</span></span>
+                  </button>
+                </div>
+
+                <div style={{ margin: "20px 0 14px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", font: "500 14px/1 Inter", marginBottom: 6 }}><span>Snapshot strength</span><span>{strength}%</span></div>
                   <div className="mc-meter"><span style={{ width: strength + "%" }} /></div>
-                  <div style={{ font: "400 14px/1.4 Inter", color: "var(--stone-500)", marginTop: 8 }}>{verifiedCount} verified · {selfCount} self-reported. Verified metrics earn more confident responses.</div>
+                  <div style={{ font: "400 14px/1.4 Inter", color: "var(--stone-500)", marginTop: 8 }}>{verifiedCount} verified · {selfCount} self-reported. Toggle a metric to include it — <b style={{ fontWeight: 500, color: "var(--stone-700)" }}>Buyers see</b> shows its anonymized form. Practice name and exact address are always hidden.</div>
                 </div>
                 {MARKET_METRICS.map(g => (
                   <div key={g.group}>
                     <div className="mc-group-title">{g.group}</div>
-                    {g.items.map(m => (
-                      <div className="mc-mrow" key={m.id}>
-                        <div className="mc-mrow__main">
-                          <div className="mc-mrow__name">{m.label}</div>
-                          <div className="mc-mrow__val">{m.value}</div>
+                    {g.items.map(m => {
+                      const on = !!metricSel[m.id];
+                      return (
+                        <div className="mc-mrow" key={m.id}>
+                          <div className="mc-mrow__main" style={{ opacity: on ? 1 : 0.45 }}>
+                            <div className="mc-mrow__name">{m.label}</div>
+                            <div className="mc-mrow__xform">
+                              <span className="mc-mrow__raw">{m.value}</span>
+                              <Icon name="chevronRight" size={13} className="mc-mrow__arrow" />
+                              <span className="mc-mrow__anon"><Icon name="eye" size={13} /> {anonValue(m, regionLabel)}</span>
+                            </div>
+                          </div>
+                          <ProvChip p={m.provenance} />
+                          <Switch on={on} onChange={() => toggleMetric(m.id)} label="" />
                         </div>
-                        <ProvChip p={m.provenance} />
-                        <Switch on={!!metricSel[m.id]} onChange={() => toggleMetric(m.id)} label="" />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ))}
               </>
@@ -772,61 +1011,49 @@ const NewRequestFlow = () => {
 
             {step === 2 && (
               <>
-                <div className="co-card__head"><h3 className="co-card__title">Anonymize & preview</h3></div>
-                <div className="co-field" style={{ maxWidth: 320 }}><label>Location granularity</label>
-                  <select value={granularity} onChange={e => setGranularity(e.target.value)}><option>Metro area</option><option>Region + density</option><option>State only</option></select>
+                <div className="co-card__head"><h3 className="co-card__title">Options</h3></div>
+
+                <div className="mc-group-title" style={{ marginTop: 0 }}>Who to send to</div>
+                <div className="mc-radio-cards" style={{ marginBottom: 14 }}>
+                  <button type="button" className={`mc-radio-card ${buyerMode === "auto" ? "is-selected" : ""}`} onClick={() => setBuyerMode("auto")}>
+                    <span className="mc-radio-card__radio" />
+                    <span><span className="mc-radio-card__title">Let CareOwner choose buyers</span><span className="mc-radio-card__desc">We'll send your request to a curated group of buyers we think are the best fit.</span></span>
+                  </button>
+                  <button type="button" className={`mc-radio-card ${buyerMode === "manual" ? "is-selected" : ""}`} onClick={() => setBuyerMode("manual")}>
+                    <span className="mc-radio-card__radio" />
+                    <span><span className="mc-radio-card__title">Choose buyers</span><span className="mc-radio-card__desc">Pick from the current list of buyer types yourself.</span></span>
+                  </button>
                 </div>
-                <div style={{ font: "400 14px/1.5 Inter", color: "var(--stone-500)", margin: "4px 0 18px" }}>Your practice name and exact address are always hidden. Identifying fields are generalized automatically.</div>
+                {buyerMode === "manual" && (
+                  <div className="mc-buyer-grid" style={{ marginBottom: 20 }}>
+                    {BUYERS.map(b => {
+                      const on = buyerSel.includes(b.id);
+                      return (
+                        <button key={b.id} className={`mc-buyer ${on ? "is-selected" : ""}`} onClick={() => toggleBuyer(b.id)}>
+                          <span className="mc-buyer__check"><Icon name="check" size={12} /></span>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span className="mc-buyer__name">{b.type}</span>
+                            <span className="mc-buyer__meta">{b.location.split(",").pop().trim()} focus · {b.funds} · {b.interest} interest</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="mc-group-title">Request options</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                  <div className="co-field"><label>Location granularity</label>
+                    <select value={granularity} onChange={e => setGranularity(e.target.value)}><option>Metro area</option><option>Region + density</option><option>State only</option></select>
+                  </div>
+                  <div className="co-field"><label>Response deadline</label><select value={deadline} onChange={e => setDeadline(e.target.value)}><option>7 days</option><option>14 days</option><option>30 days</option></select></div>
+                </div>
                 {granularity === "Metro area" && (
                   <div className="co-benefits-bar" style={{ background: "#FEF3C7", borderColor: "#FCD34D" }}>
                     <div className="co-benefits-bar__check" style={{ background: "#B45309" }}><Icon name="info" /></div>
                     <div style={{ font: "400 14px/1.5 Inter", color: "var(--stone-700)" }}>Sharing <b>metro-level geography</b> with a niche service mix could make your practice identifiable in a small market. Consider "Region + density".</div>
                   </div>
                 )}
-                <div className="mc-preview-card">
-                  <span className="mc-preview-card__tag"><Icon name="eye" size={14} /> Buyer's-eye preview</span>
-                  <div style={{ font: "600 15px/1.3 Inter", marginBottom: 12 }}>Anonymized {PRACTICE.type} · {regionLabel}</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {selectedMetrics.map(m => (
-                      <div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, font: "400 14px/1.4 Inter", paddingBottom: 8, borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-                        <span style={{ color: "var(--stone-700)" }}>{m.label}</span>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                          <b>{m.value}</b>{showProv && <ProvChip p={m.provenance} />}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {step === 3 && (
-              <>
-                <div className="co-card__head"><h3 className="co-card__title">Choose buyers</h3><span className="co-card__meta">{buyerSel.length} selected · recommend ≥ 4</span></div>
-                <div style={{ font: "400 14px/1.5 Inter", color: "var(--stone-500)", marginBottom: 14 }}>Your criteria narrow VetVet's curated, qualified pool. Hand-pick or deselect individual buyers below.</div>
-                <div className="mc-buyer-grid">
-                  {BUYERS.map(b => {
-                    const on = buyerSel.includes(b.id);
-                    return (
-                      <button key={b.id} className={`mc-buyer ${on ? "is-selected" : ""}`} onClick={() => toggleBuyer(b.id)}>
-                        <span className="mc-buyer__check"><Icon name="check" size={12} /></span>
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span className="mc-buyer__name">{b.type}</span>
-                          <span className="mc-buyer__meta">{b.location.split(",").pop().trim()} focus · {b.funds} · {b.interest} interest</span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {step === 4 && (
-              <>
-                <div className="co-card__head"><h3 className="co-card__title">Options</h3></div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                  <div className="co-field"><label>Response deadline</label><select value={deadline} onChange={e => setDeadline(e.target.value)}><option>7 days</option><option>14 days</option><option>30 days</option></select></div>
-                </div>
                 <div className="co-field" style={{ marginTop: 4 }}><label>Cover note to buyers (optional, anonymized)</label><textarea value={coverNote} onChange={e => setCoverNote(e.target.value)} placeholder="Add context for buyers — avoid identifying details." /></div>
                 <label style={{ display: "flex", alignItems: "center", gap: 10, font: "500 14px/1 Inter", cursor: "pointer" }}>
                   <input type="checkbox" checked={showProv} onChange={e => setShowProv(e.target.checked)} /> Show data provenance (verified vs self-reported) to buyers
@@ -834,17 +1061,22 @@ const NewRequestFlow = () => {
               </>
             )}
 
-            {step === 5 && (
+            {step === 3 && (
               <>
-                <div className="co-card__head"><h3 className="co-card__title">Review & send</h3></div>
+                <div className="co-card__head"><h3 className="co-card__title">Review &amp; send</h3></div>
                 <div className="co-deals" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
                   <div><div className="co-deal__label">Metrics</div><div className="co-deal__value">{selectedMetrics.length} shared</div><div style={{ font: "400 14px/1.4 Inter", color: "var(--stone-500)", marginTop: 4 }}>{verifiedCount} verified · {selfCount} self-reported</div></div>
-                  <div><div className="co-deal__label">Buyers</div><div className="co-deal__value">{buyerSel.length} selected</div></div>
+                  <div><div className="co-deal__label">Buyers</div><div className="co-deal__value">{buyerMode === "auto" ? "CareOwner curated" : buyerSel.length + " selected"}</div></div>
                   <div><div className="co-deal__label">Deadline</div><div className="co-deal__value">{deadline}</div></div>
                 </div>
                 <div style={{ borderTop: "1px solid var(--stone-100)", margin: "16px 0" }} />
+                <div className="co-deals" style={{ gridTemplateColumns: "repeat(2,1fr)" }}>
+                  <div><div className="co-deal__label">Snapshot</div><div className="co-deal__value">{snapshotMode === "current" ? "Current snapshot" : "Continuous data feed"}</div></div>
+                  <div><div className="co-deal__label">Location granularity</div><div className="co-deal__value">{granularity}</div></div>
+                </div>
+                <div style={{ borderTop: "1px solid var(--stone-100)", margin: "16px 0" }} />
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10, font: "400 14px/1.5 Inter", color: "var(--stone-700)" }}>
-                  <Icon name="lock" size={16} style={{ color: "var(--teal-brand)", flexShrink: 0, marginTop: 2 }} /> Your identity stays confidential. Buyers see only the anonymized snapshot above.
+                  <Icon name="lock" size={16} style={{ color: "var(--teal-brand)", flexShrink: 0, marginTop: 2 }} /> Your identity stays confidential. Buyers see only the anonymized snapshot.
                 </div>
                 {selfCount > 0 && (
                   <div className="co-benefits-bar" style={{ background: "#FEF3C7", borderColor: "#FCD34D", marginTop: 16, marginBottom: 0 }}>
@@ -858,9 +1090,9 @@ const NewRequestFlow = () => {
 
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
             <button className="co-btn co-btn--ghost" onClick={back}>{step === 1 ? "Cancel" : "Back"}</button>
-            {step < 5
-              ? <button className="co-btn co-btn--primary" onClick={next} disabled={step === 3 && buyerSel.length === 0}>Continue <Icon name="chevronRight" size={14} /></button>
-              : <button className="co-btn co-btn--primary" onClick={send}><Icon name="send" size={14} /> Send to {buyerSel.length} buyers</button>}
+            {step < 3
+              ? <button className="co-btn co-btn--primary" onClick={next} disabled={step === 2 && buyerMode === "manual" && buyerSel.length === 0}>Continue <Icon name="chevronRight" size={14} /></button>
+              : <button className="co-btn co-btn--primary" onClick={send}><Icon name="send" size={14} /> {buyerMode === "auto" ? "Send to curated buyers" : `Send to ${buyerSel.length} buyers`}</button>}
           </div>
         </div>
       </div>

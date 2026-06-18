@@ -148,20 +148,92 @@ const MARKET_METRICS = [
   ]},
 ];
 
-// Ranges are in $M (numbers) for charting.
+// Ranges are in $M (numbers) for charting. `color` drives the buyer-mix series +
+// the dot in the responses table. `count` = how many buyers of this type responded.
 const MARKET_CHECK_RESPONSES = [
-  { id: 1, buyer: "Corporate Acquirer", buyerType: "Corporate Group", verified: true, interest: "High", low: 2.8, high: 3.2,
-    feedback: "Strong financial performance and location. Would recommend updating facilities to modern standards to increase value by 10–15%.",
-    recs: ["Modernize waiting room and exam rooms", "Install digital X-ray system if not already in place"], submitted: "Apr 14" },
-  { id: 2, buyer: "Individual Veterinarian", buyerType: "Individual Vet", verified: true, interest: "Medium", low: 2.5, high: 2.9,
-    feedback: "Good practice fundamentals. Consider formalizing team training programs and documenting SOPs more thoroughly to reduce transition risk.",
-    recs: ["Create comprehensive SOP documentation", "Implement formal onboarding program"], submitted: "Apr 13" },
-  { id: 3, buyer: "Private Equity Group", buyerType: "PE Firm", verified: true, interest: "High", low: 3.0, high: 3.5,
-    feedback: "Excellent EBITDA margins and growth trajectory. Strengthening financial reporting systems would support higher valuation multiples.",
-    recs: ["Implement monthly financial dashboards", "Establish KPI tracking system"], submitted: "Apr 12" },
-  { id: 4, buyer: "Regional Chain", buyerType: "Regional Group", verified: false, interest: "Medium", low: 2.6, high: 3.0,
-    feedback: "Great market position. Owner transition plan could be more detailed to ensure continuity of client relationships.",
-    recs: ["Document key client relationships", "Develop 12-month transition timeline"], submitted: "Apr 11" },
+  { id: 1, buyer: "Private Equity Group", buyerType: "Private Equity", color: "#6E84B8", count: 2, verified: true, interest: "High", low: 3.0, high: 3.5, submitted: "6/2/26",
+    feedback: "Excellent EBITDA margins and growth trajectory. Strengthening financial reporting and reducing owner dependence would support a higher multiple.",
+    recs: ["Hire an associate DVM to reduce owner dependence", "Implement monthly financial dashboards"] },
+  { id: 2, buyer: "Specialty Group / DSO", buyerType: "Specialty Group / DSO", color: "#D9A65A", count: 1, verified: true, interest: "High", low: 2.9, high: 3.4, submitted: "6/2/26",
+    feedback: "Strong specialty mix and location. Expanding recurring wellness plans and dental/surgical capacity would lift value.",
+    recs: ["Launch a wellness membership program", "Grow specialty surgical & dental services"] },
+  { id: 3, buyer: "Corporate Acquirer", buyerType: "Corporate Group", color: "#4E9E8E", count: 1, verified: true, interest: "High", low: 2.8, high: 3.2, submitted: "6/2/26",
+    feedback: "Solid fundamentals and brand. Modernizing imaging equipment and documenting SOPs would de-risk the transition.",
+    recs: ["Modernize imaging equipment", "Create comprehensive SOP documentation"] },
+  { id: 4, buyer: "Regional Chain", buyerType: "Regional Group", color: "#C77E8C", count: 1, verified: false, interest: "Medium", low: 2.6, high: 3.0, submitted: "6/2/26",
+    feedback: "Great market position. A longer lease term and a clearer owner-transition plan would improve confidence.",
+    recs: ["Renew the facility lease for 5+ years", "Develop a 12-month transition timeline"] },
+  { id: 5, buyer: "Individual Veterinarian", buyerType: "Individual Vet", color: "#A89AC9", count: 1, verified: true, interest: "Medium", low: 2.5, high: 2.9, submitted: "6/2/26",
+    feedback: "Attractive practice for an owner-operator. Moving the fee schedule toward market rates would improve cash flow.",
+    recs: ["Move fee schedule to market rates", "Formalize staff training and retention"] },
+];
+
+// ── Responses-tab aggregates (mirror Figma 64:1742) ──────────────────────────
+// Headline numbers shown across the Responses dashboard. Kept as display strings
+// so the prototype matches the design exactly.
+const MC_CONSENSUS = {
+  valuation: "$2.98M", delta: "6.9%", deltaVs: "vs Q4 2025",
+  range: "$2.5M – $3.5M", rangeSub: "across responding buyers",
+  responses: 5, sent: 6, responseRate: "75%",
+  growthUpside: "+$680K", growthSub: "Estimated value increase from buyer feedback",
+  highestOffer: "$3.5M", highestOfferBuyer: "Private Equity Group",
+  modelMidpoint: "$3.0M",
+};
+
+// Consensus midpoint (and highest offer) trend across the last three market checks.
+const MC_VALUATION_TREND = {
+  periods: ["Q3 2025", "Q4 2025", "Q1 2026"],
+  consensus: [2.55, 2.79, 2.98],
+  highestOffer: [3.05, 3.25, 3.5],
+};
+
+// Buyer-mix scale: fixed axis + the IQR band / median that overlay every row.
+const MC_BUYER_MIX = { axisMin: 2.4, axisMax: 3.6, tickStep: 0.2, bandLow: 2.8, bandHigh: 3.15, median: 3.0 };
+
+// "Results by Snapshot Type" — two lenses on how data quality moves outcomes.
+const MC_SNAPSHOT_RESULTS = {
+  // Connected/verified vs self-reported.
+  connected: {
+    valuation: { verified: "$3.2M", verifiedDelta: "10%", self: "$2.8M" },
+    responseRate: { verified: "81%", verifiedDelta: "20%", self: "64%" },
+  },
+  // How much of the available profile was shared, banded by completeness,
+  // and split by whether that data was connected/verified or self-reported.
+  amountShared: {
+    verified: [
+      { band: "90%+",   valuation: "$3.3M", rate: "84%" },
+      { band: "75–90%", valuation: "$3.2M", rate: "80%" },
+      { band: "50–75%", valuation: "$3.0M", rate: "72%" },
+      { band: "0–50%",  valuation: "$2.8M", rate: "61%" },
+    ],
+    self: [
+      { band: "90%+",   valuation: "$2.9M", rate: "70%" },
+      { band: "75–90%", valuation: "$2.8M", rate: "66%" },
+      { band: "50–75%", valuation: "$2.6M", rate: "58%" },
+      { band: "0–50%",  valuation: "$2.4M", rate: "49%" },
+    ],
+  },
+};
+
+// Recommended actions (uplift in $K) — aggregated from buyer notes, ranked by uplift.
+const MC_RECOMMENDED_ACTIONS = [
+  { rank: 1, title: "Hire an associate DVM to reduce owner dependence", uplift: 180, flagged: 4, effort: "High" },
+  { rank: 2, title: "Launch a wellness membership program",             uplift: 160, flagged: 3, effort: "Medium" },
+  { rank: 3, title: "Modernize imaging equipment",                      uplift: 140, flagged: 2, effort: "Medium" },
+  { rank: 4, title: "Renew the facility lease for 5+ years",            uplift: 120, flagged: 3, effort: "Low" },
+  { rank: 5, title: "Move fee schedule to market rates",                uplift: 80,  flagged: 2, effort: "Low" },
+];
+
+// Valuation impact drivers (impact in $K) — positive lifts, negative drags.
+const MC_IMPACT_DRIVERS = [
+  { label: "Recurring wellness plans",     value: 240 },
+  { label: "Specialty surgical & dental",  value: 190 },
+  { label: "Staff tenure & retention",     value: 120 },
+  { label: "Location & demographics",      value: 90 },
+  { label: "Below-market fee schedule",    value: -70 },
+  { label: "Short remaining lease term",   value: -95 },
+  { label: "Owner-dependent goodwill",     value: -130 },
+  { label: "Aging imaging equipment",      value: -160 },
 ];
 
 const MARKET_CHECK_REQUESTS = [
@@ -179,11 +251,11 @@ const MARKET_PROFILE_STAFF = {
     comp: { ttm: "$333.4K", y2025: "$348.5K" },
     production: { ttm: "$2.04M", y2025: "$2.05M" },
     members: [
-      { name: "Clayton McQuiddy", hrwk: "40", tenure: "6.4", comp: "$106.8K", compYtd: "$44.5K", prod2025: "$662.6K", prodTtm: "$679.0K" },
-      { name: "Laura Bailey",     hrwk: "35", tenure: "6.8", comp: "$101.7K", compYtd: "$42.4K", prod2025: "$593.6K", prodTtm: "$568.5K" },
-      { name: "Michael Zarzosa",  hrwk: "40", tenure: "5.2", comp: "$125.0K", compYtd: "$52.1K", prod2025: "$785.6K", prodTtm: "$774.8K" },
-      { name: "Debra Maxwell",    hrwk: "10", tenure: "0.1", comp: "—",       compYtd: null,     prod2025: "$3.1K",   prodTtm: "$12.8K" },
-      { name: "Ross Ellis",       hrwk: "—",  tenure: "—",   comp: "—",       compYtd: null,     prod2025: "$3.1K",   prodTtm: "—" },
+      { name: "Maya Hollis", hrwk: "40", tenure: "6.4", comp: "$106.8K", compYtd: "$44.5K", prod2025: "$662.6K", prodTtm: "$679.0K" },
+      { name: "Trevor Quinn",     hrwk: "35", tenure: "6.8", comp: "$101.7K", compYtd: "$42.4K", prod2025: "$593.6K", prodTtm: "$568.5K" },
+      { name: "Elena Vance",  hrwk: "40", tenure: "5.2", comp: "$125.0K", compYtd: "$52.1K", prod2025: "$785.6K", prodTtm: "$774.8K" },
+      { name: "Damon Pruitt",    hrwk: "10", tenure: "0.1", comp: "—",       compYtd: null,     prod2025: "$3.1K",   prodTtm: "$12.8K" },
+      { name: "Rosa Whitfield",       hrwk: "—",  tenure: "—",   comp: "—",       compYtd: null,     prod2025: "$3.1K",   prodTtm: "—" },
     ],
   },
   support: {
@@ -191,19 +263,19 @@ const MARKET_PROFILE_STAFF = {
     comp: { ttm: "$523.4K", y2025: "$541.0K" },
     production: { ttm: "$400.8K", y2025: "$406.4K" },
     members: [
-      { name: "Sandra Reyes",   hrwk: "40", tenure: "8.2", comp: "$78.0K", compYtd: "$32.5K", prod2025: "—",      prodTtm: "—" },
-      { name: "Tobias Lund",    hrwk: "40", tenure: "6.5", comp: "$62.4K", compYtd: "$26.0K", prod2025: "$96.2K", prodTtm: "$92.4K" },
-      { name: "Priya Anand",    hrwk: "40", tenure: "5.1", comp: "$54.0K", compYtd: "$22.5K", prod2025: "$71.8K", prodTtm: "$70.1K" },
-      { name: "Marcus Webb",    hrwk: "36", tenure: "4.3", comp: "$49.5K", compYtd: "$20.6K", prod2025: "$64.3K", prodTtm: "$61.0K" },
-      { name: "Hannah Cole",    hrwk: "32", tenure: "3.8", comp: "$44.2K", compYtd: "$18.4K", prod2025: "$52.7K", prodTtm: "$55.9K" },
-      { name: "Derek Nash",     hrwk: "40", tenure: "2.6", comp: "$46.8K", compYtd: "$19.5K", prod2025: "$58.1K", prodTtm: "$60.4K" },
-      { name: "Olivia Park",    hrwk: "38", tenure: "3.2", comp: "$38.0K", compYtd: "$15.8K", prod2025: "—",      prodTtm: "—" },
-      { name: "Jamal Brooks",   hrwk: "30", tenure: "1.9", comp: "$24.5K", compYtd: "$10.2K", prod2025: "—",      prodTtm: "—" },
-      { name: "Grace Liu",      hrwk: "40", tenure: "4.7", comp: "$36.4K", compYtd: "$15.2K", prod2025: "—",      prodTtm: "—" },
-      { name: "Emma Sorensen",  hrwk: "28", tenure: "2.1", comp: "$22.0K", compYtd: "$9.2K",  prod2025: "—",      prodTtm: "—" },
-      { name: "Carlos Mendez",  hrwk: "32", tenure: "1.4", comp: "$26.8K", compYtd: "$11.2K", prod2025: "—",      prodTtm: "—" },
-      { name: "Aisha Khan",     hrwk: "24", tenure: "2.8", comp: "$21.6K", compYtd: "$9.0K",  prod2025: "$38.4K", prodTtm: "$34.7K" },
-      { name: "Ben Taylor",     hrwk: "20", tenure: "3.5", comp: "$19.2K", compYtd: "$8.0K",  prod2025: "$24.9K", prodTtm: "$26.3K" },
+      { name: "Bianca Cortez",   hrwk: "40", tenure: "8.2", comp: "$78.0K", compYtd: "$32.5K", prod2025: "—",      prodTtm: "—" },
+      { name: "Felix Romano",    hrwk: "40", tenure: "6.5", comp: "$62.4K", compYtd: "$26.0K", prod2025: "$96.2K", prodTtm: "$92.4K" },
+      { name: "Naomi Stein",    hrwk: "40", tenure: "5.1", comp: "$54.0K", compYtd: "$22.5K", prod2025: "$71.8K", prodTtm: "$70.1K" },
+      { name: "Gavin Lowe",    hrwk: "36", tenure: "4.3", comp: "$49.5K", compYtd: "$20.6K", prod2025: "$64.3K", prodTtm: "$61.0K" },
+      { name: "Tessa Bright",    hrwk: "32", tenure: "3.8", comp: "$44.2K", compYtd: "$18.4K", prod2025: "$52.7K", prodTtm: "$55.9K" },
+      { name: "Caleb Fuentes",     hrwk: "40", tenure: "2.6", comp: "$46.8K", compYtd: "$19.5K", prod2025: "$58.1K", prodTtm: "$60.4K" },
+      { name: "Dana Whitmore",    hrwk: "38", tenure: "3.2", comp: "$38.0K", compYtd: "$15.8K", prod2025: "—",      prodTtm: "—" },
+      { name: "Andre Bellamy",   hrwk: "30", tenure: "1.9", comp: "$24.5K", compYtd: "$10.2K", prod2025: "—",      prodTtm: "—" },
+      { name: "Mei Sato",      hrwk: "40", tenure: "4.7", comp: "$36.4K", compYtd: "$15.2K", prod2025: "—",      prodTtm: "—" },
+      { name: "Lena Vasquez",  hrwk: "28", tenure: "2.1", comp: "$22.0K", compYtd: "$9.2K",  prod2025: "—",      prodTtm: "—" },
+      { name: "Hugo Salazar",  hrwk: "32", tenure: "1.4", comp: "$26.8K", compYtd: "$11.2K", prod2025: "—",      prodTtm: "—" },
+      { name: "Zoya Iqbal",     hrwk: "24", tenure: "2.8", comp: "$21.6K", compYtd: "$9.0K",  prod2025: "$38.4K", prodTtm: "$34.7K" },
+      { name: "Wes Carver",     hrwk: "20", tenure: "3.5", comp: "$19.2K", compYtd: "$8.0K",  prod2025: "$24.9K", prodTtm: "$26.3K" },
     ],
   },
 };
@@ -214,6 +286,12 @@ window.MODELED_ESTIMATE = MODELED_ESTIMATE;
 window.MARKET_METRICS = MARKET_METRICS;
 window.MARKET_CHECK_RESPONSES = MARKET_CHECK_RESPONSES;
 window.MARKET_CHECK_REQUESTS = MARKET_CHECK_REQUESTS;
+window.MC_CONSENSUS = MC_CONSENSUS;
+window.MC_VALUATION_TREND = MC_VALUATION_TREND;
+window.MC_BUYER_MIX = MC_BUYER_MIX;
+window.MC_SNAPSHOT_RESULTS = MC_SNAPSHOT_RESULTS;
+window.MC_RECOMMENDED_ACTIONS = MC_RECOMMENDED_ACTIONS;
+window.MC_IMPACT_DRIVERS = MC_IMPACT_DRIVERS;
 window.MARKET_PROFILE_STAFF = MARKET_PROFILE_STAFF;
 window.INQUIRIES = INQUIRIES;
 window.OFFERS = OFFERS;
