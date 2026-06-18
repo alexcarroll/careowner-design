@@ -41,14 +41,19 @@ const App = () => {
   return (
     <>
       <TopNav active={area} onNav={onNav} textSize={textSize} onTextSize={setTextSize} />
-      {area === "home" && <HomeView {...props} />}
-      {area === "practice" && !isMarketCheck && <PracticeView pub={pub} onTogglePub={onTogglePub} {...props} />}
-      {isMarketCheck && <MarketCheckView pub={pub} onTogglePub={onTogglePub} {...props} />}
-      {area === "buyers" && <BuyersView {...props} />}
-      {area === "inquiries" && <InquiriesView {...props} />}
-      {area === "offers" && <OffersView {...props} />}
-      {area === "messages" && <MessagesView {...props} />}
-      {area === "meetings" && <MeetingsView {...props} />}
+      <div className="co-shell">
+        <LeftRail />
+        <div className="co-shell__main">
+          {area === "home" && <HomeView {...props} />}
+          {area === "practice" && !isMarketCheck && <PracticeView pub={pub} onTogglePub={onTogglePub} {...props} />}
+          {isMarketCheck && <MarketCheckView pub={pub} onTogglePub={onTogglePub} {...props} />}
+          {area === "buyers" && <BuyersView {...props} />}
+          {area === "inquiries" && <InquiriesView {...props} />}
+          {area === "offers" && <OffersView {...props} />}
+          {area === "messages" && <MessagesView {...props} />}
+          {area === "meetings" && <MeetingsView {...props} />}
+        </div>
+      </div>
       {modal && <EditModal modal={modal} onClose={() => setModal(null)} onSubmit={onSubmit} />}
       {toast && <Toast message={toast} />}
     </>
@@ -137,5 +142,12 @@ const EditModal = ({ modal, onClose, onSubmit }) => {
     </Modal>
   );
 };
+
+// Apply the deep-link path stashed by index.html now that every relative <script src>
+// has been resolved/fetched (see the routing notes in index.html and server.js).
+if (window.__RESTORE_PATH__) {
+  try { window.history.replaceState(null, "", window.__RESTORE_PATH__); } catch (e) {}
+  window.__RESTORE_PATH__ = null;
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);

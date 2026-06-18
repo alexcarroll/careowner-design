@@ -11,10 +11,14 @@
       var l = window.location;
       // Detect the app base ("/careowner-design" on Pages, "" everywhere else).
       window.__APP_BASE__ = l.hostname.endsWith(".github.io") ? "/" + l.pathname.split("/")[1] : "";
-      // Restore a deep path encoded by 404.html (…/?/practice/market-check → …/practice/market-check).
+      // Decode a deep path encoded by 404.html (…/?/practice/market-check → …/practice/market-check),
+      // but DON'T rewrite the URL yet. The page's relative <script src>/<link href> tags resolve against
+      // the current path; rewriting to the deep path here makes them 404 on a static host (GitHub Pages)
+      // that has no SPA file-fallback — which renders a blank page. app.jsx applies the restore once all
+      // scripts have loaded.
       if (l.search[1] === "/") {
         var decoded = l.search.slice(1).split("&").map(function (s) { return s.replace(/~and~/g, "&"); }).join("?");
-        window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
+        window.__RESTORE_PATH__ = l.pathname.slice(0, -1) + decoded + l.hash;
       }
     })();
   </script>
@@ -71,14 +75,14 @@
     .co-avatar-chip svg { width: 14px; height: 14px; color: var(--stone-500); }
 
     /* Page header (white, sits under the dark nav) */
-    .co-sub { background: #fff; color: var(--stone-900); padding: 24px 36px 20px; min-height: 0; position: relative; border-bottom: 1px solid var(--stone-200); }
-    .co-sub__wrap { max-width: var(--page-max); margin: 0 auto; display:flex; align-items:flex-start; justify-content: space-between; gap: 24px; }
+    .co-sub { background: transparent; color: var(--stone-900); padding: 0; min-height: 0; position: static; border-bottom: 0; margin-bottom: 20px; }
+    .co-sub__wrap { max-width: none; margin: 0; display:flex; align-items:flex-start; justify-content: space-between; gap: 24px; }
     .co-crumb { display:flex; align-items:center; gap: 6px; font: 500 14px/1 "Inter"; color: var(--stone-500); margin-bottom: 12px; }
     .co-crumb a { color: inherit; text-decoration:none; }
     .co-crumb a:hover { color: var(--stone-900); }
     .co-crumb svg { width: 14px; height: 14px; opacity: 0.6; }
     .co-crumb__current { color: var(--stone-900); font-weight: 500; }
-    .co-sub h1 { font: 700 24px/1.2 "Inter"; margin: 0; letter-spacing: -0.005em; }
+    .co-sub h1 { font: 600 24px/1.2 "Inter"; margin: 0; letter-spacing: -0.005em; }
     .co-sub__subtitle { font: 400 14px/1.4 "Inter"; color: var(--stone-500); margin: 6px 0 0; }
     .co-sub__actions { display:flex; align-items:center; gap: 10px; margin-top: 4px; }
     .co-btn-outline { display:inline-flex; align-items:center; gap: 6px; height: 38px; padding: 0 20px; border-radius: 8px; border: 1px solid var(--stone-200); background: #fff; color: var(--stone-700); font: 500 14px/1 "Inter"; cursor: pointer; }
@@ -106,7 +110,7 @@
     .co-card + .co-card { margin-top: 16px; }
     .co-card-grid .co-card { margin-top: 0; }
     .co-card__head { display:flex; align-items:center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
-    .co-card__title { font: 700 16px/1 "Inter"; display:flex; align-items:center; gap: 10px; margin: 0; }
+    .co-card__title { font: 600 16px/1 "Inter"; display:flex; align-items:center; gap: 10px; margin: 0; }
     .co-card__meta { font: 400 12px/1 "Inter"; color: var(--stone-500); display:inline-flex; align-items:center; gap: 6px; }
     .co-card__meta .dot { color: #00AA55; }
     .co-edit { display:inline-flex; align-items:center; gap: 6px; background: none; border: 0; cursor: pointer; color: var(--stone-500); font: 500 13px/1 "Inter"; padding: 4px 8px; border-radius: 6px; }
@@ -171,7 +175,7 @@
     .co-preview { background: #fff; border: 1px solid var(--stone-200); border-radius: 10px; padding: 20px; }
     .co-preview__img { height: 160px; border-radius: 8px; background-size: cover; background-position: center; position: relative; margin-bottom: 16px; }
     .co-preview__tag { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 9999px; background: rgba(0,0,0,0.6); color: #fff; font: 600 12px/1 "Inter"; backdrop-filter: blur(4px); }
-    .co-preview__title { font: 700 16px/1.3 "Inter"; margin: 0 0 8px; color: var(--stone-900); }
+    .co-preview__title { font: 600 16px/1.3 "Inter"; margin: 0 0 8px; color: var(--stone-900); }
     .co-preview__desc { font: 400 14px/1.4 "Inter"; color: var(--stone-500); margin: 0 0 14px; }
     .co-preview__facts { display:flex; gap: 14px; font: 500 12px/1 "Inter"; color: var(--stone-700); flex-wrap: wrap; }
     .co-preview__fact { display:flex; align-items:center; gap: 5px; }
@@ -234,7 +238,7 @@
 
     /* Badge (status pills) */
     .co-badge { display:inline-flex; align-items:center; gap: 4px; padding: 2px 10px; border-radius: 9999px; font: 600 12px/1.4 "Inter"; }
-    .co-badge--green { background: #D1FAE5; color: #047857; }
+    .co-badge--green { background: #ecfdf5; color: #047857; }
     .co-badge--amber { background: #FEF3C7; color: #92400E; }
     .co-badge--blue { background: #DBEAFE; color: #1E40AF; }
     .co-badge--gray { background: var(--stone-100); color: var(--stone-700); }
@@ -245,7 +249,7 @@
     .co-modal { background: #fff; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); width: 100%; max-width: 560px; max-height: 85vh; display:flex; flex-direction:column; overflow: hidden; animation: modalIn 180ms ease; }
     @keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
     .co-modal__header { padding: 20px 24px; border-bottom: 1px solid var(--stone-200); display:flex; align-items:center; justify-content:space-between; }
-    .co-modal__header h2 { font: 700 18px/1.2 "Inter"; margin: 0; }
+    .co-modal__header h2 { font: 600 18px/1.2 "Inter"; margin: 0; }
     .co-modal__close { background: none; border: 0; cursor: pointer; color: var(--stone-500); width: 32px; height: 32px; border-radius: 6px; display:grid; place-items:center; }
     .co-modal__close:hover { background: var(--stone-100); color: var(--stone-900); }
     .co-modal__close svg { width: 18px; height: 18px; }
@@ -266,7 +270,7 @@
 
     /* Misc */
     .co-empty { text-align: center; padding: 48px 24px; color: var(--stone-500); font: 400 14px/1.5 "Inter"; }
-    .co-sec-title { font: 700 16px/1 "Inter"; margin: 0 0 12px; display:flex; align-items:center; gap: 8px; }
+    .co-sec-title { font: 600 16px/1 "Inter"; margin: 0 0 12px; display:flex; align-items:center; gap: 8px; }
 
     /* Messages */
     .co-msg-wrap { display: grid; grid-template-columns: 320px 1fr; background: #fff; border: 1px solid var(--stone-200); border-radius: 10px; overflow: hidden; height: 640px; }
@@ -480,15 +484,16 @@
     /* === Market Check === */
     .mc-grid { display:grid; grid-template-columns: 1fr 368px; gap: 24px; align-items: start; }
     .mc-row2 { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .mc-intro { display:flex; align-items:flex-start; justify-content:space-between; gap: 16px; margin: 8px 0 16px; }
-    .mc-intro__title { font: 700 16px/1.3 "Inter"; margin: 0; }
-    .mc-intro__desc { font: 400 14px/1.5 "Inter"; color: var(--stone-500); margin: 4px 0 0; max-width: 640px; }
+    .mc-intro { display:flex; align-items:center; justify-content:space-between; gap: 24px; margin: 20px 0 24px; }
+    .mc-intro__text { flex: 1; min-width: 0; }
+    .mc-intro__title { font: 600 16px/1.3 "Inter"; margin: 0; }
+    .mc-intro__desc { font: 400 14px/1.5 "Inter"; color: var(--stone-500); margin: 6px 0 0; max-width: none; }
     .mc-count { background: var(--stone-100); color: var(--stone-700); font: 600 12px/1 "Inter"; padding: 4px 8px; border-radius: 6px; }
 
     /* provenance chip */
     .co-prov { display:inline-flex; align-items:center; gap: 5px; font: 600 12px/1 "Inter"; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
     .co-prov svg { width: 12px; height: 12px; }
-    .co-prov--verified { background: #D1FAE5; color: #047857; }
+    .co-prov--verified { background: #ecfdf5; color: #047857; }
     .co-prov--self { background: #FEF3C7; color: #92400E; }
     .co-prov--none { background: var(--stone-100); color: var(--stone-500); }
 
@@ -563,6 +568,49 @@
     /* empty / needs-input card body */
     .mc-empty-card { text-align: center; padding: 14px 16px 4px; }
     .mc-empty-card p { font: 400 14px/1.5 "Inter"; color: var(--stone-500); margin: 0 0 12px; max-width: 420px; margin-left: auto; margin-right: auto; }
+
+    /* === App shell: persistent left nav + page content (incl. page header) in the right column === */
+    .co-shell { display: flex; align-items: flex-start; }
+    .co-shell__nav {
+      width: var(--nav-w); flex-shrink: 0;
+      background: #fff; border-right: 1px solid var(--stone-200);
+      padding: 14px 12px 24px;
+      position: sticky; top: var(--header-h); align-self: flex-start;
+      height: calc(100vh - var(--header-h)); overflow-y: auto;
+    }
+    .co-shell__main { flex: 1; min-width: 0; padding: 24px 32px 96px; }
+    .co-shell__nav .co-rail__brand { padding: 6px 10px 14px; border-bottom: 1px solid var(--stone-200); margin-bottom: 8px; }
+    .co-rail__brand-name { font: 600 14px/1.3 "Inter"; color: var(--stone-900); }
+    .co-rail__brand-loc { font: 400 12px/1.4 "Inter"; color: var(--stone-500); margin-top: 3px; }
+
+    /* Content body — the left rail now lives outside, so grids drop the rail column */
+    .co-body { width: 100%; }
+    .co-body--cols { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+
+    /* Market Profile — large data numbers */
+    .mc-profile .co-metric__value { font: 600 18px/22px "Inter"; color: #0A0A0A; letter-spacing: 0; }
+    .mc-profile .co-metric__value small { font: 500 12px/1 "Inter"; color: var(--stone-500); }
+    .mc-profile .co-deal__value { font: 600 18px/22px "Inter"; color: #0A0A0A; }
+
+    /* Market Profile card stack — uniform 16px between every row */
+    .mc-stack { display: flex; flex-direction: column; gap: 16px; }
+    .mc-stack > .co-card { margin-top: 0; }
+
+    /* Market Profile — full-width staff cards (Doctors / Support Staff) */
+    .mc-staff__summary { display: flex; align-items: stretch; flex-wrap: wrap; gap: 20px; padding: 6px 0 18px; }
+    .mc-staff__stat, .mc-staff__group { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+    .mc-staff__divider { width: 1px; align-self: stretch; background: var(--stone-200); }
+    .mc-staff__grouplabel { font: 500 11px/1.2 "Inter"; text-transform: uppercase; letter-spacing: 0.06em; color: var(--stone-500); text-align: center; }
+    .mc-staff__pair { display: flex; gap: 20px; }
+    .mc-staff__sub { font: 500 11px/1 "Inter"; text-transform: uppercase; letter-spacing: 0.06em; color: var(--stone-500); margin-bottom: 6px; }
+    .mc-staff__num { font: 600 18px/22px "Inter"; color: #0A0A0A; }
+    .mc-staff__tablewrap { overflow-x: auto; }
+    .mc-staff__table { width: 100%; }
+    .mc-staff__table th, .mc-staff__table td { white-space: nowrap; }
+    .mc-staff__grouprow th { background: transparent; border-bottom: 0; padding: 0 16px 4px; }
+    .mc-staff__table th.mc-staff__prodgroup { background: var(--stone-100); color: var(--stone-500); text-align: center; border-radius: 6px 6px 0 0; }
+    .mc-staff__table th.mc-staff__prodcol { background: var(--stone-100); }
+    .mc-staff__muted { color: var(--stone-500); font-weight: 400; }
   </style>
 </head>
 <body>

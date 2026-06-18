@@ -22,35 +22,32 @@ const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection, tab }) => 
           <button className="co-btn-solid" onClick={() => onEdit({ title: "Manage Practice", kind: "manage" })}>Manage</button>
         </>}
       />
-      <div className="co-page">
-        <LeftRail section={section} onSection={onSection} />
-        {isTeam ? (
-          <div style={{ gridColumn: "2 / -1" }}>
-            <TeamSection />
-          </div>
-        ) : (
-          <>
-            <div>
-              <div className="co-tabs" style={{ marginBottom: 16 }}>
-                {[
-                  { id: "overview", label: "Overview" },
-                  { id: "details", label: "Practice Details" },
-                  { id: "ownership", label: "Ownership" },
-                  { id: "deal", label: "Deal Preferences" },
-                ].map(t => (
-                  <button key={t.id} className={activeTab === t.id ? "is-active" : ""} onClick={() => navigateTo(`/practice/${section || "overview"}#${t.id}`)}>{t.label}</button>
-                ))}
-              </div>
-
-              {activeTab === "overview" && <OverviewTab pub={pub} onTogglePub={onTogglePub} onEdit={onEdit} />}
-              {activeTab === "details" && <DetailsTab onEdit={onEdit} />}
-              {activeTab === "ownership" && <OwnershipTab onEdit={onEdit} />}
-              {activeTab === "deal" && <DealTab onEdit={onEdit} />}
+      {isTeam ? (
+        <div className="co-body">
+          <TeamSection />
+        </div>
+      ) : (
+        <div className="co-body co-body--cols">
+          <div>
+            <div className="co-tabs" style={{ marginBottom: 16 }}>
+              {[
+                { id: "overview", label: "Overview" },
+                { id: "details", label: "Practice Details" },
+                { id: "ownership", label: "Ownership" },
+                { id: "deal", label: "Deal Preferences" },
+              ].map(t => (
+                <button key={t.id} className={activeTab === t.id ? "is-active" : ""} onClick={() => navigateTo(`/practice/${section || "overview"}#${t.id}`)}>{t.label}</button>
+              ))}
             </div>
-            <RightRail />
-          </>
-        )}
-      </div>
+
+            {activeTab === "overview" && <OverviewTab pub={pub} onTogglePub={onTogglePub} onEdit={onEdit} />}
+            {activeTab === "details" && <DetailsTab onEdit={onEdit} />}
+            {activeTab === "ownership" && <OwnershipTab onEdit={onEdit} />}
+            {activeTab === "deal" && <DealTab onEdit={onEdit} />}
+          </div>
+          <RightRail />
+        </div>
+      )}
     </>
   );
 };
@@ -167,9 +164,9 @@ const OverviewTab = ({ pub, onTogglePub, onEdit }) => (
   </>
 );
 
-const Metric = ({ icon, tint, label, value }) => (
+const Metric = ({ icon, tint, label, value, noIcon }) => (
   <div className="co-metric">
-    <div className={`co-metric__icon ${tint ? "co-metric__icon--" + tint : ""}`}><Icon name={icon} /></div>
+    {!noIcon && <div className={`co-metric__icon ${tint ? "co-metric__icon--" + tint : ""}`}><Icon name={icon} /></div>}
     <div>
       <div className="co-metric__label">{label}</div>
       <div className="co-metric__value">{value}</div>

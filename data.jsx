@@ -170,12 +170,51 @@ const MARKET_CHECK_REQUESTS = [
   { id: 3, name: "Quick Manual Check", sent: null, status: "draft", metrics: 5, verifiedMix: "5 self-reported", buyersSent: 0, responded: 0, deadline: null },
 ];
 
+// Market Profile — full staffing breakdown (mirrors the client's "Vet Staffing" reference).
+// Doctors are populated from the producing vets; comp shown as LTM with a YTD figure,
+// production split TTM-YTD vs full-year 2025. "—" marks data not yet provided.
+const MARKET_PROFILE_STAFF = {
+  doctors: {
+    count: 5, fullTime: 3, partTime: 2, avgTenure: "4.6 years",
+    comp: { ttm: "$333.4K", y2025: "$348.5K" },
+    production: { ttm: "$2.04M", y2025: "$2.05M" },
+    members: [
+      { name: "Clayton McQuiddy", hrwk: "40", tenure: "6.4", comp: "$106.8K", compYtd: "$44.5K", prod2025: "$662.6K", prodTtm: "$679.0K" },
+      { name: "Laura Bailey",     hrwk: "35", tenure: "6.8", comp: "$101.7K", compYtd: "$42.4K", prod2025: "$593.6K", prodTtm: "$568.5K" },
+      { name: "Michael Zarzosa",  hrwk: "40", tenure: "5.2", comp: "$125.0K", compYtd: "$52.1K", prod2025: "$785.6K", prodTtm: "$774.8K" },
+      { name: "Debra Maxwell",    hrwk: "10", tenure: "0.1", comp: "—",       compYtd: null,     prod2025: "$3.1K",   prodTtm: "$12.8K" },
+      { name: "Ross Ellis",       hrwk: "—",  tenure: "—",   comp: "—",       compYtd: null,     prod2025: "$3.1K",   prodTtm: "—" },
+    ],
+  },
+  support: {
+    count: 13, fullTime: 7, partTime: 6, avgTenure: "3.9 years",
+    comp: { ttm: "$523.4K", y2025: "$541.0K" },
+    production: { ttm: "$400.8K", y2025: "$406.4K" },
+    members: [
+      { name: "Sandra Reyes",   hrwk: "40", tenure: "8.2", comp: "$78.0K", compYtd: "$32.5K", prod2025: "—",      prodTtm: "—" },
+      { name: "Tobias Lund",    hrwk: "40", tenure: "6.5", comp: "$62.4K", compYtd: "$26.0K", prod2025: "$96.2K", prodTtm: "$92.4K" },
+      { name: "Priya Anand",    hrwk: "40", tenure: "5.1", comp: "$54.0K", compYtd: "$22.5K", prod2025: "$71.8K", prodTtm: "$70.1K" },
+      { name: "Marcus Webb",    hrwk: "36", tenure: "4.3", comp: "$49.5K", compYtd: "$20.6K", prod2025: "$64.3K", prodTtm: "$61.0K" },
+      { name: "Hannah Cole",    hrwk: "32", tenure: "3.8", comp: "$44.2K", compYtd: "$18.4K", prod2025: "$52.7K", prodTtm: "$55.9K" },
+      { name: "Derek Nash",     hrwk: "40", tenure: "2.6", comp: "$46.8K", compYtd: "$19.5K", prod2025: "$58.1K", prodTtm: "$60.4K" },
+      { name: "Olivia Park",    hrwk: "38", tenure: "3.2", comp: "$38.0K", compYtd: "$15.8K", prod2025: "—",      prodTtm: "—" },
+      { name: "Jamal Brooks",   hrwk: "30", tenure: "1.9", comp: "$24.5K", compYtd: "$10.2K", prod2025: "—",      prodTtm: "—" },
+      { name: "Grace Liu",      hrwk: "40", tenure: "4.7", comp: "$36.4K", compYtd: "$15.2K", prod2025: "—",      prodTtm: "—" },
+      { name: "Emma Sorensen",  hrwk: "28", tenure: "2.1", comp: "$22.0K", compYtd: "$9.2K",  prod2025: "—",      prodTtm: "—" },
+      { name: "Carlos Mendez",  hrwk: "32", tenure: "1.4", comp: "$26.8K", compYtd: "$11.2K", prod2025: "—",      prodTtm: "—" },
+      { name: "Aisha Khan",     hrwk: "24", tenure: "2.8", comp: "$21.6K", compYtd: "$9.0K",  prod2025: "$38.4K", prodTtm: "$34.7K" },
+      { name: "Ben Taylor",     hrwk: "20", tenure: "3.5", comp: "$19.2K", compYtd: "$8.0K",  prod2025: "$24.9K", prodTtm: "$26.3K" },
+    ],
+  },
+};
+
 window.PRACTICE = PRACTICE;
 window.BUYERS = BUYERS;
 window.MODELED_ESTIMATE = MODELED_ESTIMATE;
 window.MARKET_METRICS = MARKET_METRICS;
 window.MARKET_CHECK_RESPONSES = MARKET_CHECK_RESPONSES;
 window.MARKET_CHECK_REQUESTS = MARKET_CHECK_REQUESTS;
+window.MARKET_PROFILE_STAFF = MARKET_PROFILE_STAFF;
 window.INQUIRIES = INQUIRIES;
 window.OFFERS = OFFERS;
 window.THREADS = THREADS;

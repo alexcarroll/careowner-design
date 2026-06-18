@@ -40,8 +40,7 @@ const BuyersView = ({ section, onSection, onEdit }) => {
         <button className="co-btn-outline"><Icon name="filter" /> Saved Searches</button>
         <button className="co-btn-solid"><Icon name="plus" /> Invite Buyer</button>
       </>} />
-      <div className="co-page">
-        <LeftRail section={section} onSection={onSection} />
+      <div className="co-body">
         <div style={{ gridColumn: "2 / -1" }}>
           <div className="co-card" style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ padding: 16, borderBottom: "1px solid var(--stone-200)" }}>

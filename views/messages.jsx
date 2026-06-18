@@ -19,8 +19,7 @@ const MessagesView = ({ section, onSection }) => {
       <SubHeader crumbs={["Messages"]} title="Messages" actions={<>
         <button className="co-btn-solid"><Icon name="plus" /> New Message</button>
       </>} />
-      <div className="co-page">
-        <LeftRail section={section} onSection={onSection} />
+      <div className="co-body">
         <div style={{ gridColumn: "2 / -1" }}>
           <div className="co-msg-wrap">
             <div className="co-msg-list">

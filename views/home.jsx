@@ -18,8 +18,7 @@ const HomeView = ({ section, onSection, onNav }) => {
           <button className="co-btn-solid" onClick={() => onNav("offers")}>Review Offers</button>
         </>}
       />
-      <div className="co-page" style={{ gridTemplateColumns: "260px 1fr 320px" }}>
-        <LeftRail section={section} onSection={onSection} />
+      <div className="co-body co-body--cols">
         <div>
           <h2 className="co-sec-title" style={{ marginBottom: 16 }}>This Week</h2>
           <div className="co-kpi-grid">

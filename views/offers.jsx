@@ -34,8 +34,7 @@ const OffersView = ({ section, onSection, onEdit }) => {
           Counter Template
         </button>
       </>} />
-      <div className="co-page">
-        <LeftRail section={section} onSection={onSection} />
+      <div className="co-body">
         <div style={{ gridColumn: "2 / -1" }}>
           <div className="co-kpi-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
             <div className="co-kpi"><div className="co-kpi__label">Total Offers</div><div className="co-kpi__value">{OFFERS.length}</div><div className="co-kpi__delta up"><Icon name="arrowUp" size={12} />+2 this week</div></div>

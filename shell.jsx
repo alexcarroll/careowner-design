@@ -22,11 +22,6 @@ const TopNav = ({ active, onNav, textSize, onTextSize }) => {
         ))}
       </div>
       <div className="co-nav__right">
-        <div className="co-text-size" title="Text size">
-          {["sm","md","lg"].map(s => (
-            <button key={s} className={textSize === s ? "is-active" : ""} onClick={() => onTextSize(s)}>A</button>
-          ))}
-        </div>
         <button className="co-avatar-chip">
           <span className="co-avatar">DS</span>
           <Icon name="chevronDown" size={14} />
@@ -146,51 +141,18 @@ const LeftRail = () => {
   };
 
   return (
-    <aside className="co-rail">
-      <div className="co-rail__card">
-        <div className="co-rail__header">
-          <div className="co-rail__header-logo" style={{ backgroundImage: "url(assets/practice-hero.jpg)" }} />
-          <div className="co-rail__header-text">
-            <div className="co-rail__header-name">{PRACTICE.name}</div>
-            <div className="co-rail__header-sub">{PRACTICE.location}</div>
-          </div>
-          <Icon name="chevronsUpDown" size={16} />
-        </div>
-        <div className="co-rail__group-items">
-          {profile.map(renderItem)}
-          {shortcuts.map(renderItem)}
-        </div>
-        <div className="co-rail__group">Deals</div>
-        <div className="co-rail__group-items">
-          {deals.map(renderItem)}
-        </div>
+    <aside className="co-shell__nav">
+      <div className="co-rail__brand">
+        <div className="co-rail__brand-name">{PRACTICE.name}</div>
+        <div className="co-rail__brand-loc">{PRACTICE.location}</div>
       </div>
-      <div className="co-help">
-        <h3><Icon name="helpCircle" /> Need Help?</h3>
-        <div className="co-help__item">
-          <div className="co-help__icon"><Icon name="book" /></div>
-          <div>
-            <div className="co-help__title">Documentation</div>
-            <div className="co-help__desc">How-to guides and FAQs</div>
-            <a className="co-help__link" href="#">View Docs →</a>
-          </div>
-        </div>
-        <div className="co-help__item">
-          <div className="co-help__icon"><Icon name="headphones" /></div>
-          <div>
-            <div className="co-help__title">Support Team</div>
-            <div className="co-help__desc">Get help from our experts</div>
-            <a className="co-help__link" href="#">Contact Support →</a>
-          </div>
-        </div>
-        <div className="co-help__item">
-          <div className="co-help__icon"><Icon name="video" /></div>
-          <div>
-            <div className="co-help__title">Video Tutorials</div>
-            <div className="co-help__desc">Watch how-to videos</div>
-            <a className="co-help__link" href="#">Watch Now →</a>
-          </div>
-        </div>
+      <div className="co-rail__group-items">
+        {profile.map(renderItem)}
+        {shortcuts.map(renderItem)}
+      </div>
+      <div className="co-rail__group">Deals</div>
+      <div className="co-rail__group-items">
+        {deals.map(renderItem)}
       </div>
     </aside>
   );

@@ -14,7 +14,7 @@ const mcMid = (r) => (r.low + r.high) / 2;
 
 const InterestBadge = ({ i }) => {
   const cls = i === "High" ? "co-badge--green" : i === "Medium" ? "co-badge--blue" : "co-badge--gray";
-  return <span className={`co-badge ${cls}`}>{i} Interest</span>;
+  return <span className={`co-badge ${cls}`}>{i}</span>;
 };
 
 const ProvChip = ({ p }) => {
@@ -41,8 +41,7 @@ const MarketCheckView = ({ tab, sub }) => {
           <button className="co-btn-solid" onClick={() => navigateTo("/practice/market-check/new")}><Icon name="plus" /> New Request</button>
         </>}
       />
-      <div className="co-page co-page--solo">
-        <LeftRail />
+      <div className="co-body">
         <div>
           <div className="co-tabs" style={{ marginBottom: 16 }}>
             {MC_TABS.map(t => (
@@ -85,13 +84,6 @@ const MCResponses = () => {
         <div className="co-kpi"><div className="co-kpi__label">Consensus Range</div><div className="co-kpi__value" style={{ fontSize: 22 }}>{fmtRange(consensusLow, consensusHigh)}</div></div>
         <div className="co-kpi"><div className="co-kpi__label">High Interest</div><div className="co-kpi__value">{highCount}<small style={{ font: "500 14px/1 Inter", color: "var(--stone-500)", marginLeft: 4 }}>buyers</small></div></div>
         <div className="co-kpi"><div className="co-kpi__label">Avg Midpoint</div><div className="co-kpi__value" style={{ fontSize: 22 }}>${avgMid.toFixed(2)}M</div></div>
-      </div>
-
-      <div className="mc-summary">
-        <h3>Summary</h3>
-        <p>Based on these market responses, your practice valuation range is estimated at <span className="hl">{fmtRange(consensusLow, consensusHigh)}</span> with strong buyer interest.</p>
-        <div className="mc-summary__rec"><Icon name="checkCircle" size={16} />Top recommendation: Strengthen financial reporting and KPI tracking</div>
-        <div className="mc-summary__rec"><Icon name="checkCircle" size={16} />Secondary recommendation: Document transition plan and key relationships</div>
       </div>
 
       <div className="co-card">
@@ -231,7 +223,7 @@ const MCRequests = () => {
   return (
     <>
       <div className="mc-intro">
-        <div>
+        <div className="mc-intro__text">
           <h3 className="mc-intro__title">Your Requests</h3>
           <p className="mc-intro__desc">Market checks you've sent. Track responses as they arrive, send reminders, or duplicate a snapshot for a new round.</p>
         </div>
@@ -397,6 +389,67 @@ const MCEmptyCard = ({ icon, title, blurb, onAdd }) => (
   </div>
 );
 
+// Full-width staffing card: summary metrics + per-staff-member table (mirrors client's vet-staffing sheet).
+const StaffCard = ({ icon, title, anon, data, preview, edit }) => (
+  <div className="co-card mc-staff" style={{ marginTop: 0 }}>
+    <div className="co-card__head">
+      <h3 className="co-card__title"><span className="co-metric__icon" style={{ width: 36, height: 36 }}><Icon name={icon} /></span> {title} <span className="mc-count">{data.count}</span></h3>
+      {edit}
+    </div>
+    <div className="mc-staff__summary">
+      <div className="mc-staff__stat"><div className="co-metric__label">Full-time</div><div className="co-metric__value">{data.fullTime}</div></div>
+      <div className="mc-staff__stat"><div className="co-metric__label">Part-time</div><div className="co-metric__value">{data.partTime}</div></div>
+      <div className="mc-staff__stat"><div className="co-metric__label">Avg Tenure</div><div className="co-metric__value">{data.avgTenure}</div></div>
+      <div className="mc-staff__divider" />
+      <div className="mc-staff__group">
+        <div className="mc-staff__grouplabel">Total Compensation</div>
+        <div className="mc-staff__pair">
+          <div><div className="mc-staff__sub">TTM YTD</div><div className="mc-staff__num">{data.comp.ttm}</div></div>
+          <div><div className="mc-staff__sub">2025</div><div className="mc-staff__num">{data.comp.y2025}</div></div>
+        </div>
+      </div>
+      <div className="mc-staff__divider" />
+      <div className="mc-staff__group">
+        <div className="mc-staff__grouplabel">Total Production</div>
+        <div className="mc-staff__pair">
+          <div><div className="mc-staff__sub">TTM YTD</div><div className="mc-staff__num">{data.production.ttm}</div></div>
+          <div><div className="mc-staff__sub">2025</div><div className="mc-staff__num">{data.production.y2025}</div></div>
+        </div>
+      </div>
+    </div>
+    <div className="mc-staff__tablewrap">
+      <table className="co-table mc-staff__table">
+        <thead>
+          <tr className="mc-staff__grouprow">
+            <th colSpan={4}></th>
+            <th colSpan={2} className="mc-staff__prodgroup">Production</th>
+          </tr>
+          <tr>
+            <th>Staff Member</th>
+            <th>HR/WK</th>
+            <th>Tenure</th>
+            <th>Compensation</th>
+            <th className="mc-staff__prodcol">2025</th>
+            <th className="mc-staff__prodcol">TTM YTD</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.members.map((m, i) => (
+            <tr key={i}>
+              <td className="co-table__name">{preview ? `${anon} ${i + 1}` : m.name}</td>
+              <td>{m.hrwk}</td>
+              <td>{m.tenure}</td>
+              <td>{m.comp}{m.compYtd && <span className="mc-staff__muted"> ({m.compYtd} YTD)</span>}</td>
+              <td>{m.prod2025}</td>
+              <td>{m.prodTtm}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
 const MCMarketProfile = ({ completed }) => {
   const [preview, setPreview] = React.useState(false);
   const [edit, setEdit] = React.useState(null);
@@ -405,9 +458,9 @@ const MCMarketProfile = ({ completed }) => {
   const editBtn = (kind) => !preview && <button className="co-edit" onClick={() => openEdit(kind)}><Icon name="edit" /> Edit</button>;
 
   return (
-    <>
+    <div className="mc-profile">
       <div className="mc-intro">
-        <div>
+        <div className="mc-intro__text">
           <h3 className="mc-intro__title">Your Market Profile</h3>
           <p className="mc-intro__desc">Your view of the non-anonymized version of the metrics. Select "Preview as Buyer" to see the anonymized version.</p>
         </div>
@@ -438,7 +491,7 @@ const MCMarketProfile = ({ completed }) => {
 
       <div className="mc-grid">
         {/* main column */}
-        <div>
+        <div className="mc-stack">
           {/* Financials */}
           {completed ? (
             <div className="co-card" style={{ marginTop: 0 }}>
@@ -447,9 +500,9 @@ const MCMarketProfile = ({ completed }) => {
                 {editBtn("financials")}
               </div>
               <div className="co-metrics">
-                <Metric icon="dollarSign" tint="" label="TTM Revenue" value="$2.45M" />
-                <Metric icon="trendUp" tint="green" label="EBITDA" value="$612K" />
-                <Metric icon="activity" tint="indigo" label="Margin" value="20%" />
+                <Metric noIcon label="TTM Revenue" value="$2.45M" />
+                <Metric noIcon label="EBITDA" value="$612K" />
+                <Metric noIcon label="Margin" value="20%" />
               </div>
             </div>
           ) : <MCEmptyCard icon="dollarSign" title="Financials" blurb="Add your high-level financials. You can share ranges instead of exact figures." onAdd={() => openEdit("financials")} />}
@@ -462,45 +515,22 @@ const MCMarketProfile = ({ completed }) => {
                 {editBtn("operations")}
               </div>
               <div className="co-metrics">
-                <Metric icon="users" tint="" label="Active Clients" value="1,240" />
-                <Metric icon="dollarSign" tint="amber" label="Revenue / Visit" value="$456" />
-                <Metric icon="activity" tint="indigo" label="Revenue / Doctor" value="$612K" />
+                <Metric noIcon label="Active Clients" value="1,240" />
+                <Metric noIcon label="Revenue / Visit" value="$456" />
+                <Metric noIcon label="Revenue / Doctor" value="$612K" />
               </div>
             </div>
           ) : <MCEmptyCard icon="activity" title="Operations" blurb="Add your operational metrics as ranges to give buyers a sense of scale." onAdd={() => openEdit("operations")} />}
 
-          {/* Doctors + Support Staff */}
-          <div className="mc-row2" style={{ marginTop: 16 }}>
-            {completed ? (
-              <div className="co-card" style={{ marginTop: 0 }}>
-                <div className="co-card__head">
-                  <h3 className="co-card__title"><span className="co-metric__icon" style={{ width: 36, height: 36 }}><Icon name="stethoscope" /></span> Doctors <span className="mc-count">5</span></h3>
-                  {editBtn("doctors")}
-                </div>
-                <div className="co-team" style={{ gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  <div><div className="co-metric__label">Full-time</div><div className="co-metric__value">3</div></div>
-                  <div><div className="co-metric__label">Part-time</div><div className="co-metric__value">2</div></div>
-                  <div><div className="co-metric__label">Avg experience</div><div className="co-metric__value">13 years</div></div>
-                  <div><div className="co-metric__label">Avg tenure</div><div className="co-metric__value">7 years</div></div>
-                </div>
-              </div>
-            ) : <MCEmptyCard icon="stethoscope" title="Doctors" blurb="Add how many DVMs you employ (full- and part-time)." onAdd={() => openEdit("doctors")} />}
+          {/* Doctors — full-width staffing card */}
+          {completed
+            ? <StaffCard icon="stethoscope" title="Doctors" anon="Veterinarian" data={MARKET_PROFILE_STAFF.doctors} preview={preview} edit={editBtn("doctors")} />
+            : <MCEmptyCard icon="stethoscope" title="Doctors" blurb="Add how many DVMs you employ (full- and part-time)." onAdd={() => openEdit("doctors")} />}
 
-            {completed ? (
-              <div className="co-card" style={{ marginTop: 0 }}>
-                <div className="co-card__head">
-                  <h3 className="co-card__title"><span className="co-metric__icon" style={{ width: 36, height: 36 }}><Icon name="users" /></span> Support Staff <span className="mc-count">13</span></h3>
-                  {editBtn("support")}
-                </div>
-                <div className="co-team" style={{ gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  <div><div className="co-metric__label">Full-time</div><div className="co-metric__value">3</div></div>
-                  <div><div className="co-metric__label">Part-time</div><div className="co-metric__value">2</div></div>
-                  <div><div className="co-metric__label">Avg experience</div><div className="co-metric__value">9 years</div></div>
-                  <div><div className="co-metric__label">Avg tenure</div><div className="co-metric__value">3.5 years</div></div>
-                </div>
-              </div>
-            ) : <MCEmptyCard icon="users" title="Support Staff" blurb="Add how many support staff you employ (full- and part-time)." onAdd={() => openEdit("support")} />}
-          </div>
+          {/* Support Staff — full-width staffing card */}
+          {completed
+            ? <StaffCard icon="users" title="Support Staff" anon="Staff member" data={MARKET_PROFILE_STAFF.support} preview={preview} edit={editBtn("support")} />
+            : <MCEmptyCard icon="users" title="Support Staff" blurb="Add how many support staff you employ (full- and part-time)." onAdd={() => openEdit("support")} />}
 
           {/* Facilities — moved from the sidebar into a horizontal info card */}
           {completed ? (
@@ -582,7 +612,7 @@ const MCMarketProfile = ({ completed }) => {
       </div>
 
       {edit && <MCEditSlideout kind={edit} completed={completed} onClose={() => setEdit(null)} />}
-    </>
+    </div>
   );
 };
 
@@ -603,7 +633,7 @@ const MCPreferences = () => {
   return (
     <>
       <div className="mc-intro">
-        <div>
+        <div className="mc-intro__text">
           <h3 className="mc-intro__title">Market Check Preferences</h3>
           <p className="mc-intro__desc">Defaults applied to every new request, and the buyers you're willing to share an anonymized snapshot with.</p>
         </div>
@@ -695,8 +725,7 @@ const NewRequestFlow = () => {
         subtitle="Build an anonymized snapshot and send it to curated buyers for an indicative valuation."
         actions={<button className="co-btn-outline" onClick={() => navigateTo("/practice/market-check#requests")}><Icon name="x" /> Cancel</button>}
       />
-      <div className="co-page co-page--solo">
-        <LeftRail />
+      <div className="co-body">
         <div>
           <div className="mc-steps">
             {MC_STEPS.map((label, i) => {

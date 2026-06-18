@@ -22,8 +22,7 @@ const InquiriesView = ({ section, onSection, onEdit }) => {
       <SubHeader crumbs={["Inquiries"]} title="Buyer Inquiries" actions={<>
         <button className="co-btn-outline"><Icon name="download" /> Export</button>
       </>} />
-      <div className="co-page">
-        <LeftRail section={section} onSection={onSection} />
+      <div className="co-body">
         <div style={{ gridColumn: "2 / -1" }}>
           <div className="co-card" style={{ padding: 0 }}>
             <div style={{ padding: 16, borderBottom: "1px solid var(--stone-200)" }}>

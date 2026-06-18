@@ -9,8 +9,7 @@ const MeetingsView = ({ section, onSection, onEdit }) => {
           <Icon name="plus" /> Schedule
         </button>
       </>} />
-      <div className="co-page">
-        <LeftRail section={section} onSection={onSection} />
+      <div className="co-body">
         <div style={{ gridColumn: "2 / -1" }}>
           <h2 className="co-sec-title">Upcoming</h2>
           <div>
