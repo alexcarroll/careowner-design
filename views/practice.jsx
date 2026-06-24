@@ -252,74 +252,27 @@ const OwnershipTab = ({ onEdit }) => (
   </>
 );
 
-const DealTab = ({ onEdit }) => {
-  const [form, setForm] = React.useState({
-    timeline: PRACTICE.deal.timeline,
-    type: PRACTICE.deal.type,
-    stay: PRACTICE.deal.stay,
-    buyer: PRACTICE.deal.buyer,
-    askingMin: "800",
-    askingMax: "900",
-    earnOut: true,
-    anonymous: false,
-  });
-  return (
-    <div className="co-card">
-      <div className="co-card__head">
-        <h3 className="co-card__title">Deal Preferences</h3>
-        <span className="co-card__meta">Changes save automatically</span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div className="co-field">
-          <label>Sale Timeline</label>
-          <select value={form.timeline} onChange={e => setForm({...form, timeline: e.target.value})}>
-            <option>Immediate</option><option>3–6 months</option><option>6–9 months</option><option>9–12 months</option><option>1–2 years</option>
-          </select>
-        </div>
-        <div className="co-field">
-          <label>Deal Type</label>
-          <select value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
-            <option>Asset Purchase</option><option>Stock Purchase</option><option>Joint Venture</option><option>Partnership</option>
-          </select>
-        </div>
-        <div className="co-field">
-          <label>Stay Post-Deal</label>
-          <select value={form.stay} onChange={e => setForm({...form, stay: e.target.value})}>
-            <option>Exit at closing</option><option>6 months</option><option>1 year</option><option>2–3 years</option><option>5+ years</option>
-          </select>
-        </div>
-        <div className="co-field">
-          <label>Preferred Buyer Type</label>
-          <select value={form.buyer} onChange={e => setForm({...form, buyer: e.target.value})}>
-            <option>Individual Vet</option><option>Regional Group</option><option>Corporate Group</option><option>PE Firm</option><option>Any</option>
-          </select>
-        </div>
-        <div className="co-field">
-          <label>Asking Price — Min ($K)</label>
-          <input value={form.askingMin} onChange={e => setForm({...form, askingMin: e.target.value})} />
-        </div>
-        <div className="co-field">
-          <label>Asking Price — Max ($K)</label>
-          <input value={form.askingMax} onChange={e => setForm({...form, askingMax: e.target.value})} />
-        </div>
-        <div className="co-field" style={{ gridColumn: "1 / -1" }}>
-          <label>Additional Notes for Buyers</label>
-          <textarea placeholder="Any specific considerations about the sale…" defaultValue="Looking for a partner who will preserve the long-tenured support team and continue community involvement (vaccine clinics, school visits). Open to earn-out structures." />
-        </div>
-        <div style={{ gridColumn: "1 / -1", display: "flex", gap: 20, alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, font: "500 14px/1 Inter", cursor: "pointer" }}>
-            <input type="checkbox" checked={form.earnOut} onChange={e => setForm({...form, earnOut: e.target.checked})} />
-            Open to earn-out structures
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, font: "500 14px/1 Inter", cursor: "pointer" }}>
-            <input type="checkbox" checked={form.anonymous} onChange={e => setForm({...form, anonymous: e.target.checked})} />
-            Hide practice name from public listing
-          </label>
-        </div>
+const DealTab = ({ onEdit }) => (
+  <div className="co-card">
+    <div className="co-card__head">
+      <h3 className="co-card__title">Deal Preferences</h3>
+      <button className="co-edit" onClick={() => onEdit({ title: "Edit Deal Preferences", kind: "deal" })}><Icon name="edit" /> Edit</button>
+    </div>
+    <div className="co-deals" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+      <div><div className="co-deal__label">Sale Timeline</div><div className="co-deal__value">{PRACTICE.deal.timeline}</div></div>
+      <div><div className="co-deal__label">Deal Type</div><div className="co-deal__value">{(PRACTICE.deal.types || [PRACTICE.deal.type]).join(", ")}</div></div>
+      <div><div className="co-deal__label">Stay Post-Deal</div><div className="co-deal__value">{PRACTICE.deal.stay}</div></div>
+      <div><div className="co-deal__label">Preferred Buyer Type</div><div className="co-deal__value">{PRACTICE.deal.buyer}</div></div>
+    </div>
+    <div style={{ borderTop: "1px solid var(--stone-100)", marginTop: 16, paddingTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div><div className="co-deal__label">Additional Notes for Buyers</div><div style={{ marginTop: 4, font: "var(--font-body)", color: "var(--stone-700)" }}>{PRACTICE.deal.notes}</div></div>
+      <div style={{ display: "flex", gap: 24 }}>
+        {PRACTICE.deal.earnOut && <span className="badge badge--success">Open to earn-out</span>}
+        {PRACTICE.deal.anonymous && <span className="badge badge--brand">Name hidden from listing</span>}
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 const RightRail = () => (
   <aside className="co-aside">

@@ -60,6 +60,71 @@ const App = () => {
   );
 };
 
+const DEAL_TYPES = ["Joint Venture", "Partnership"];
+
+const DealEditForm = () => {
+  const [types, setTypes] = React.useState(PRACTICE.deal.types || [PRACTICE.deal.type]);
+  const [buyer, setBuyer] = React.useState(PRACTICE.deal.buyer);
+  const [timeline, setTimeline] = React.useState(PRACTICE.deal.timeline);
+  const [stay, setStay] = React.useState(PRACTICE.deal.stay);
+  const [earnOut, setEarnOut] = React.useState(PRACTICE.deal.earnOut);
+  const [anonymous, setAnonymous] = React.useState(PRACTICE.deal.anonymous);
+  const toggleType = (t) => setTypes(types.includes(t) ? types.filter(x => x !== t) : [...types, t]);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="co-field">
+          <label>Sale Timeline</label>
+          <select value={timeline} onChange={e => setTimeline(e.target.value)}>
+            <option>Immediate</option><option>3–6 months</option><option>6–9 months</option><option>9–12 months</option><option>1–2 years</option>
+          </select>
+        </div>
+        <div className="co-field">
+          <label>Stay Post-Deal</label>
+          <select value={stay} onChange={e => setStay(e.target.value)}>
+            <option>Exit at closing</option><option>6 months</option><option>1 year</option><option>2–3 years</option><option>5+ years</option>
+          </select>
+        </div>
+      </div>
+      <div className="co-field">
+        <label>Deal Type <span style={{ color: "var(--stone-500)", fontWeight: 400 }}>· select all that apply</span></label>
+        <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+          {DEAL_TYPES.map(t => (
+            <button key={t} type="button" className={`co-chip ${types.includes(t) ? "is-active" : ""}`} onClick={() => toggleType(t)}>
+              {types.includes(t) && <Icon name="check" size={12} />}{t}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="co-field">
+        <label>Preferred Buyer Type</label>
+        <select value={buyer} onChange={e => setBuyer(e.target.value)}>
+          <option>Private / DVM</option><option>Corporate</option><option>Open to Both</option>
+        </select>
+      </div>
+      <div className="co-field">
+        <label>Additional Notes for Buyers</label>
+        <textarea defaultValue={PRACTICE.deal.notes} placeholder="Any specific considerations about the sale…" />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, font: "500 14px/1 Inter", cursor: "pointer" }}>
+          <input type="checkbox" checked={earnOut} onChange={e => setEarnOut(e.target.checked)} />
+          Open to earn-out structures
+        </label>
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+          <input type="checkbox" checked={anonymous} onChange={e => setAnonymous(e.target.checked)} style={{ marginTop: 2 }} />
+          <span>
+            <span style={{ font: "500 14px/1.4 Inter" }}>Hide practice name from public listing</span>
+            <span style={{ display: "block", marginTop: 4, font: "var(--font-caption)", color: "var(--stone-500)" }}>
+              Buyers browsing the marketplace will see your practice details and metrics, but not its name or exact location, until you accept their request to connect. Recommended to protect confidentiality while your practice is listed.
+            </span>
+          </span>
+        </label>
+      </div>
+    </div>
+  );
+};
+
 const EditModal = ({ modal, onClose, onSubmit }) => {
   const renderBody = () => {
     if (modal.kind === "financials") return (
@@ -114,6 +179,7 @@ const EditModal = ({ modal, onClose, onSubmit }) => {
         <div className="co-field"><label>Type</label><select><option>Zoom</option><option>Phone</option><option>On-site</option></select></div>
       </>
     );
+    if (modal.kind === "deal") return <DealEditForm />;
     if (modal.kind === "services") return (
       <>
         <p style={{ font: "400 14px/1.5 Inter", color: "var(--stone-500)", marginTop: 0 }}>Toggle which services are offered.</p>
