@@ -34,9 +34,13 @@ const PRACTICE = {
   },
   deal: {
     timeline: "6–9 months",
+    types: ["Joint Venture"],
     type: "Joint Venture",
     stay: "2–3 years",
-    buyer: "Corporate Group",
+    buyer: "Open to Both",
+    notes: "Looking for a partner who will preserve the long-tenured support team and continue community involvement (vaccine clinics, school visits). Open to earn-out structures.",
+    earnOut: true,
+    anonymous: true,
   },
   bio: "Dr. Lisa Thompson has been practicing veterinary medicine for over 15 years. She opened AnimalCare in 2013 with a mission to provide compassionate, high-quality care to pets and their families. Dr. Thompson specializes in small animal medicine and surgery, with particular expertise in internal medicine and emergency care.",
   owners: [
@@ -49,6 +53,11 @@ const PRACTICE = {
     buildingSize: "2,300 sq ft",
     monthlyRent: "$10,000/mo",
     leaseExpires: "12/2030",
+    tenure: "Leased",
+    rent: "$10,000/mo · $120K/yr",
+    relatedParty: "Yes — seller's LLC",
+    remainingTerm: "~4.5 yrs (to 12/2030)",
+    renewalOptions: "Two 5-year options",
   },
 };
 
@@ -127,8 +136,8 @@ const MODELED_ESTIMATE = { low: 2.5, high: 3.5 };
 const MARKET_METRICS = [
   { group: "Financials", items: [
     { id: "revenue",   label: "High-Level Revenue",      value: "$2.45M",          provenance: "verified" },
-    { id: "ebitda",    label: "EBITDA",                  value: "$612K",           provenance: "verified" },
-    { id: "adjMargin", label: "Adjusted EBITDA Margin",  value: "20%",             provenance: "verified" },
+    { id: "ebitda",    label: "Adjusted EBITDA",         value: "$612K",           provenance: "verified" },
+    { id: "adjMargin", label: "Adjusted EBITDA Margin",  value: "25%",             provenance: "verified" },
     { id: "sales",     label: "Annual Sales + Growth",   value: "$2.45M · +8% YoY", provenance: "verified" },
   ]},
   { group: "Production", items: [
@@ -244,18 +253,31 @@ const MC_INCOMING_REQUESTS = [
   {
     id: "inc-1", type: "Small Animal Practice", region: "Suburban · Midwest",
     requestedBy: "Anonymous seller · via CareOwner", received: "6/14/26", deadline: "6/28/26",
-    status: "new", revenueBand: "$2M – $3M", verifiedMix: "7 verified · 4 self-reported",
+    status: "new", revenueBand: "$2M – $3M", verifiedMix: "19 verified · 4 self-reported",
     defaultLow: 2.5, defaultHigh: 3.0,
     coverNote: "Established practice with a loyal client base; owner planning a transition over the next 1–2 years.",
     groups: [
       { group: "Financials", items: [
-        { label: "High-Level Revenue", value: "$2M – $3M", provenance: "verified" },
-        { label: "Adjusted EBITDA Margin", value: "~20%", provenance: "verified" },
-        { label: "Annual Growth", value: "+8% YoY", provenance: "verified" },
+        { label: "High-Level Revenue", value: "$2M – $3M", provenance: "verified", up: true },
+        { label: "Adjusted EBITDA", value: "~$610K · ~25% margin", provenance: "verified", up: true },
+        { label: "EBITDA Basis", value: "Adjusted · owner comp normalized", provenance: "verified" },
+        { label: "Annual Growth", value: "+8% YoY", provenance: "verified", up: true },
+      ]},
+      { group: "Operations", items: [
+        { label: "Active Clients", value: "~1,240", provenance: "verified" },
+        { label: "Revenue / Visit", value: "$456", provenance: "verified" },
+        { label: "Revenue / Doctor", value: "$612K", provenance: "verified" },
+        { label: "Revenue Mix", value: "Med 42% · Sx 21% · Dental 13% · Rx 16% · Retail 8%", provenance: "verified" },
       ]},
       { group: "Production", items: [
         { label: "Production / DVM", value: "~$610K avg", provenance: "verified" },
+        { label: "Owner vs Associate Production", value: "33% owner · 67% associates", provenance: "verified" },
         { label: "# of DVMs", value: "5 DVMs", provenance: "self" },
+      ]},
+      { group: "Owner", items: [
+        { label: "Owner Intentions", value: "Stay through 2–3 yr transition", provenance: "self" },
+        { label: "Dependency Score", value: "38 / 100 · Moderate", provenance: "verified" },
+        { label: "Production at risk if owner exits", value: "~$475K (23%)", provenance: "verified" },
       ]},
       { group: "Practice Attributes", items: [
         { label: "Location", value: "Suburban · Midwest", provenance: "verified" },
@@ -267,25 +289,35 @@ const MC_INCOMING_REQUESTS = [
       ]},
       { group: "Facilities", items: [
         { label: "Space", value: "~2,300 sq ft · 5 exam rooms", provenance: "verified" },
-        { label: "Lease", value: "Through 2030", provenance: "verified" },
+        { label: "Occupancy", value: "Leased · related party (seller's LLC)", provenance: "verified" },
+        { label: "Actual Rent", value: "~$10K/mo · ~$120K/yr", provenance: "verified" },
+        { label: "Remaining Term", value: "~4.5 yrs · through 2030", provenance: "verified" },
+        { label: "Renewal Options", value: "Two 5-yr options", provenance: "verified" },
       ]},
     ],
   },
   {
     id: "inc-2", type: "Multi-Doctor Practice", region: "Urban · Mountain West",
     requestedBy: "Anonymous seller · via CareOwner", received: "6/12/26", deadline: "6/26/26",
-    status: "new", revenueBand: "$3M – $4M", verifiedMix: "9 verified · 1 self-reported",
+    status: "new", revenueBand: "$3M – $4M", verifiedMix: "14 verified · 2 self-reported",
     defaultLow: 3.2, defaultHigh: 3.9,
     coverNote: "High-growth, multi-doctor practice in a dense metro; modern facility and strong specialty mix.",
     groups: [
       { group: "Financials", items: [
-        { label: "High-Level Revenue", value: "$3M – $4M", provenance: "verified" },
-        { label: "Adjusted EBITDA Margin", value: "~24%", provenance: "verified" },
-        { label: "Annual Growth", value: "+12% YoY", provenance: "verified" },
+        { label: "High-Level Revenue", value: "$3M – $4M", provenance: "verified", up: true },
+        { label: "Adjusted EBITDA", value: "~$840K · ~24% margin", provenance: "verified", up: true },
+        { label: "EBITDA Basis", value: "Adjusted · owner comp normalized", provenance: "verified" },
+        { label: "Annual Growth", value: "+12% YoY", provenance: "verified", up: true },
       ]},
       { group: "Production", items: [
         { label: "Production / DVM", value: "~$680K avg", provenance: "verified" },
+        { label: "Owner vs Associate Production", value: "18% owner · 82% associates", provenance: "verified" },
         { label: "# of DVMs", value: "7 DVMs", provenance: "verified" },
+      ]},
+      { group: "Owner", items: [
+        { label: "Owner Intentions", value: "Exit at close · 12-mo handover", provenance: "self" },
+        { label: "Dependency Score", value: "22 / 100 · Low", provenance: "verified" },
+        { label: "Production at risk if owner exits", value: "~$180K (5%)", provenance: "verified" },
       ]},
       { group: "Practice Attributes", items: [
         { label: "Location", value: "Urban · Mountain West", provenance: "verified" },
@@ -304,18 +336,25 @@ const MC_INCOMING_REQUESTS = [
   {
     id: "inc-3", type: "Mixed-Animal Practice", region: "Rural · Pacific NW",
     requestedBy: "Anonymous seller · via CareOwner", received: "6/9/26", deadline: "6/23/26",
-    status: "viewed", revenueBand: "$1M – $2M", verifiedMix: "5 self-reported",
+    status: "viewed", revenueBand: "$1M – $2M", verifiedMix: "16 self-reported",
     defaultLow: 1.2, defaultHigh: 1.8,
     coverNote: "Community mixed-animal practice with room to modernize; sole owner exploring options.",
     groups: [
       { group: "Financials", items: [
-        { label: "High-Level Revenue", value: "$1M – $2M", provenance: "self" },
-        { label: "Adjusted EBITDA Margin", value: "~16%", provenance: "self" },
-        { label: "Annual Growth", value: "+5% YoY", provenance: "self" },
+        { label: "High-Level Revenue", value: "$1M – $2M", provenance: "self", up: true },
+        { label: "Adjusted EBITDA", value: "~$240K · ~16% margin", provenance: "self" },
+        { label: "EBITDA Basis", value: "Owner-reported · SDE basis", provenance: "self" },
+        { label: "Annual Growth", value: "+5% YoY", provenance: "self", up: true },
       ]},
       { group: "Production", items: [
         { label: "Production / DVM", value: "~$520K avg", provenance: "self" },
+        { label: "Owner vs Associate Production", value: "61% owner · 39% associates", provenance: "self" },
         { label: "# of DVMs", value: "3 DVMs", provenance: "self" },
+      ]},
+      { group: "Owner", items: [
+        { label: "Owner Intentions", value: "Undecided · short handover", provenance: "self" },
+        { label: "Dependency Score", value: "74 / 100 · High", provenance: "self" },
+        { label: "Production at risk if owner exits", value: "~$430K (40%)", provenance: "self" },
       ]},
       { group: "Practice Attributes", items: [
         { label: "Location", value: "Rural · Pacific NW", provenance: "self" },
@@ -347,8 +386,15 @@ const MARKET_PROFILE_STAFF = {
     count: 5, fullTime: 3, partTime: 2, avgTenure: "4.6 years",
     comp: { ttm: "$333.4K", y2025: "$348.5K" },
     production: { ttm: "$2.04M", y2025: "$2.05M" },
+    // Owner-vs-associate production split (drives buyer key-person risk).
+    split: {
+      owner: "$679K", ownerPct: 33,
+      associates: "$1.36M", associatesPct: 67,
+      atRisk: "$475K", atRiskPct: 23,
+      note: "≈70% of the owner's personal production is relationship-bonded. A managed 2–3 yr transition is expected to retain the rest.",
+    },
     members: [
-      { name: "Maya Hollis", hrwk: "40", tenure: "6.4", comp: "$106.8K", compYtd: "$44.5K", prod2025: "$662.6K", prodTtm: "$679.0K" },
+      { name: "Maya Hollis", owner: true, hrwk: "40", tenure: "6.4", comp: "$106.8K", compYtd: "$44.5K", prod2025: "$662.6K", prodTtm: "$679.0K" },
       { name: "Trevor Quinn",     hrwk: "35", tenure: "6.8", comp: "$101.7K", compYtd: "$42.4K", prod2025: "$593.6K", prodTtm: "$568.5K" },
       { name: "Elena Vance",  hrwk: "40", tenure: "5.2", comp: "$125.0K", compYtd: "$52.1K", prod2025: "$785.6K", prodTtm: "$774.8K" },
       { name: "Damon Pruitt",    hrwk: "10", tenure: "0.1", comp: "—",       compYtd: null,     prod2025: "$3.1K",   prodTtm: "$12.8K" },
@@ -377,6 +423,55 @@ const MARKET_PROFILE_STAFF = {
   },
 };
 
+// Market Profile — Financials detail. EBITDA is the headline metric buyers price
+// against, so we carry its basis (Reported / Adjusted / SDE) and how owner comp
+// was handled, plus YoY direction and a 3-year-plus-forecast series for the chart.
+const MARKET_PROFILE_FINANCIALS = {
+  revenue: { value: "$2.45M", basis: "TTM", up: true, deltaPct: "8%", deltaLabel: "Up 8% vs 2025" },
+  ebitda: {
+    value: "$612K", margin: "25%", basis: "Adjusted", up: true, deltaPct: "11%", deltaLabel: "Up 11% vs 2025",
+    reported: "$490K", reportedMargin: "20%", sde: "$735K", addBacks: "$122K",
+    ownerComp: "Owner salary normalized to a $165K market rate; $122K of discretionary and one-time add-backs applied to reported EBITDA.",
+  },
+  // Three actual years + one forecast year. Values in $M.
+  series: [
+    { year: "2024", revenue: 2.08, ebitda: 0.50, forecast: false },
+    { year: "2025", revenue: 2.26, ebitda: 0.55, forecast: false },
+    { year: "2026", revenue: 2.45, ebitda: 0.61, forecast: false },
+    { year: "2027", revenue: 2.69, ebitda: 0.69, forecast: true },
+    { year: "2028", revenue: 2.95, ebitda: 0.77, forecast: true },
+    { year: "2029", revenue: 3.23, ebitda: 0.85, forecast: true },
+  ],
+};
+
+// Operations — revenue mix by service line (sums to 100%). Drives the horizontal
+// stacked bar on the Operations card.
+const OPERATIONS_REVENUE_MIX = [
+  { label: "Medical",  pct: 42, value: "$1.03M", color: "#1B6970" },
+  { label: "Surgery",  pct: 21, value: "$515K",  color: "#6E84B8" },
+  { label: "Dental",   pct: 13, value: "$319K",  color: "#D9A65A" },
+  { label: "Pharmacy", pct: 16, value: "$392K",  color: "#4E9E8E" },
+  { label: "Retail",   pct: 8,  value: "$196K",  color: "#C77E8C" },
+];
+
+// Market Profile — Owner card. Intentions (stay vs go, for how long) plus a
+// key-person Dependency Score out of 100 (higher = worse) derived from the share
+// of clinical production the owner personally drives vs the associates.
+const MARKET_PROFILE_OWNER = {
+  intentions: {
+    status: "Staying through transition",
+    timeline: "2–3 years",
+    detail: "Open to staying clinically active part-time for 2–3 years to transfer key client relationships and mentor associates before fully exiting.",
+  },
+  dependency: {
+    score: 38, band: "Moderate", ownerPct: 33,
+    note: "Owner personally drives ~33% of clinical production. A structured 2–3 yr transition keeps most of it with the practice; an abrupt exit puts ~$475K of production at risk.",
+  },
+};
+
+window.MARKET_PROFILE_FINANCIALS = MARKET_PROFILE_FINANCIALS;
+window.MARKET_PROFILE_OWNER = MARKET_PROFILE_OWNER;
+window.OPERATIONS_REVENUE_MIX = OPERATIONS_REVENUE_MIX;
 window.PRACTICE = PRACTICE;
 window.BUYERS = BUYERS;
 window.MODELED_ESTIMATE = MODELED_ESTIMATE;

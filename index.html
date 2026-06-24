@@ -600,7 +600,8 @@
 
     /* Market Profile — full-width staff cards (Doctors / Support Staff) */
     .mc-staff__summary { display: flex; align-items: stretch; flex-wrap: wrap; gap: 20px; padding: 6px 0 18px; }
-    .mc-staff__stat, .mc-staff__group { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+    .mc-staff__stat { display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+    .mc-staff__group { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
     .mc-staff__divider { width: 1px; align-self: stretch; background: var(--stone-200); }
     .mc-staff__grouplabel { font: 500 11px/1.2 "Inter"; text-transform: uppercase; letter-spacing: 0.06em; color: var(--stone-500); text-align: center; }
     .mc-staff__pair { display: flex; gap: 20px; }
@@ -610,7 +611,7 @@
     .mc-staff__table { width: 100%; }
     .mc-staff__table th, .mc-staff__table td { white-space: nowrap; }
     .mc-staff__grouprow th { background: transparent; border-bottom: 0; padding: 0 16px 4px; }
-    .mc-staff__table th.mc-staff__prodgroup { background: var(--stone-100); color: var(--stone-500); text-align: center; border-radius: 6px 6px 0 0; }
+    .mc-staff__table th.mc-staff__prodgroup { background: var(--stone-100); color: var(--stone-500); text-align: center; border-radius: 6px 6px 0 0; padding-top: 12px; }
     .mc-staff__table th.mc-staff__prodcol { background: var(--stone-100); }
     .mc-staff__muted { color: var(--stone-500); font-weight: 400; }
 
@@ -835,6 +836,145 @@
     .mc-interested__title svg { color: var(--teal-brand); width:16px; height:16px; }
     .mc-interested__desc { font:400 14px/1.5 "Inter"; color: var(--stone-700); margin-top:5px; }
     .mc-interested > .co-btn { flex-shrink:0; }
+
+    /* === Market Check — interactive chart tooltips (shared) === */
+    .mc-hastip { position: relative; }
+    .mc-tip { position:absolute; left:50%; bottom: calc(100% + 9px); transform: translateX(-50%); z-index:30; background: var(--stone-900); color:#fff; font:500 14px/1.4 "Inter"; text-transform:none; letter-spacing:normal; padding:7px 10px; border-radius:7px; white-space:nowrap; opacity:0; pointer-events:none; transition: opacity 120ms ease; box-shadow:0 8px 20px rgba(10,10,10,0.22); }
+    .mc-tip::after { content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color: var(--stone-900); }
+    .mc-hastip:hover > .mc-tip { opacity:1; }
+
+    /* chart legend */
+    .mc-legend { display:flex; gap:18px; flex-wrap:nowrap; }
+    .mc-legend__item { display:inline-flex; align-items:center; gap:7px; font:500 14px/1 "Inter"; color: var(--stone-700); }
+    .mc-legend__swatch { width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+
+    /* line chart — interactive layer */
+    .mc-linechart__svg .mc-linechart__guide { stroke: var(--stone-400); stroke-width:1; stroke-dasharray:3 3; }
+    .mc-linechart__dot { transition: transform 100ms ease; }
+    .mc-linechart__dot.is-hot { transform: translate(-50%,-50%) scale(1.4); }
+    .mc-linechart__zone { position:absolute; top:0; bottom:0; cursor: crosshair; }
+    .mc-chart-tip { position:absolute; top:6px; transform: translateX(-50%); z-index:25; background: var(--stone-900); color:#fff; border-radius:8px; padding:9px 11px; pointer-events:none; box-shadow:0 8px 20px rgba(10,10,10,0.22); min-width:132px; }
+    .mc-chart-tip.is-start { transform: translateX(-14px); }
+    .mc-chart-tip.is-end { transform: translateX(calc(-100% + 14px)); }
+    .mc-chart-tip.is-center { left:50%; top:auto; bottom: calc(100% + 10px); transform: translateX(-50%); }
+    .mc-chart-tip__title { font:600 11px/1 "Inter"; text-transform:uppercase; letter-spacing:0.06em; color: var(--stone-300); margin-bottom:8px; }
+    .mc-chart-tip__row { display:flex; align-items:center; gap:7px; font:500 14px/1.5 "Inter"; white-space:nowrap; }
+    .mc-chart-tip__row b { margin-left:auto; padding-left:16px; font-weight:700; }
+    .mc-chart-tip__row--muted { color: var(--stone-300); }
+    .mc-chart-tip__sw { width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+
+    /* Snapshot Type — two lenses side by side (bottom of Responses) */
+    .mc-snap-cols { display:grid; grid-template-columns: 1fr 1fr; gap:36px; }
+    .mc-snap-col + .mc-snap-col { border-left:1px solid var(--stone-100); padding-left:36px; }
+    .mc-snap-col__eyebrow { font:600 11px/1 "Inter"; text-transform:uppercase; letter-spacing:0.07em; color: var(--stone-500); }
+    .mc-snap-col .mc-snap-desc { margin-top:8px; }
+
+    /* === Market Profile — Financials === */
+    .mc-fin { display:grid; grid-template-columns: 1.55fr 1fr; gap:20px; align-items:stretch; }
+    .mc-fin__hero { background: linear-gradient(180deg,#F0FAF7,#FFFFFF 72%); border:1px solid #CFE8E1; border-radius:12px; padding:18px 20px; }
+    .mc-fin__herohead { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .mc-fin__herolabel { font:600 11px/1 "Inter"; text-transform:uppercase; letter-spacing:0.07em; color:#047857; }
+    .mc-basis-chip { font:600 12px/1 "Inter"; color:#047857; background:#D1FAE5; border-radius:999px; padding:4px 9px; }
+    .mc-fin__heroval { display:flex; align-items:center; gap:12px; font:700 38px/1 "Inter"; letter-spacing:-0.02em; color: var(--stone-900); margin-top:12px; }
+    .mc-fin__herotrend { margin-top:0; }
+    .mc-fin__bases { display:grid; grid-template-columns: repeat(3,1fr); gap:8px; margin-top:18px; }
+    .mc-fin__base { border:1px solid var(--stone-200); border-radius:8px; padding:9px 10px; background:#fff; cursor:pointer; text-align:left; font-family:inherit; transition:border-color 120ms ease, background 120ms ease; }
+    .mc-fin__base:hover { border-color: var(--stone-400); }
+    .mc-fin__base.is-active { border-color:#047857; background:#ECFDF5; }
+    .mc-fin__base.is-active:hover { border-color:#047857; }
+    .mc-fin__basek { display:block; font:600 11px/1 "Inter"; text-transform:uppercase; letter-spacing:0.05em; color: var(--stone-500); }
+    .mc-fin__base.is-active .mc-fin__basek { color:#047857; }
+    .mc-fin__basev { display:block; font:700 16px/1.1 "Inter"; color: var(--stone-900); margin-top:5px; }
+    .mc-fin__ownercomp { font:400 12px/1.5 "Inter"; color: var(--stone-500); margin:14px 0 0; }
+    .mc-fin__side { display:flex; flex-direction:column; gap:14px; }
+    .mc-fin__stat { border:1px solid var(--stone-200); border-radius:12px; padding:16px 18px; flex:1; display:flex; flex-direction:column; justify-content:center; }
+    .mc-fin__statval { font:700 26px/1 "Inter"; letter-spacing:-0.01em; color: var(--stone-900); margin:8px 0; }
+    .mc-fin__statpill { align-self:flex-start; }
+    .mc-fin__statsub { font:400 14px/1.3 "Inter"; color: var(--stone-500); }
+
+    /* Financials — 3-year trend + forecast chart */
+    .mc-fin__chart { margin-top:20px; padding-top:18px; border-top:1px solid var(--stone-100); }
+    .mc-fin__charthead { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px; }
+    .mc-finchart__plot { display:flex; align-items:flex-end; gap:10px; height:170px; padding:0 4px; }
+    .mc-fingroup { flex:1; display:flex; flex-direction:column; align-items:center; gap:10px; height:100%; cursor:default; }
+    .mc-fingroup__bars { position:relative; display:flex; align-items:flex-end; justify-content:center; gap:7px; width:100%; flex:1; }
+    .mc-finbar { width:28px; max-width:36%; border-radius:5px 5px 0 0; transition: filter 120ms ease; }
+    .mc-finbar--rev { background:#237F86; }
+    .mc-finbar--eb { background:#D9A65A; }
+    .mc-fingroup.is-hot .mc-finbar { filter:brightness(1.08); }
+    .mc-fingroup.is-forecast .mc-finbar--rev { background: repeating-linear-gradient(45deg,#5BA0A6,#5BA0A6 5px,#BBD7DA 5px,#BBD7DA 10px); border:1px dashed #237F86; }
+    .mc-fingroup.is-forecast .mc-finbar--eb { background: repeating-linear-gradient(45deg,#E2BE80,#E2BE80 5px,#F1DDBC 5px,#F1DDBC 10px); border:1px dashed #C7913F; }
+    .mc-fingroup__label { font:500 12px/1.2 "Inter"; color: var(--stone-700); display:flex; flex-direction:column; align-items:center; gap:5px; }
+    .mc-fingroup.is-forecast .mc-fingroup__label { color: var(--stone-500); }
+    .mc-fingroup__tag { font:600 11px/1 "Inter"; text-transform:uppercase; letter-spacing:0.04em; color:#B45309; background:#FEF3C7; border-radius:999px; padding:3px 7px; }
+
+    /* === Market Profile — Owner card === */
+    .mc-owner__intent { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .mc-owner__time { display:inline-flex; align-items:center; gap:5px; font:500 14px/1 "Inter"; color: var(--stone-500); }
+    .mc-owner__time svg { color: var(--stone-400); }
+    .mc-owner__detail { font:400 14px/1.55 "Inter"; color: var(--stone-700); margin:12px 0 0; }
+    .mc-owner__sep { height:1px; background: var(--stone-100); margin:16px 0; }
+    .mc-owner__dephead { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    .mc-owner__help { display:inline-flex; align-items:center; gap:4px; font:500 12px/1 "Inter"; color: var(--stone-500); cursor:help; }
+    .mc-owner__help svg { color: var(--stone-400); }
+    .mc-gauge-row { display:flex; align-items:center; gap:12px; }
+    .mc-gauge-score { font:700 24px/1 "Inter"; letter-spacing:-0.01em; flex-shrink:0; }
+    .mc-gauge-score small { font:600 12px/1 "Inter"; color: var(--stone-400); margin-left:1px; }
+    .mc-gauge-score--low { color:#047857; }
+    .mc-gauge-score--moderate { color:#B45309; }
+    .mc-gauge-score--high { color:#BE123C; }
+    .mc-gauge { position:relative; flex:1; height:9px; border-radius:999px; background: var(--stone-100); overflow:hidden; }
+    .mc-gauge__fill { position:absolute; left:0; top:0; height:100%; border-radius:999px; }
+    .mc-gauge--low .mc-gauge__fill { background:#10B981; }
+    .mc-gauge--moderate .mc-gauge__fill { background:#E0A33E; }
+    .mc-gauge--high .mc-gauge__fill { background:#E11D48; }
+    .mc-gauge__tick { position:absolute; top:0; bottom:0; width:1px; background:#fff; }
+    .mc-gauge-scale { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; font:500 12px/1 "Inter"; color: var(--stone-400); }
+    .mc-owner__band { font:700 12px/1 "Inter"; padding:3px 8px; border-radius:999px; }
+    .mc-owner__band--low { color:#047857; background:#ECFDF5; }
+    .mc-owner__band--moderate { color:#B45309; background:#FEF3C7; }
+    .mc-owner__band--high { color:#BE123C; background:#FFE4E6; }
+    .mc-owner__depnote { font:400 14px/1.55 "Inter"; color: var(--stone-700); margin:12px 0 0; }
+
+    /* === Doctors — owner vs associate production split === */
+    .mc-prodsplit { margin-top:4px; padding:16px 0 4px; border-top:1px solid var(--stone-100); }
+    .mc-prodsplit__top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .mc-prodsplit__risk { display:inline-flex; align-items:center; gap:6px; font:600 14px/1.3 "Inter"; color:#B45309; background:#FEF3C7; border:1px solid #FCD34D; border-radius:999px; padding:5px 11px; }
+    .mc-prodsplit__risk svg { flex-shrink:0; }
+    .mc-prodsplit__bar { display:flex; height:24px; border-radius:7px; overflow:hidden; }
+    .mc-prodsplit__owner { background:#1B6970; }
+    .mc-prodsplit__assoc { background:#9DC3C0; }
+    .mc-prodsplit__legend { display:flex; gap:24px; flex-wrap:wrap; margin-top:12px; }
+    .mc-prodsplit__legend > span { display:inline-flex; align-items:center; gap:7px; font:500 14px/1.3 "Inter"; color: var(--stone-700); }
+    .mc-prodsplit__dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+    .mc-prodsplit__dot--owner { background:#1B6970; }
+    .mc-prodsplit__dot--assoc { background:#9DC3C0; }
+
+    /* === Operations — revenue mix bar === */
+    .mc-revmix { margin-top:20px; padding-top:18px; border-top:1px solid var(--stone-100); }
+    .mc-revmix__bar { display:flex; height:24px; border-radius:7px; overflow:hidden; }
+    .mc-revmix__seg { height:100%; min-width:3px; }
+    .mc-revmix__seg + .mc-revmix__seg { box-shadow: inset 1.5px 0 0 rgba(255,255,255,0.65); }
+    .mc-revmix__legend { display:flex; flex-wrap:wrap; gap:8px 20px; margin-top:12px; }
+    .mc-revmix__item { display:inline-flex; align-items:center; gap:7px; font:500 14px/1.3 "Inter"; color: var(--stone-700); }
+    .mc-revmix__item b { font-weight:700; color: var(--stone-900); }
+    .mc-revmix__dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+
+    /* staff "Total Production" info icon */
+    .mc-staff__grouplabel.mc-hastip { cursor:help; }
+    .mc-staff__info { display:inline-flex; align-items:center; vertical-align:middle; color: var(--stone-400); margin-left:3px; }
+
+    /* === Staff card — collapsible member table === */
+    .mc-acc { display:flex; align-items:center; gap:10px; width:100%; margin-top:4px; padding:12px 14px; border:1px solid var(--stone-200); border-radius:10px; background: var(--stone-50); cursor:pointer; font:600 14px/1 "Inter"; color: var(--stone-700); text-align:left; }
+    .mc-acc:hover { border-color: var(--stone-300); background: var(--stone-100); color: var(--stone-900); }
+    .mc-acc__chev { color: var(--stone-400); transition: transform 150ms ease; flex-shrink:0; }
+    .mc-acc__chev.is-open { transform: rotate(90deg); }
+    .mc-acc__hint { margin-left:auto; font:400 14px/1 "Inter"; color: var(--stone-400); }
+    .mc-staff .mc-staff__tablewrap { margin-top:12px; }
+    .mc-ownertag { display:inline-block; margin-left:8px; font:600 11px/1 "Inter"; text-transform:uppercase; letter-spacing:0.05em; color:#1B6970; background: var(--teal-tint); border-radius:999px; padding:3px 7px; vertical-align:middle; }
+
+    /* buyer-detail trend arrow */
+    .mc-up { display:inline-flex; align-items:center; color:#047857; margin-right:5px; }
   </style>
 </head>
 <body>

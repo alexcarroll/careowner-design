@@ -50,26 +50,80 @@ const MCFilter = ({ label, options }) => (
   </div>
 );
 
-// "Valuation change by period" line chart. SVG fills the card (preserveAspectRatio
-// none → strokes use non-scaling-stroke); dots + labels are HTML so they stay crisp.
-const MCLineChart = ({ periods, series }) => {
-  const N = series.length;
+// "Valuation change by period" line chart. Renders one or more series on a shared
+// scale. SVG fills the card (preserveAspectRatio none → strokes use non-scaling-stroke);
+// dots, guide line, and the hover tooltip are HTML so they stay crisp and interactive.
+const MCLineChart = ({ periods, series, format = fmtMid }) => {
+  const [hov, setHov] = React.useState(null);
+  const N = periods.length;
   const padL = 7, padR = 7, padT = 16, padB = 14;
-  const min = Math.min(...series), max = Math.max(...series), span = (max - min) || 1;
-  const xs = series.map((_, i) => padL + (i * (100 - padL - padR)) / (N - 1));
-  const ys = series.map(v => padT + (1 - (v - min) / span) * (100 - padT - padB));
-  const pts = xs.map((x, i) => `${x.toFixed(2)},${ys[i].toFixed(2)}`).join(" ");
+  const all = series.flatMap(s => s.values);
+  const min = Math.min(...all), max = Math.max(...all), span = (max - min) || 1;
+  const xOf = (i) => padL + (i * (100 - padL - padR)) / (N - 1);
+  const yOf = (v) => padT + (1 - (v - min) / span) * (100 - padT - padB);
   return (
     <div>
-      <div className="mc-linechart">
+      <div className="mc-legend">
+        {series.map(s => <span key={s.name} className="mc-legend__item"><span className="mc-legend__swatch" style={{ background: s.color }} />{s.name}</span>)}
+      </div>
+      <div className="mc-linechart" onMouseLeave={() => setHov(null)}>
         <svg className="mc-linechart__svg" viewBox="0 0 100 100" preserveAspectRatio="none">
           {[20, 40, 60, 80].map(y => <line key={y} className="grid" x1="0" y1={y} x2="100" y2={y} vectorEffect="non-scaling-stroke" />)}
-          <polyline className="line" points={pts} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+          {hov != null && <line className="mc-linechart__guide" x1={xOf(hov)} y1="2" x2={xOf(hov)} y2="98" vectorEffect="non-scaling-stroke" />}
+          {series.map(s => (
+            <polyline key={s.name} points={s.values.map((v, i) => `${xOf(i).toFixed(2)},${yOf(v).toFixed(2)}`).join(" ")}
+              fill="none" stroke={s.color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          ))}
         </svg>
-        {xs.map((x, i) => <span key={i} className="mc-linechart__dot" style={{ left: x + "%", top: ys[i] + "%" }} />)}
+        {series.map(s => s.values.map((v, i) => (
+          <span key={s.name + i} className={"mc-linechart__dot" + (hov === i ? " is-hot" : "")} style={{ left: xOf(i) + "%", top: yOf(v) + "%", background: s.color, boxShadow: "0 0 0 1px " + s.color }} />
+        )))}
+        {periods.map((p, i) => (
+          <div key={p} className="mc-linechart__zone" style={{ left: (i * 100 / N) + "%", width: (100 / N) + "%" }} onMouseEnter={() => setHov(i)} />
+        ))}
+        {hov != null && (
+          <div className={"mc-chart-tip" + (hov === 0 ? " is-start" : hov === N - 1 ? " is-end" : "")} style={{ left: xOf(hov) + "%" }}>
+            <div className="mc-chart-tip__title">{periods[hov]}</div>
+            {series.map(s => (
+              <div key={s.name} className="mc-chart-tip__row"><span className="mc-chart-tip__sw" style={{ background: s.color }} />{s.name}<b>{format(s.values[hov])}</b></div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="mc-linechart__xlabels">
-        {periods.map((p, i) => <span key={p} style={{ left: xs[i] + "%" }}>{p}</span>)}
+        {periods.map((p, i) => <span key={p} style={{ left: xOf(i) + "%" }}>{p}</span>)}
+      </div>
+    </div>
+  );
+};
+
+// 3-year-plus-forecast grouped bar chart (Revenue + Adjusted EBITDA) for the Market
+// Profile Financials section. Forecast year is rendered distinctly; bars carry hover
+// tooltips with the exact figures and implied margin.
+const MCFinChart = ({ series }) => {
+  const [hov, setHov] = React.useState(null);
+  const max = Math.max(...series.map(d => d.revenue)) * 1.12;
+  const h = (v) => (v / max) * 100;
+  return (
+    <div className="mc-finchart" onMouseLeave={() => setHov(null)}>
+      <div className="mc-finchart__plot">
+        {series.map((d, i) => (
+          <div key={d.year} className={"mc-fingroup" + (d.forecast ? " is-forecast" : "") + (hov === i ? " is-hot" : "")} onMouseEnter={() => setHov(i)}>
+            <div className="mc-fingroup__bars">
+              <span className="mc-finbar mc-finbar--rev" style={{ height: h(d.revenue) + "%" }} />
+              <span className="mc-finbar mc-finbar--eb" style={{ height: h(d.ebitda) + "%" }} />
+              {hov === i && (
+                <div className="mc-chart-tip is-center">
+                  <div className="mc-chart-tip__title">{d.year}{d.forecast ? " · Forecast" : ""}</div>
+                  <div className="mc-chart-tip__row"><span className="mc-chart-tip__sw" style={{ background: "#237F86" }} />Revenue<b>${d.revenue.toFixed(2)}M</b></div>
+                  <div className="mc-chart-tip__row"><span className="mc-chart-tip__sw" style={{ background: "#D9A65A" }} />Adj. EBITDA<b>${d.ebitda.toFixed(2)}M</b></div>
+                  <div className="mc-chart-tip__row mc-chart-tip__row--muted">Margin<b>{Math.round((d.ebitda / d.revenue) * 100)}%</b></div>
+                </div>
+              )}
+            </div>
+            <div className="mc-fingroup__label"><span>{d.year}</span><span className="mc-fingroup__tag" style={{ visibility: d.forecast ? "visible" : "hidden" }}>Forecast</span></div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -171,8 +225,6 @@ const MarketCheckView = ({ tab, sub }) => {
 
 const MCResponses = () => {
   const [selected, setSelected] = React.useState(null);
-  const [trendView, setTrendView] = React.useState("consensus");
-  const [snapView, setSnapView] = React.useState("connected");
   const R = MARKET_CHECK_RESPONSES;
   const C = MC_CONSENSUS;
   const mix = MC_BUYER_MIX;
@@ -234,39 +286,25 @@ const MCResponses = () => {
         <div className="mc-kpi">
           <div className="mc-kpi__label">Highest Offer</div>
           <div className="mc-kpi__value">{C.highestOffer}</div>
-          <button className="mc-kpi__link" onClick={() => setSelected(R[0])}>{C.highestOfferBuyer} <Icon name="chevronRight" /></button>
+          <button className="mc-kpi__link" onClick={() => setSelected(R[0])}>View Offer <Icon name="chevronRight" /></button>
         </div>
       </div>
 
-      {/* Trend + Snapshot type */}
-      <div className="mc-cols mc-cols--wide-left" style={{ marginTop: 0 }}>
-        <div className="co-card" style={{ marginTop: 0 }}>
-          <div className="co-card__head">
-            <div>
-              <h3 className="co-card__title">Valuation change by period</h3>
-              <div className="mc-card-sub">Consensus midpoint and full buyer range across market-check periods</div>
-            </div>
-            <div className="mc-seg">
-              <button className={trendView === "consensus" ? "is-active" : ""} onClick={() => setTrendView("consensus")}>Consensus</button>
-              <button className={trendView === "highest" ? "is-active" : ""} onClick={() => setTrendView("highest")}>Highest Offer</button>
-            </div>
+      {/* Valuation change by period — full width, consensus + highest offer on one scale */}
+      <div className="co-card" style={{ marginTop: 0 }}>
+        <div className="co-card__head" style={{ marginBottom: 4 }}>
+          <div>
+            <h3 className="co-card__title">Valuation change by period</h3>
+            <div className="mc-card-sub">Consensus midpoint and highest offer across market-check periods · hover a period for figures</div>
           </div>
-          <MCLineChart periods={MC_VALUATION_TREND.periods} series={trendView === "consensus" ? MC_VALUATION_TREND.consensus : MC_VALUATION_TREND.highestOffer} />
         </div>
-
-        <div className="co-card" style={{ marginTop: 0 }}>
-          <div className="co-card__head" style={{ marginBottom: 12 }}>
-            <div>
-              <h3 className="co-card__title">Results by Snapshot Type</h3>
-              <div className="mc-card-sub">Average median estimated value</div>
-            </div>
-          </div>
-          <div className="mc-seg mc-seg--full">
-            <button className={snapView === "connected" ? "is-active" : ""} onClick={() => setSnapView("connected")}>Connected Data</button>
-            <button className={snapView === "shared" ? "is-active" : ""} onClick={() => setSnapView("shared")}>Amount Shared</button>
-          </div>
-          {snapView === "connected" ? <MCSnapConnected /> : <MCSnapShared />}
-        </div>
+        <MCLineChart
+          periods={MC_VALUATION_TREND.periods}
+          series={[
+            { name: "Consensus midpoint", color: "#237F86", values: MC_VALUATION_TREND.consensus },
+            { name: "Highest offer", color: "#D9A65A", values: MC_VALUATION_TREND.highestOffer },
+          ]}
+        />
       </div>
 
       {/* Buyer mix & valuation ranges */}
@@ -291,9 +329,10 @@ const MCResponses = () => {
                   <div className="mc-mix__label"><span className="mc-mix__label-dot" style={{ background: r.color }} />{r.buyer} ({r.count})</div>
                   <div className="mc-mix__sub">{fmtRange(r.low, r.high)}</div>
                 </div>
-                <div className="mc-mix__lane">
+                <div className="mc-mix__lane mc-hastip">
                   <div className="mc-mix__bar" style={{ left: pct(r.low) + "%", width: (pct(r.high) - pct(r.low)) + "%", background: r.color }} />
                   <div className="mc-mix__dot" style={{ left: pct(mcMid(r)) + "%", border: "3px solid " + r.color }} />
+                  <span className="mc-tip" style={{ left: pct(mcMid(r)) + "%" }}>{r.buyer} · {fmtRange(r.low, r.high)} · mid {fmtMid(mcMid(r))}</span>
                 </div>
               </div>
             ))}
@@ -320,7 +359,7 @@ const MCResponses = () => {
                 <div className="mc-action__rank">{a.rank}</div>
                 <div>
                   <div className="mc-action__title">{a.title}</div>
-                  <div className="mc-action__bar"><span style={{ width: (a.uplift / maxUplift * 100) + "%" }} /></div>
+                  <div className="mc-action__bar mc-hastip"><span style={{ width: (a.uplift / maxUplift * 100) + "%" }} /><span className="mc-tip">+${a.uplift}K uplift · {a.flagged} buyers flagged · {a.effort} effort</span></div>
                   <div className="mc-action__flag">{a.flagged} buyers flagged</div>
                 </div>
                 <div className="mc-action__right">
@@ -346,9 +385,10 @@ const MCResponses = () => {
               return (
                 <div className="mc-driver" key={d.label}>
                   <div className="mc-driver__label">{d.label}</div>
-                  <div className="mc-driver__plot">
+                  <div className="mc-driver__plot mc-hastip">
                     <div className="mc-driver__zero" />
                     <div className={"mc-driver__bar " + (positive ? "mc-driver__bar--pos" : "mc-driver__bar--neg")} style={{ width: w + "%" }} />
+                    <span className="mc-tip">{d.label}: {positive ? "+" : "−"}${Math.abs(d.value)}K</span>
                   </div>
                   <div className={"mc-driver__val " + (positive ? "mc-driver__val--pos" : "mc-driver__val--neg")}>{positive ? "+" : "−"}${Math.abs(d.value)}K</div>
                 </div>
@@ -381,6 +421,26 @@ const MCResponses = () => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Results by Snapshot Type — full width at the bottom; both lenses side by side */}
+      <div className="co-card" style={{ marginTop: 24 }}>
+        <div className="co-card__head" style={{ marginBottom: 4 }}>
+          <div>
+            <h3 className="co-card__title">Results by Snapshot Type</h3>
+            <div className="mc-card-sub">How the data you share moves your estimate — verified vs self-reported, and how much of your profile you include</div>
+          </div>
+        </div>
+        <div className="mc-snap-cols">
+          <div className="mc-snap-col">
+            <div className="mc-snap-col__eyebrow">Connected vs self-reported</div>
+            <MCSnapConnected />
+          </div>
+          <div className="mc-snap-col">
+            <div className="mc-snap-col__eyebrow">Amount shared</div>
+            <MCSnapShared />
+          </div>
+        </div>
       </div>
 
       {selected && <MCResponseSlideout r={selected} onClose={() => setSelected(null)} />}
@@ -606,66 +666,226 @@ const MCEmptyCard = ({ icon, title, blurb, onAdd }) => (
   </div>
 );
 
-// Full-width staffing card: summary metrics + per-staff-member table (mirrors client's vet-staffing sheet).
-const StaffCard = ({ icon, title, anon, data, preview, edit }) => (
-  <div className="co-card mc-staff" style={{ marginTop: 0 }}>
-    <div className="co-card__head">
-      <h3 className="co-card__title"><span className="co-metric__icon" style={{ width: 36, height: 36 }}><Icon name={icon} /></span> {title} <span className="mc-count">{data.count}</span></h3>
-      {edit}
+// Owner-vs-associate production split shown inside the Doctors card. Surfaces the
+// key-person concentration buyers price against, plus how much production walks if
+// the owner exits without a managed transition.
+const MCProdSplit = ({ split }) => (
+  <div className="mc-prodsplit">
+    <div className="co-metric__label" style={{ margin: "0 0 12px" }}>Production by Owner vs. Associates</div>
+    <div className="mc-prodsplit__bar mc-hastip">
+      <span className="mc-prodsplit__owner" style={{ width: split.ownerPct + "%" }} />
+      <span className="mc-prodsplit__assoc" style={{ width: split.associatesPct + "%" }} />
+      <span className="mc-tip">Owner {split.owner} ({split.ownerPct}%) · Associates {split.associates} ({split.associatesPct}%)</span>
     </div>
-    <div className="mc-staff__summary">
-      <div className="mc-staff__stat"><div className="co-metric__label">Full-time</div><div className="co-metric__value">{data.fullTime}</div></div>
-      <div className="mc-staff__stat"><div className="co-metric__label">Part-time</div><div className="co-metric__value">{data.partTime}</div></div>
-      <div className="mc-staff__stat"><div className="co-metric__label">Avg Tenure</div><div className="co-metric__value">{data.avgTenure}</div></div>
-      <div className="mc-staff__divider" />
-      <div className="mc-staff__group">
-        <div className="mc-staff__grouplabel">Total Compensation</div>
-        <div className="mc-staff__pair">
-          <div><div className="mc-staff__sub">TTM YTD</div><div className="mc-staff__num">{data.comp.ttm}</div></div>
-          <div><div className="mc-staff__sub">2025</div><div className="mc-staff__num">{data.comp.y2025}</div></div>
-        </div>
-      </div>
-      <div className="mc-staff__divider" />
-      <div className="mc-staff__group">
-        <div className="mc-staff__grouplabel">Total Production</div>
-        <div className="mc-staff__pair">
-          <div><div className="mc-staff__sub">TTM YTD</div><div className="mc-staff__num">{data.production.ttm}</div></div>
-          <div><div className="mc-staff__sub">2025</div><div className="mc-staff__num">{data.production.y2025}</div></div>
-        </div>
-      </div>
-    </div>
-    <div className="mc-staff__tablewrap">
-      <table className="co-table mc-staff__table">
-        <thead>
-          <tr className="mc-staff__grouprow">
-            <th colSpan={4}></th>
-            <th colSpan={2} className="mc-staff__prodgroup">Production</th>
-          </tr>
-          <tr>
-            <th>Staff Member</th>
-            <th>HR/WK</th>
-            <th>Tenure</th>
-            <th>Compensation</th>
-            <th className="mc-staff__prodcol">2025</th>
-            <th className="mc-staff__prodcol">TTM YTD</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.members.map((m, i) => (
-            <tr key={i}>
-              <td className="co-table__name">{preview ? `${anon} ${i + 1}` : m.name}</td>
-              <td>{m.hrwk}</td>
-              <td>{m.tenure}</td>
-              <td>{m.comp}{m.compYtd && <span className="mc-staff__muted"> ({m.compYtd} YTD)</span>}</td>
-              <td>{m.prod2025}</td>
-              <td>{m.prodTtm}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="mc-prodsplit__legend">
+      <span><span className="mc-prodsplit__dot mc-prodsplit__dot--owner" />Owner · {split.owner} ({split.ownerPct}%)</span>
+      <span><span className="mc-prodsplit__dot mc-prodsplit__dot--assoc" />Associates · {split.associates} ({split.associatesPct}%)</span>
     </div>
   </div>
 );
+
+// Full-width staffing card: summary metrics + a collapsible per-staff-member table
+// (mirrors the client's vet-staffing sheet). The Doctors card additionally shows the
+// owner-vs-associate production split.
+const StaffCard = ({ icon, title, anon, data, preview, edit }) => {
+  const [open, setOpen] = React.useState(false);
+  const noun = title === "Doctors" ? (data.count === 1 ? "doctor" : "doctors") : "team members";
+  return (
+    <div className="co-card mc-staff" style={{ marginTop: 0 }}>
+      <div className="co-card__head">
+        <h3 className="co-card__title"><span className="co-metric__icon" style={{ width: 36, height: 36 }}><Icon name={icon} /></span> {title} <span className="mc-count">{data.count}</span></h3>
+        {edit}
+      </div>
+      <div className="mc-staff__summary">
+        <div className="mc-staff__stat"><div className="co-metric__label">Full-time</div><div className="co-metric__value">{data.fullTime}</div></div>
+        <div className="mc-staff__stat"><div className="co-metric__label">Part-time</div><div className="co-metric__value">{data.partTime}</div></div>
+        <div className="mc-staff__stat"><div className="co-metric__label">Avg Tenure</div><div className="co-metric__value">{data.avgTenure}</div></div>
+        <div className="mc-staff__divider" />
+        <div className="mc-staff__group">
+          <div className="mc-staff__grouplabel">Total Compensation</div>
+          <div className="mc-staff__pair">
+            <div><div className="mc-staff__sub">TTM YTD</div><div className="mc-staff__num">{data.comp.ttm}</div></div>
+            <div><div className="mc-staff__sub">2025</div><div className="mc-staff__num">{data.comp.y2025}</div></div>
+          </div>
+        </div>
+        <div className="mc-staff__divider" />
+        <div className="mc-staff__group">
+          <div className="mc-staff__grouplabel mc-hastip">Total Production <span className="mc-staff__info"><Icon name="info" size={12} /></span><span className="mc-tip">Production numbers are for full-time employees only.</span></div>
+          <div className="mc-staff__pair">
+            <div><div className="mc-staff__sub">TTM YTD</div><div className="mc-staff__num">{data.production.ttm}</div></div>
+            <div><div className="mc-staff__sub">2025</div><div className="mc-staff__num">{data.production.y2025}</div></div>
+          </div>
+        </div>
+      </div>
+
+      {data.split && <MCProdSplit split={data.split} />}
+
+      <button className="mc-acc" onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <Icon name="chevronRight" size={16} className={"mc-acc__chev" + (open ? " is-open" : "")} />
+        <span className="mc-acc__label">{open ? "Hide" : "Show"} all {data.count} {noun}</span>
+        {!open && <span className="mc-acc__hint">hours · tenure · compensation · production</span>}
+      </button>
+
+      {open && (
+        <div className="mc-staff__tablewrap">
+          <table className="co-table mc-staff__table">
+            <thead>
+              <tr className="mc-staff__grouprow">
+                <th colSpan={4}></th>
+                <th colSpan={2} className="mc-staff__prodgroup">Production</th>
+              </tr>
+              <tr>
+                <th>Staff Member</th>
+                <th>HR/WK</th>
+                <th>Tenure</th>
+                <th>Compensation</th>
+                <th className="mc-staff__prodcol">2025</th>
+                <th className="mc-staff__prodcol">TTM YTD</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.members.map((m, i) => (
+                <tr key={i}>
+                  <td className="co-table__name">{preview ? `${anon} ${i + 1}` : m.name}{m.owner && <span className="mc-ownertag">Owner</span>}</td>
+                  <td>{m.hrwk}</td>
+                  <td>{m.tenure}</td>
+                  <td>{m.comp}{m.compYtd && <span className="mc-staff__muted"> ({m.compYtd} YTD)</span>}</td>
+                  <td>{m.prod2025}</td>
+                  <td>{m.prodTtm}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Market Profile — Financials. EBITDA leads as the headline metric buyers price
+// against: it declares its basis (Reported / Adjusted / SDE) and how owner comp was
+// handled. Revenue and EBITDA each carry a direction-of-trend pill, and a 3-year +
+// forecast chart shows the trajectory that drives the rollover upside.
+const MCFinancials = ({ data, edit }) => {
+  const f = data;
+  const bases = [
+    { key: "Reported", label: "Reported EBITDA", value: f.ebitda.reported },
+    { key: "Adjusted", label: "Adjusted EBITDA", value: f.ebitda.value },
+    { key: "SDE", label: "Seller's Discretionary Earnings", value: f.ebitda.sde },
+  ];
+  const [basis, setBasis] = React.useState("Adjusted");
+  const active = bases.find(b => b.key === basis) || bases[1];
+  return (
+    <div className="co-card" style={{ marginTop: 0 }}>
+      <div className="co-card__head">
+        <h3 className="co-card__title"><span className="co-metric__icon co-metric__icon--green" style={{ width: 36, height: 36 }}><Icon name="dollarSign" /></span> Financials <ProvChip p="verified" /></h3>
+        {edit}
+      </div>
+
+      <div className="mc-fin">
+        <div className="mc-fin__hero">
+          <div className="mc-fin__herohead">
+            <span className="mc-fin__herolabel">{active.label}</span>
+            <span className="mc-basis-chip">{basis} basis</span>
+          </div>
+          <div className="mc-fin__heroval">{active.value}<span className="mc-trend mc-trend--up mc-fin__herotrend"><Tri up /> {f.ebitda.deltaLabel}</span></div>
+          <div className="mc-fin__bases">
+            {bases.map(b => (
+              <button key={b.key} type="button" className={"mc-fin__base" + (b.key === basis ? " is-active" : "")} onClick={() => setBasis(b.key)} aria-pressed={b.key === basis}>
+                <span className="mc-fin__basek">{b.key}</span>
+                <span className="mc-fin__basev">{b.value}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mc-fin__ownercomp">{f.ebitda.ownerComp}</p>
+        </div>
+
+        <div className="mc-fin__side">
+          <div className="mc-fin__stat">
+            <span className="co-metric__label">TTM Revenue</span>
+            <span className="mc-fin__statval">{f.revenue.value}</span>
+            <span className="mc-trend mc-trend--up mc-fin__statpill"><Tri up /> {f.revenue.deltaLabel}</span>
+          </div>
+          <div className="mc-fin__stat">
+            <span className="co-metric__label">Adj. EBITDA Margin</span>
+            <span className="mc-fin__statval">{f.ebitda.margin}</span>
+            <span className="mc-fin__statsub">Reported {f.ebitda.reportedMargin}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mc-fin__chart">
+        <div className="mc-fin__charthead">
+          <div className="co-metric__label" style={{ margin: 0 }}>Revenue &amp; Adjusted EBITDA</div>
+          <div className="mc-legend">
+            <span className="mc-legend__item"><span className="mc-legend__swatch" style={{ background: "#237F86" }} />Revenue</span>
+            <span className="mc-legend__item"><span className="mc-legend__swatch" style={{ background: "#D9A65A" }} />Adj. EBITDA</span>
+          </div>
+        </div>
+        <MCFinChart series={f.series} />
+      </div>
+    </div>
+  );
+};
+
+// Operations — revenue mix by service line as a horizontal stacked bar with legend.
+const MCRevenueMix = ({ mix }) => (
+  <div className="mc-revmix">
+    <div className="co-metric__label" style={{ margin: "0 0 12px" }}>Revenue Mix</div>
+    <div className="mc-revmix__bar">
+      {mix.map(m => (
+        <span key={m.label} className="mc-revmix__seg mc-hastip" style={{ width: m.pct + "%", background: m.color }}>
+          <span className="mc-tip">{m.label} · {m.pct}% · {m.value}</span>
+        </span>
+      ))}
+    </div>
+    <div className="mc-revmix__legend">
+      {mix.map(m => (
+        <span key={m.label} className="mc-revmix__item"><span className="mc-revmix__dot" style={{ background: m.color }} />{m.label} <b>{m.pct}%</b></span>
+      ))}
+    </div>
+  </div>
+);
+
+// Market Profile — Owner card (aside). Owner intentions through a transition, plus a
+// key-person Dependency Score out of 100 (higher = worse) measuring how much of total
+// production the owner personally drives vs the associates.
+const MCOwnerCard = ({ data }) => {
+  const dep = data.dependency;
+  const band = dep.score <= 33 ? "low" : dep.score <= 66 ? "moderate" : "high";
+  return (
+    <div className="co-card" style={{ padding: "18px 20px" }}>
+      <div className="co-card__head" style={{ marginBottom: 12 }}>
+        <h3 className="co-card__title"><Icon name="user" />Owner</h3>
+      </div>
+      <div className="co-metric__label" style={{ marginBottom: 8 }}>Owner Intentions</div>
+      <div className="mc-owner__intent">
+        <span className="co-badge co-badge--green">{data.intentions.status}</span>
+        <span className="mc-owner__time"><Icon name="clock" size={12} /> {data.intentions.timeline}</span>
+      </div>
+      <p className="mc-owner__detail">{data.intentions.detail}</p>
+
+      <div className="mc-owner__sep" />
+
+      <div className="mc-owner__dephead">
+        <span className="co-metric__label" style={{ margin: 0 }}>Dependency Score</span>
+        <span className="mc-owner__help" title="Share of total practice production the owner is personally responsible for, vs the associates. Higher = more revenue at risk if the owner leaves after the sale.">
+          <Icon name="helpCircle" size={13} /> {dep.ownerPct}% owner-driven
+        </span>
+      </div>
+      <div className="mc-gauge-row">
+        <span className={"mc-gauge-score mc-gauge-score--" + band}>{dep.score}<small>/100</small></span>
+        <div className={"mc-gauge mc-gauge--" + band}>
+          <span className="mc-gauge__fill" style={{ width: dep.score + "%" }} />
+          <span className="mc-gauge__tick" style={{ left: "33%" }} />
+          <span className="mc-gauge__tick" style={{ left: "66%" }} />
+        </div>
+      </div>
+      <div className="mc-gauge-scale"><span>0 · low risk</span><span className={"mc-owner__band mc-owner__band--" + band}>{dep.band}</span><span>100 · high</span></div>
+      <p className="mc-owner__depnote">{dep.note}</p>
+    </div>
+  );
+};
 
 const MCMarketProfile = ({ completed }) => {
   const [preview, setPreview] = React.useState(false);
@@ -710,19 +930,9 @@ const MCMarketProfile = ({ completed }) => {
         {/* main column */}
         <div className="mc-stack">
           {/* Financials */}
-          {completed ? (
-            <div className="co-card" style={{ marginTop: 0 }}>
-              <div className="co-card__head">
-                <h3 className="co-card__title"><span className="co-metric__icon co-metric__icon--green" style={{ width: 36, height: 36 }}><Icon name="dollarSign" /></span> Financials <ProvChip p="verified" /></h3>
-                {editBtn("financials")}
-              </div>
-              <div className="co-metrics">
-                <Metric noIcon label="TTM Revenue" value="$2.45M" />
-                <Metric noIcon label="EBITDA" value="$612K" />
-                <Metric noIcon label="Margin" value="20%" />
-              </div>
-            </div>
-          ) : <MCEmptyCard icon="dollarSign" title="Financials" blurb="Add your high-level financials. You can share ranges instead of exact figures." onAdd={() => openEdit("financials")} />}
+          {completed
+            ? <MCFinancials data={MARKET_PROFILE_FINANCIALS} edit={editBtn("financials")} />
+            : <MCEmptyCard icon="dollarSign" title="Financials" blurb="Add your high-level financials. You can share ranges instead of exact figures." onAdd={() => openEdit("financials")} />}
 
           {/* Operations */}
           {completed ? (
@@ -736,6 +946,7 @@ const MCMarketProfile = ({ completed }) => {
                 <Metric noIcon label="Revenue / Visit" value="$456" />
                 <Metric noIcon label="Revenue / Doctor" value="$612K" />
               </div>
+              <MCRevenueMix mix={OPERATIONS_REVENUE_MIX} />
             </div>
           ) : <MCEmptyCard icon="activity" title="Operations" blurb="Add your operational metrics as ranges to give buyers a sense of scale." onAdd={() => openEdit("operations")} />}
 
@@ -757,10 +968,13 @@ const MCMarketProfile = ({ completed }) => {
                 {editBtn("facilities")}
               </div>
               <div className="co-deals">
+                <div><div className="co-deal__label">Occupancy</div><div className="co-deal__value">{PRACTICE.facilities.tenure}</div></div>
                 <div><div className="co-deal__label">Exam Rooms</div><div className="co-deal__value">{PRACTICE.facilities.examRooms}</div></div>
                 <div><div className="co-deal__label">Building Size</div><div className="co-deal__value">{PRACTICE.facilities.buildingSize}</div></div>
-                <div><div className="co-deal__label">Monthly Rent</div><div className="co-deal__value">{preview ? "Disclosed in diligence" : PRACTICE.facilities.monthlyRent}</div></div>
-                <div><div className="co-deal__label">Lease Expires</div><div className="co-deal__value">{PRACTICE.facilities.leaseExpires}</div></div>
+                <div><div className="co-deal__label">Actual Rent</div><div className="co-deal__value">{preview ? "Disclosed in diligence" : PRACTICE.facilities.rent}</div></div>
+                <div><div className="co-deal__label">Related Party</div><div className="co-deal__value">{PRACTICE.facilities.relatedParty}</div></div>
+                <div><div className="co-deal__label">Remaining Term</div><div className="co-deal__value">{PRACTICE.facilities.remainingTerm}</div></div>
+                <div><div className="co-deal__label">Renewal Options</div><div className="co-deal__value">{PRACTICE.facilities.renewalOptions}</div></div>
               </div>
             </div>
           ) : <MCEmptyCard icon="building" title="Facilities" blurb="Add your space and facilities details (exam rooms, square footage, lease)." onAdd={() => openEdit("facilities")} />}
@@ -800,6 +1014,8 @@ const MCMarketProfile = ({ completed }) => {
             <h4 className="co-preview__title">About Your Market Profile</h4>
             <p className="co-preview__desc" style={{ margin: 0 }}>This page contains all the details and metrics that are available to share with buyers in the market when you request a Market Check. When you send a new request for a Market Check, you will be able to select which fields you wish to include or hide.</p>
           </div>
+
+          <MCOwnerCard data={MARKET_PROFILE_OWNER} />
 
           <div className="co-card" style={{ padding: "18px 20px" }}>
             <div className="co-card__head" style={{ marginBottom: 12 }}>
@@ -1189,7 +1405,7 @@ const MCBuyerDetail = ({ req, onBack }) => {
           {g.items.map((m, i) => (
             <div className="mc-snap-metric" key={i}>
               <span className="mc-snap-metric__k">{m.label}</span>
-              <span className="mc-snap-metric__v">{m.value} {m.provenance ? <ProvChip p={m.provenance} /> : null}</span>
+              <span className="mc-snap-metric__v">{m.up && <span className="mc-up"><Tri up /></span>}{m.value} {m.provenance ? <ProvChip p={m.provenance} /> : null}</span>
             </div>
           ))}
         </div>
