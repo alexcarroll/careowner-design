@@ -4,9 +4,9 @@ This file is the source of truth for design conventions in this project. All HTM
 
 ## Typography
 
-### The 14px floor (enforced)
+### The 14px floor (preferred default)
 
-**14px is the minimum readable size for any text the user is meant to read.** This applies inside:
+**14px is the preferred size for body text the user is meant to read.** Reach for it first inside:
 
 - Cards and panels (descriptions, body copy, supporting text)
 - Table cells and list items
@@ -16,7 +16,7 @@ This file is the source of truth for design conventions in this project. All HTM
 - Activity feeds, notifications, message previews
 - Sidebar nav labels
 
-There is **no inline `font-size: 12px` or `font-size: 13px`** allowed for any of the above. If you find yourself wanting something smaller "to fit," fix the layout — don't shrink the type.
+Prefer 14px for the above and reach for it first. **12px (or smaller) is acceptable when it's genuinely the right call** for fit or density — use judgment rather than treating 14px as an inviolable floor. Still, don't shrink type purely to paper over a layout that could be fixed instead.
 
 ### When 12px is allowed (rare)
 
@@ -29,7 +29,7 @@ There is **no inline `font-size: 12px` or `font-size: 13px`** allowed for any of
 - Monospaced token names and hex codes in reference tables
 - Table column headers (uppercase eyebrows)
 
-If a piece of 12px text would be read as a sentence, it's wrong — promote it to 14px.
+As a rule of thumb, sentence-length copy reads best at 14px — but a deliberately compact 12px note (e.g. a fine-print adjustment caption) is fine when the context calls for it.
 
 ### Tokens
 
