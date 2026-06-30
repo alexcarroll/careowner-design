@@ -1,23 +1,154 @@
-// Find Buyers view — sortable, selectable table with filter chips
+// Find Buyers view — sortable, selectable table with dropdown filters.
+
+// US states for the Location → State filter. value = postal abbr (matches the
+// trailing ", XX" in each buyer's location string), label = full name.
+const BF_STATES = [
+  ["AL", "Alabama"], ["AK", "Alaska"], ["AZ", "Arizona"], ["AR", "Arkansas"], ["CA", "California"],
+  ["CO", "Colorado"], ["CT", "Connecticut"], ["DE", "Delaware"], ["FL", "Florida"], ["GA", "Georgia"],
+  ["HI", "Hawaii"], ["ID", "Idaho"], ["IL", "Illinois"], ["IN", "Indiana"], ["IA", "Iowa"],
+  ["KS", "Kansas"], ["KY", "Kentucky"], ["LA", "Louisiana"], ["ME", "Maine"], ["MD", "Maryland"],
+  ["MA", "Massachusetts"], ["MI", "Michigan"], ["MN", "Minnesota"], ["MS", "Mississippi"], ["MO", "Missouri"],
+  ["MT", "Montana"], ["NE", "Nebraska"], ["NV", "Nevada"], ["NH", "New Hampshire"], ["NJ", "New Jersey"],
+  ["NM", "New Mexico"], ["NY", "New York"], ["NC", "North Carolina"], ["ND", "North Dakota"], ["OH", "Ohio"],
+  ["OK", "Oklahoma"], ["OR", "Oregon"], ["PA", "Pennsylvania"], ["RI", "Rhode Island"], ["SC", "South Carolina"],
+  ["SD", "South Dakota"], ["TN", "Tennessee"], ["TX", "Texas"], ["UT", "Utah"], ["VT", "Vermont"],
+  ["VA", "Virginia"], ["WA", "Washington"], ["WV", "West Virginia"], ["WI", "Wisconsin"], ["WY", "Wyoming"],
+];
+const bfStateName = (ab) => { const s = BF_STATES.find(x => x[0] === ab); return s ? s[1] : ab; };
+
+// Generic single-select dropdown (Type, Interest).
+const BfSelect = ({ label, value, display, options, onSelect }) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="bf-field">
+      <span className="bf-label">{label}</span>
+      <div className="bf-wrap">
+        <button className={`bf-dd ${open ? "is-open" : ""}`} onClick={() => setOpen(o => !o)}>
+          <span className="bf-dd__val">{display}</span>
+          <Icon name="chevronDown" size={14} className="bf-dd__chev" />
+        </button>
+        {open && (
+          <>
+            <div className="bf-backdrop" onClick={() => setOpen(false)} />
+            <div className="bf-pop">
+              {options.map(o => (
+                <button key={o.value} className={`bf-pop__item ${o.value === value ? "is-active" : ""}`} onClick={() => { onSelect(o.value); setOpen(false); }}>
+                  <span>{o.label}</span>
+                  {o.value === value && <Icon name="check" size={14} />}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Location dropdown — larger card with State / Proximity radios.
+const BfLocation = ({ value, onApply, onReset }) => {
+  const [open, setOpen] = React.useState(false);
+  const [mode, setMode] = React.useState(null);   // null | "state" | "proximity"
+  const [stateVal, setStateVal] = React.useState("");
+  const [miles, setMiles] = React.useState("");
+  const [place, setPlace] = React.useState("");
+
+  // Per spec: each time the card opens, no radio is selected and both field
+  // groups are visible but disabled until a radio is chosen.
+  const openPop = () => { setMode(null); setStateVal(""); setMiles(""); setPlace(""); setOpen(true); };
+
+  const display = !value ? "All locations"
+    : value.mode === "state" ? bfStateName(value.state)
+    : `Within ${value.miles || "?"} mi of ${value.place || "?"}`;
+
+  const save = () => {
+    if (mode === "state" && stateVal) onApply({ mode: "state", state: stateVal });
+    else if (mode === "proximity" && place) onApply({ mode: "proximity", miles, place });
+    else onApply(null);
+    setOpen(false);
+  };
+  const reset = () => { onReset(); setOpen(false); };
+
+  return (
+    <div className="bf-field">
+      <span className="bf-label">Location</span>
+      <div className="bf-wrap">
+        <button className={`bf-dd ${open ? "is-open" : ""} ${value ? "is-set" : ""}`} onClick={() => (open ? setOpen(false) : openPop())}>
+          <span className="bf-dd__val">{display}</span>
+          <Icon name="chevronDown" size={14} className="bf-dd__chev" />
+        </button>
+        {open && (
+          <>
+            <div className="bf-backdrop" onClick={() => setOpen(false)} />
+            <div className="bf-pop bf-locpop">
+              <label className={`bf-radio ${mode === "state" ? "is-on" : ""}`}>
+                <input type="radio" name="bf-loc-mode" checked={mode === "state"} onChange={() => setMode("state")} />
+                <span className="bf-radio__title">State</span>
+              </label>
+              <div className={`bf-locrow ${mode === "state" ? "" : "is-disabled"}`}>
+                <select className="bf-input" value={stateVal} disabled={mode !== "state"} onChange={e => setStateVal(e.target.value)}>
+                  <option value="">Select a state…</option>
+                  {BF_STATES.map(([ab, nm]) => <option key={ab} value={ab}>{nm}</option>)}
+                </select>
+              </div>
+
+              <label className={`bf-radio ${mode === "proximity" ? "is-on" : ""}`}>
+                <input type="radio" name="bf-loc-mode" checked={mode === "proximity"} onChange={() => setMode("proximity")} />
+                <span className="bf-radio__title">Proximity</span>
+              </label>
+              <div className={`bf-locrow bf-locrow--prox ${mode === "proximity" ? "" : "is-disabled"}`}>
+                <span className="bf-prox__lead">Within</span>
+                <input className="bf-input bf-input--mi" type="number" min="1" placeholder="25" value={miles} disabled={mode !== "proximity"} onChange={e => setMiles(e.target.value)} />
+                <span className="bf-prox__lead">miles of</span>
+                <input className="bf-input" placeholder="City or ZIP code" value={place} disabled={mode !== "proximity"} onChange={e => setPlace(e.target.value)} />
+              </div>
+
+              <div className="bf-locfoot">
+                <button className="bf-btn-reset" onClick={reset}>Reset</button>
+                <button className="co-btn-solid bf-btn-save" onClick={save}>Save</button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const InterestBadge = ({ level }) => {
+  if (!level) return <span style={{ color: "var(--stone-400)" }}>—</span>;
+  const cls = level === "High" ? "co-badge--green" : level === "Medium" ? "co-badge--amber" : "co-badge--gray";
+  return <span className={`co-badge ${cls}`}>{level}</span>;
+};
 
 const BuyersView = ({ section, onSection, onEdit }) => {
-  const [filter, setFilter] = React.useState("all");
   const [q, setQ] = React.useState("");
+  const [typeFilter, setTypeFilter] = React.useState("all");
+  const [interestFilter, setInterestFilter] = React.useState("all");
+  const [loc, setLoc] = React.useState(null); // null | {mode:"state",state} | {mode:"proximity",miles,place}
   const [sort, setSort] = React.useState({ key: "lastActive", dir: "asc" });
   const [selected, setSelected] = React.useState(new Set());
   const [detail, setDetail] = React.useState(null);
 
   const filtered = React.useMemo(() => {
     let list = BUYERS.slice();
-    if (filter !== "all") list = list.filter(b => b.interest.toLowerCase() === filter);
-    if (q) list = list.filter(b => (b.name + b.type + b.location).toLowerCase().includes(q.toLowerCase()));
+    if (typeFilter !== "all") list = list.filter(b => b.type === typeFilter);
+    if (interestFilter !== "all") list = list.filter(b => b.interest === interestFilter);
+    if (loc) {
+      if (loc.mode === "state" && loc.state) list = list.filter(b => b.location.endsWith(", " + loc.state));
+      else if (loc.mode === "proximity" && loc.place) {
+        const p = loc.place.trim().toLowerCase();
+        list = list.filter(b => b.location.toLowerCase().includes(p));
+      }
+    }
+    if (q) list = list.filter(b => (b.name + (b.company || "") + b.type + b.location).toLowerCase().includes(q.toLowerCase()));
     list.sort((a, b) => {
       const av = a[sort.key], bv = b[sort.key];
       const cmp = typeof av === "number" ? av - bv : String(av).localeCompare(String(bv));
       return sort.dir === "asc" ? cmp : -cmp;
     });
     return list;
-  }, [filter, q, sort]);
+  }, [typeFilter, interestFilter, loc, q, sort]);
 
   const toggleSort = (key) => setSort(s => s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
   const toggleRow = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -34,6 +165,26 @@ const BuyersView = ({ section, onSection, onEdit }) => {
     paused: <span className="co-badge co-badge--gray">Paused</span>,
   }[s]);
 
+  const typeOptions = [{ value: "all", label: "All types" }].concat(BUYER_TYPES.map(t => ({ value: t, label: t })));
+  const interestOptions = [
+    { value: "all", label: "All levels" },
+    { value: "High", label: "High" },
+    { value: "Medium", label: "Medium" },
+    { value: "Low", label: "Low" },
+  ];
+
+  // Clicking a buyer row opens the full-page Buyer Profile (replaces the old detail modal).
+  if (detail) {
+    return (
+      <BuyerProfileView
+        buyer={detail}
+        onBack={() => setDetail(null)}
+        onMessage={() => onEdit({ title: `Message ${detail.name}`, kind: "message-buyer" })}
+        onAsk={() => onEdit({ title: `Ask ${detail.name} a Question`, kind: "ask-question" })}
+      />
+    );
+  }
+
   return (
     <>
       <SubHeader crumbs={["Find Buyers"]} title="Find Buyers" actions={<>
@@ -42,27 +193,24 @@ const BuyersView = ({ section, onSection, onEdit }) => {
       </>} />
       <div className="co-body">
         <div style={{ gridColumn: "2 / -1" }}>
-          <div className="co-card" style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ padding: 16, borderBottom: "1px solid var(--stone-200)" }}>
-              <div className="co-filters">
-                <div className="co-search">
-                  <Icon name="search" />
-                  <input placeholder="Search buyers by name, type, or location…" value={q} onChange={e => setQ(e.target.value)} />
-                </div>
-                {["all", "high", "medium", "low"].map(f => (
-                  <button key={f} className={`co-chip ${filter === f ? "is-active" : ""}`} onClick={() => setFilter(f)}>
-                    {f === "all" ? "All Interest" : f.charAt(0).toUpperCase() + f.slice(1) + " Interest"}
-                  </button>
-                ))}
-                {selected.size > 0 && (
-                  <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ font: "500 13px/1 Inter", color: "var(--stone-500)" }}>{selected.size} selected</span>
-                    <button className="co-btn co-btn--ghost"><Icon name="message" size={14} /> Message</button>
-                    <button className="co-btn co-btn--primary"><Icon name="send" size={14} /> Invite to Review</button>
-                  </div>
-                )}
-              </div>
+          <div className="bf-filters">
+            <div className="co-search bf-search">
+              <Icon name="search" />
+              <input placeholder="Search buyers…" value={q} onChange={e => setQ(e.target.value)} />
             </div>
+            <BfSelect label="Type" value={typeFilter} display={typeFilter === "all" ? "All types" : typeFilter} options={typeOptions} onSelect={setTypeFilter} />
+            <BfSelect label="Interest" value={interestFilter} display={interestFilter === "all" ? "All levels" : interestFilter} options={interestOptions} onSelect={setInterestFilter} />
+            <BfLocation value={loc} onApply={setLoc} onReset={() => setLoc(null)} />
+            {selected.size > 0 && (
+              <div className="bf-bulk">
+                <span className="bf-bulk__count">{selected.size} selected</span>
+                <button className="co-btn co-btn--ghost"><Icon name="message" size={14} /> Message</button>
+                <button className="co-btn co-btn--primary"><Icon name="send" size={14} /> Invite to Review</button>
+              </div>
+            )}
+          </div>
+
+          <div className="co-card" style={{ padding: 0, overflow: "hidden" }}>
             <table className="co-table">
               <thead>
                 <tr>
@@ -70,8 +218,8 @@ const BuyersView = ({ section, onSection, onEdit }) => {
                   <SortHead k="name">Buyer</SortHead>
                   <SortHead k="type">Type</SortHead>
                   <SortHead k="location">Location</SortHead>
-                  <SortHead k="funds">Funds</SortHead>
-                  <SortHead k="offers">Offers</SortHead>
+                  <SortHead k="practices">Practices</SortHead>
+                  <SortHead k="interest">Interest</SortHead>
                   <SortHead k="status">Status</SortHead>
                   <SortHead k="lastActive">Last Active</SortHead>
                 </tr>
@@ -82,12 +230,12 @@ const BuyersView = ({ section, onSection, onEdit }) => {
                     <td onClick={e => e.stopPropagation()}><input type="checkbox" className="co-table__cb" checked={selected.has(b.id)} onChange={() => toggleRow(b.id)} /></td>
                     <td>
                       <div className="co-table__name">{b.name}</div>
-                      <div className="co-table__sub">Interest: {b.interest}</div>
+                      <div className="co-table__sub">{b.company || "Individual Buyer"}</div>
                     </td>
                     <td>{b.type}</td>
                     <td>{b.location}</td>
-                    <td>{b.funds}</td>
-                    <td>{b.offers}</td>
+                    <td>{b.practices}</td>
+                    <td><InterestBadge level={b.interest} /></td>
                     <td><BadgeStatus s={b.status} /></td>
                     <td style={{ color: "var(--stone-500)" }}>{b.lastActive}</td>
                   </tr>
@@ -98,26 +246,6 @@ const BuyersView = ({ section, onSection, onEdit }) => {
           </div>
         </div>
       </div>
-      {detail && (
-        <Modal title={detail.name} onClose={() => setDetail(null)} footer={<>
-          <button className="co-btn co-btn--ghost" onClick={() => setDetail(null)}>Close</button>
-          <button className="co-btn co-btn--primary" onClick={() => { setDetail(null); onEdit({ title: `Message ${detail.name}`, kind: "message-buyer" }); }}>
-            <Icon name="message" size={14} /> Message Buyer
-          </button>
-        </>}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <div><div className="co-deal__label">Type</div><div className="co-deal__value">{detail.type}</div></div>
-            <div><div className="co-deal__label">Location</div><div className="co-deal__value">{detail.location}</div></div>
-            <div><div className="co-deal__label">Funds Available</div><div className="co-deal__value">{detail.funds}</div></div>
-            <div><div className="co-deal__label">Interest Level</div><div className="co-deal__value">{detail.interest}</div></div>
-            <div><div className="co-deal__label">Offers Submitted</div><div className="co-deal__value">{detail.offers}</div></div>
-            <div><div className="co-deal__label">Last Active</div><div className="co-deal__value">{detail.lastActive}</div></div>
-          </div>
-          <p style={{ marginTop: 16, font: "400 14px/1.5 Inter", color: "var(--stone-700)" }}>
-            {detail.type.includes("Corporate") ? "Multi-location operator actively consolidating Midwest small-animal practices. Strong preference for joint-venture structures with 2–3 year seller transitions." : "Verified professional with completed CareOwner buyer onboarding. Pre-approved for stated range."}
-          </p>
-        </Modal>
-      )}
     </>
   );
 };

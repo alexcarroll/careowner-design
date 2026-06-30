@@ -1258,7 +1258,7 @@ const NewRequestFlow = () => {
                           <span className="mc-buyer__check"><Icon name="check" size={12} /></span>
                           <span style={{ flex: 1, minWidth: 0 }}>
                             <span className="mc-buyer__name">{b.type}</span>
-                            <span className="mc-buyer__meta">{b.location.split(",").pop().trim()} focus · {b.funds} · {b.interest} interest</span>
+                            <span className="mc-buyer__meta">{b.location.split(",").pop().trim()} focus · {b.funds} · {b.interest ? b.interest + " interest" : "interest TBD"}</span>
                           </span>
                         </button>
                       );

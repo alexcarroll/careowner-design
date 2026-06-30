@@ -61,15 +61,22 @@ const PRACTICE = {
   },
 };
 
+// Canonical buyer types — the same set surfaced on the Buyer Profile type badge
+// and in the Find Buyers "Type" filter. Keep table + profile + filter in sync.
+const BUYER_TYPES = ["Individual Buyer", "Acquisition Group", "Corporate Group", "Private Equity", "Regional Group"];
+
+// Each buyer is a contact person. `company` is the organization they buy for,
+// or null for an individual buyer. `practices` = practices in their network /
+// that they own. `interest` may be "" when a buyer hasn't expressed interest yet.
 const BUYERS = [
-  { id: 1, name: "Paws & Whiskers Group", type: "Corporate Group", location: "Chicago, IL", offers: 3, funds: "$5M–$15M", interest: "High", lastActive: "2h ago", status: "active" },
-  { id: 2, name: "Dr. Marcus Chen", type: "Individual Vet", location: "Madison, WI", offers: 1, funds: "$1M–$3M", interest: "Medium", lastActive: "1d ago", status: "active" },
-  { id: 3, name: "Heartland Veterinary Partners", type: "Regional PE", location: "Indianapolis, IN", offers: 0, funds: "$10M+", interest: "High", lastActive: "3h ago", status: "verified" },
-  { id: 4, name: "Dr. Priya Natarajan", type: "Individual Vet", location: "Milwaukee, WI", offers: 2, funds: "$500K–$2M", interest: "Low", lastActive: "1w ago", status: "paused" },
-  { id: 5, name: "Midwest Animal Holdings", type: "Corporate Group", location: "Minneapolis, MN", offers: 1, funds: "$8M–$25M", interest: "High", lastActive: "5h ago", status: "active" },
-  { id: 6, name: "Dr. James Okafor", type: "Individual Vet", location: "Lakeside, IL", offers: 0, funds: "$800K–$1.5M", interest: "Medium", lastActive: "4d ago", status: "verified" },
-  { id: 7, name: "Northwoods Pet Partners", type: "Regional Group", location: "Green Bay, WI", offers: 2, funds: "$3M–$8M", interest: "High", lastActive: "6h ago", status: "active" },
-  { id: 8, name: "Harbor Ridge Capital", type: "PE Firm", location: "Boston, MA", offers: 0, funds: "$20M+", interest: "Medium", lastActive: "2d ago", status: "active" },
+  { id: 1, name: "Sarah Whitman",     company: "Paws & Whiskers Group",        type: "Corporate Group",   location: "Chicago, IL",      practices: 24, funds: "$5M–$15M",   interest: "High",   lastActive: "2h ago", status: "active" },
+  { id: 2, name: "Dr. Marcus Chen",   company: null,                           type: "Individual Buyer",  location: "Madison, WI",      practices: 1,  funds: "$1M–$3M",    interest: "Medium", lastActive: "1d ago", status: "active" },
+  { id: 3, name: "Michael Brennan",   company: "Heartland Veterinary Partners",type: "Private Equity",    location: "Indianapolis, IN", practices: 38, funds: "$10M+",      interest: "High",   lastActive: "3h ago", status: "verified" },
+  { id: 4, name: "Dr. Priya Natarajan", company: null,                         type: "Individual Buyer",  location: "Milwaukee, WI",    practices: 0,  funds: "$500K–$2M",  interest: "",       lastActive: "1w ago", status: "paused" },
+  { id: 5, name: "Karen Lindqvist",   company: "Midwest Animal Holdings",      type: "Corporate Group",   location: "Minneapolis, MN",  practices: 15, funds: "$8M–$25M",   interest: "High",   lastActive: "5h ago", status: "active" },
+  { id: 6, name: "Dr. James Okafor",  company: null,                           type: "Individual Buyer",  location: "Lakeside, IL",     practices: 1,  funds: "$800K–$1.5M",interest: "Medium", lastActive: "4d ago", status: "verified" },
+  { id: 7, name: "Daniel Roth",       company: "Northwoods Pet Partners",      type: "Regional Group",    location: "Green Bay, WI",    practices: 9,  funds: "$3M–$8M",    interest: "",       lastActive: "6h ago", status: "active" },
+  { id: 8, name: "Rachel Okafor",     company: "Harbor Ridge Capital",         type: "Acquisition Group", location: "Boston, MA",       practices: 52, funds: "$20M+",      interest: "",       lastActive: "2d ago", status: "active" },
 ];
 
 const INQUIRIES = [
@@ -474,6 +481,7 @@ window.MARKET_PROFILE_OWNER = MARKET_PROFILE_OWNER;
 window.OPERATIONS_REVENUE_MIX = OPERATIONS_REVENUE_MIX;
 window.PRACTICE = PRACTICE;
 window.BUYERS = BUYERS;
+window.BUYER_TYPES = BUYER_TYPES;
 window.MODELED_ESTIMATE = MODELED_ESTIMATE;
 window.MARKET_METRICS = MARKET_METRICS;
 window.MARKET_CHECK_RESPONSES = MARKET_CHECK_RESPONSES;

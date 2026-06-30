@@ -148,6 +148,12 @@ const EditModal = ({ modal, onClose, onSubmit }) => {
         <div className="co-field"><label>Avg Experience</label><input defaultValue="13 years" /></div>
       </>
     );
+    if (modal.kind === "ask-question") return (
+      <>
+        <div className="co-field"><label>Category</label><select defaultValue="General"><option>General</option><option>Offer/Deal</option><option>Operations</option></select></div>
+        <div className="co-field"><label>Your Question</label><textarea placeholder="Type your question for this buyer…" /></div>
+      </>
+    );
     if (modal.kind === "reply" || modal.kind === "message-buyer") return (
       <>
         <div className="co-field"><label>Subject</label><input defaultValue={modal.title} /></div>
