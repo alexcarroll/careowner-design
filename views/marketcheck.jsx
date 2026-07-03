@@ -847,12 +847,26 @@ const MCRevenueMix = ({ mix }) => (
   </div>
 );
 
-// Market Profile — Owner card (aside). Owner intentions through a transition, plus a
-// key-person Dependency Score out of 100 (higher = worse) measuring how much of total
-// production the owner personally drives vs the associates.
+// Circular owner-dependency gauge: the owner's share of clinical production, drawn
+// as a donut arc (higher % = more key-person risk for a buyer).
+const MCDepRing = ({ pct, band }) => {
+  const r = 30, c = 2 * Math.PI * r;
+  return (
+    <svg className="mc-depring" viewBox="0 0 72 72" width="72" height="72" role="img" aria-label={`Owner is responsible for ${pct}% of clinical production`}>
+      <circle className="mc-depring__track" cx="36" cy="36" r={r} fill="none" strokeWidth="7" />
+      <circle className={"mc-depring__arc--" + band} cx="36" cy="36" r={r} fill="none" strokeWidth="7" strokeLinecap="round"
+        strokeDasharray={`${(pct / 100) * c} ${c}`} transform="rotate(-90 36 36)" />
+      <text className="mc-depring__num" x="36" y="37" textAnchor="middle" dominantBaseline="middle">{pct}%</text>
+    </svg>
+  );
+};
+
+// Market Profile — Owner card (aside). Owner intentions through a transition, plus
+// owner dependency: the share of clinical production the owner personally drives
+// (higher = worse — buyers want less reliance on an owner who will eventually leave).
 const MCOwnerCard = ({ data }) => {
   const dep = data.dependency;
-  const band = dep.score <= 33 ? "low" : dep.score <= 66 ? "moderate" : "high";
+  const band = (dep.band || "Moderate").toLowerCase();
   return (
     <div className="co-card" style={{ padding: "18px 20px" }}>
       <div className="co-card__head" style={{ marginBottom: 12 }}>
@@ -868,21 +882,97 @@ const MCOwnerCard = ({ data }) => {
       <div className="mc-owner__sep" />
 
       <div className="mc-owner__dephead">
-        <span className="co-metric__label" style={{ margin: 0 }}>Dependency Score</span>
-        <span className="mc-owner__help" title="Share of total practice production the owner is personally responsible for, vs the associates. Higher = more revenue at risk if the owner leaves after the sale.">
-          <Icon name="helpCircle" size={13} /> {dep.ownerPct}% owner-driven
-        </span>
+        <span className="co-metric__label" style={{ margin: 0 }}>Owner Dependency</span>
+        <span className={"mc-owner__band mc-owner__band--" + band}>{dep.band}</span>
       </div>
-      <div className="mc-gauge-row">
-        <span className={"mc-gauge-score mc-gauge-score--" + band}>{dep.score}<small>/100</small></span>
-        <div className={"mc-gauge mc-gauge--" + band}>
-          <span className="mc-gauge__fill" style={{ width: dep.score + "%" }} />
-          <span className="mc-gauge__tick" style={{ left: "33%" }} />
-          <span className="mc-gauge__tick" style={{ left: "66%" }} />
+      <div className="mc-depring-row">
+        <MCDepRing pct={dep.ownerPct} band={band} />
+        <p className="mc-depring-row__text">Owner is responsible for <b>~{dep.ownerPct}% of clinical production</b>.</p>
+      </div>
+    </div>
+  );
+};
+
+// ─── Buyer sharing defaults (aside card + edit modal) ──────────────────────────
+// Per-metric visibility defaults applied to every new Market Check request.
+// Numeric metrics can be shared exactly, as a range, or hidden; categorical
+// metrics are simply shown or hidden.
+
+const MC_SHARE_GROUP_LABELS = { "Financials": "Financial data", "Production": "Production data", "Practice Attributes": "Practice attributes", "People": "People", "Facilities": "Facility" };
+const MC_SHARE_3OPT = ["revenue", "ebitda", "adjMargin", "sales", "prodByDoctor"];
+const MC_SEG_LABELS = { exact: "Exact", range: "Range", show: "Show", hide: "Hide" };
+const shareOpts = (id) => MC_SHARE_3OPT.includes(id) ? ["exact", "range", "hide"] : ["show", "hide"];
+
+const MC_SHARE_DEFAULTS = {
+  feed: "snapshot",
+  metrics: { revenue: "exact", ebitda: "range", adjMargin: "exact", sales: "exact", prodByDoctor: "exact", dvm: "show", locationType: "show", geo: "show", pricing: "show", turnover: "hide", facilities: "show" },
+};
+
+const MCShareDefaultsModal = ({ value, onSave, onClose }) => {
+  const [feed, setFeed] = React.useState(value.feed);
+  const [sel, setSel] = React.useState(value.metrics);
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const setMetric = (id, v) => setSel(s => ({ ...s, [id]: v }));
+
+  return (
+    <div className="co-modal-backdrop" onClick={onClose}>
+      <div className="co-modal mc-share-modal" onClick={e => e.stopPropagation()}>
+        <div className="co-modal__header mc-share-modal__header">
+          <div>
+            <h2>Set Buyer Visibility Defaults</h2>
+            <p>Set the defaults for what a buyer sees when you send a new request for a Market Check. You will still be able to adjust these settings for each request you send.</p>
+          </div>
+          <button className="co-modal__close" onClick={onClose}><Icon name="x" size={18} /></button>
+        </div>
+        <div className="co-modal__body">
+          <h3 className="mc-share__sectitle">Data sharing</h3>
+          <p className="mc-share__secdesc">Send your current metrics at the time of sending or allow the buyer access to a live updating feed of your data until their request expires.</p>
+          <div className="mc-radio-cards">
+            <button type="button" className={`mc-radio-card mc-radio-card--slim ${feed === "snapshot" ? "is-selected" : ""}`} onClick={() => setFeed("snapshot")}>
+              <span className="mc-radio-card__radio" />
+              <span><span className="mc-radio-card__title">Current snapshot only</span></span>
+            </button>
+            <button type="button" className={`mc-radio-card mc-radio-card--slim ${feed === "live" ? "is-selected" : ""}`} onClick={() => setFeed("live")}>
+              <span className="mc-radio-card__radio" />
+              <span><span className="mc-radio-card__title">Continuous live data feed</span></span>
+            </button>
+          </div>
+
+          <h3 className="mc-share__sectitle">Per-metric viewing options</h3>
+          <p className="mc-share__secdesc">How each metric appears to buyers - exact values, only a range, or hidden completely.</p>
+          {MARKET_METRICS.map(g => (
+            <div key={g.group}>
+              <div className="mc-group-title">{g.group}</div>
+              {g.items.map(m => {
+                const opts = shareOpts(m.id);
+                const cur = sel[m.id];
+                const display = cur === "range" && m.range ? m.range : m.value;
+                return (
+                  <div className={"mc-share-row" + (cur === "hide" ? " is-hidden" : "")} key={m.id}>
+                    <div className="mc-share-row__main">
+                      <div className="mc-share-row__name">{m.label}</div>
+                      <div className="mc-share-row__val">{display} <ProvChip p={m.provenance} /></div>
+                    </div>
+                    <div className="mc-vseg">
+                      {opts.map(o => (
+                        <button key={o} type="button" className={"mc-vseg__btn" + (cur === o ? " is-active" : "")} onClick={() => setMetric(m.id, o)} aria-pressed={cur === o}>{MC_SEG_LABELS[o]}</button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <div className="co-modal__footer">
+          <button className="co-btn co-btn--ghost" onClick={onClose}>Cancel</button>
+          <button className="co-btn co-btn--primary" onClick={() => onSave({ feed, metrics: sel })}>Save defaults</button>
         </div>
       </div>
-      <div className="mc-gauge-scale"><span>0 · low risk</span><span className={"mc-owner__band mc-owner__band--" + band}>{dep.band}</span><span>100 · high</span></div>
-      <p className="mc-owner__depnote">{dep.note}</p>
     </div>
   );
 };
@@ -890,9 +980,16 @@ const MCOwnerCard = ({ data }) => {
 const MCMarketProfile = ({ completed }) => {
   const [preview, setPreview] = React.useState(false);
   const [edit, setEdit] = React.useState(null);
+  const [shareDefaults, setShareDefaults] = React.useState(MC_SHARE_DEFAULTS);
+  const [shareOpen, setShareOpen] = React.useState(false);
   const incomplete = !completed;
   const openEdit = (kind) => setEdit(kind);
   const editBtn = (kind) => !preview && <button className="co-edit" onClick={() => openEdit(kind)}><Icon name="edit" /> Edit</button>;
+  const shareSummary = MARKET_METRICS.map(g => ({
+    label: MC_SHARE_GROUP_LABELS[g.group] || g.group,
+    shared: g.items.filter(m => shareDefaults.metrics[m.id] !== "hide").length,
+    total: g.items.length,
+  }));
 
   return (
     <div className="mc-profile">
@@ -1010,9 +1107,15 @@ const MCMarketProfile = ({ completed }) => {
 
         {/* aside */}
         <aside className="co-aside" style={{ position: "static" }}>
-          <div className="co-preview">
-            <h4 className="co-preview__title">About Your Market Profile</h4>
-            <p className="co-preview__desc" style={{ margin: 0 }}>This page contains all the details and metrics that are available to share with buyers in the market when you request a Market Check. When you send a new request for a Market Check, you will be able to select which fields you wish to include or hide.</p>
+          <div className="co-card" style={{ padding: "18px 20px", marginTop: 0 }}>
+            <div className="co-card__head" style={{ marginBottom: 8 }}>
+              <h3 className="co-card__title"><Icon name="list" />Buyer Sharing Defaults</h3>
+              {!preview && <button className="co-edit" onClick={() => setShareOpen(true)}><Icon name="edit" /> Edit</button>}
+            </div>
+            <div className="co-info__row"><span className="co-info__k">Live data feed</span><span className="co-info__v">{shareDefaults.feed === "snapshot" ? "Snapshot only" : "Live data feed"}</span></div>
+            {shareSummary.map(r => (
+              <div className="co-info__row" key={r.label}><span className="co-info__k">{r.label}</span><span className="co-info__v">{r.shared} (out of {r.total})</span></div>
+            ))}
           </div>
 
           <MCOwnerCard data={MARKET_PROFILE_OWNER} />
@@ -1045,6 +1148,7 @@ const MCMarketProfile = ({ completed }) => {
       </div>
 
       {edit && <MCEditSlideout kind={edit} completed={completed} onClose={() => setEdit(null)} />}
+      {shareOpen && <MCShareDefaultsModal value={shareDefaults} onSave={(v) => { setShareDefaults(v); setShareOpen(false); }} onClose={() => setShareOpen(false)} />}
     </div>
   );
 };
@@ -1366,50 +1470,95 @@ const MCBuyerResponse = () => {
 
 const MCBuyerDetail = ({ req, onBack }) => {
   const respond = () => navigateTo("/practice/market-check/respond#" + req.id);
+  const has = (name) => req.groups.some(g => g.group === name);
+  const showFinancials = has("Financials");
+  const showOperations = has("Operations");
+  const showDoctors = has("Production");
+  const showSupport = has("People");
+  const showFacilities = has("Facilities");
+  const showOwner = has("Owner");
+  const showDetails = has("Practice Attributes");
+
   return (
     <>
       <button className="mc-back" onClick={onBack}><Icon name="chevronRight" /> Back to requests</button>
       <div className="mc-resp-head">
         <div>
           <h2 className="mc-resp-head__title">{req.type}</h2>
-          <p className="mc-resp-head__sub">{req.region} · {req.requestedBy}</p>
+          <p className="mc-resp-head__sub">{req.region} · {req.requestedBy} · Respond by {req.deadline}</p>
         </div>
         <div className="mc-resp-head__actions">
           <button className="co-btn-solid" onClick={respond}><Icon name="send" size={14} /> Respond</button>
         </div>
       </div>
 
-      <div className="mc-preview-card" style={{ marginBottom: 20, padding: "14px 18px" }}>
-        <span className="mc-preview-card__tag" style={{ marginBottom: 0 }}>
-          <Icon name="eye" size={14} /> Anonymized snapshot — practice name, exact location and identifying details are hidden until the seller accepts your interest.
-        </span>
-      </div>
-
-      <div className="co-deals" style={{ marginBottom: 20 }}>
-        <div><div className="co-deal__label">Revenue</div><div className="co-deal__value">{req.revenueBand}</div></div>
-        <div><div className="co-deal__label">Data</div><div className="co-deal__value" style={{ fontSize: 14 }}>{req.verifiedMix}</div></div>
-        <div><div className="co-deal__label">Received</div><div className="co-deal__value" style={{ fontSize: 14 }}>{req.received}</div></div>
-        <div><div className="co-deal__label">Respond by</div><div className="co-deal__value" style={{ fontSize: 14 }}>{req.deadline}</div></div>
-      </div>
-
-      {req.coverNote && (
-        <div className="mc-callout mc-callout--info">
-          <Icon name="message" size={16} />
-          <div><b>Seller note:</b> {req.coverNote}</div>
+      <div className="mc-profile">
+        <div className="mc-preview-card" style={{ marginBottom: 16, padding: "14px 18px" }}>
+          <span className="mc-preview-card__tag" style={{ marginBottom: 0 }}>
+            <Icon name="eye" size={14} /> Buyer's anonymized view — practice name, exact location and identifying details are hidden.
+          </span>
         </div>
-      )}
 
-      {req.groups.map(g => (
-        <div className="co-card" key={g.group}>
-          <div className="co-card__head" style={{ marginBottom: 6 }}><h3 className="co-card__title">{g.group}</h3></div>
-          {g.items.map((m, i) => (
-            <div className="mc-snap-metric" key={i}>
-              <span className="mc-snap-metric__k">{m.label}</span>
-              <span className="mc-snap-metric__v">{m.up && <span className="mc-up"><Tri up /></span>}{m.value} {m.provenance ? <ProvChip p={m.provenance} /> : null}</span>
-            </div>
-          ))}
+        {req.coverNote && (
+          <div className="mc-callout mc-callout--info" style={{ marginBottom: 16 }}>
+            <Icon name="message" size={16} />
+            <div><b>Seller note:</b> {req.coverNote}</div>
+          </div>
+        )}
+
+        <div className="mc-grid">
+          <div className="mc-stack">
+            {showFinancials && <MCFinancials data={MARKET_PROFILE_FINANCIALS} />}
+            {showOperations && (
+              <div className="co-card">
+                <div className="co-card__head">
+                  <h3 className="co-card__title"><span className="co-metric__icon co-metric__icon--amber" style={{ width: 36, height: 36 }}><Icon name="activity" /></span> Operations <ProvChip p="verified" /></h3>
+                </div>
+                <div className="co-metrics">
+                  <Metric noIcon label="Active Clients" value="1,240" />
+                  <Metric noIcon label="Revenue / Visit" value="$456" />
+                  <Metric noIcon label="Revenue / Doctor" value="$612K" />
+                </div>
+                <MCRevenueMix mix={OPERATIONS_REVENUE_MIX} />
+              </div>
+            )}
+            {showDoctors && <StaffCard icon="stethoscope" title="Doctors" anon="Veterinarian" data={MARKET_PROFILE_STAFF.doctors} preview={true} />}
+            {showSupport && <StaffCard icon="users" title="Support Staff" anon="Staff member" data={MARKET_PROFILE_STAFF.support} preview={true} />}
+            {showFacilities && (
+              <div className="co-card">
+                <div className="co-card__head">
+                  <h3 className="co-card__title"><span className="co-metric__icon" style={{ width: 36, height: 36 }}><Icon name="building" /></span> Facilities <ProvChip p="verified" /></h3>
+                </div>
+                <div className="co-deals">
+                  <div><div className="co-deal__label">Occupancy</div><div className="co-deal__value">{PRACTICE.facilities.tenure}</div></div>
+                  <div><div className="co-deal__label">Exam Rooms</div><div className="co-deal__value">{PRACTICE.facilities.examRooms}</div></div>
+                  <div><div className="co-deal__label">Building Size</div><div className="co-deal__value">{PRACTICE.facilities.buildingSize}</div></div>
+                  <div><div className="co-deal__label">Actual Rent</div><div className="co-deal__value">Disclosed in diligence</div></div>
+                  <div><div className="co-deal__label">Related Party</div><div className="co-deal__value">{PRACTICE.facilities.relatedParty}</div></div>
+                  <div><div className="co-deal__label">Remaining Term</div><div className="co-deal__value">{PRACTICE.facilities.remainingTerm}</div></div>
+                  <div><div className="co-deal__label">Renewal Options</div><div className="co-deal__value">{PRACTICE.facilities.renewalOptions}</div></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <aside className="co-aside" style={{ position: "static" }}>
+            {showOwner && <MCOwnerCard data={MARKET_PROFILE_OWNER} />}
+            {showDetails && (
+              <div className="co-card" style={{ padding: "18px 20px" }}>
+                <div className="co-card__head" style={{ marginBottom: 12 }}>
+                  <h3 className="co-card__title"><Icon name="list" />Details</h3>
+                </div>
+                <div className="co-info__row"><span className="co-info__k">Location</span><span className="co-info__v">{req.region}</span></div>
+                <div className="co-info__row"><span className="co-info__k">Type</span><span className="co-info__v">{req.type}</span></div>
+                <div className="co-info__row"><span className="co-info__k">Founded</span><span className="co-info__v">~10 yrs ago</span></div>
+                <div className="co-info__row"><span className="co-info__k">Data</span><span className="co-info__v">{req.verifiedMix}</span></div>
+                <div className="co-info__row"><span className="co-info__k">Received</span><span className="co-info__v">{req.received}</span></div>
+              </div>
+            )}
+          </aside>
         </div>
-      ))}
+      </div>
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
         <button className="co-btn-solid" onClick={respond}><Icon name="send" size={14} /> Respond to this request</button>

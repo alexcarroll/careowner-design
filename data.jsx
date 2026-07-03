@@ -142,13 +142,13 @@ const MODELED_ESTIMATE = { low: 2.5, high: 3.5 };
 // "verified" (pulled from a connected account/doc) | "self" (manual) | "none".
 const MARKET_METRICS = [
   { group: "Financials", items: [
-    { id: "revenue",   label: "High-Level Revenue",      value: "$2.45M",          provenance: "verified" },
-    { id: "ebitda",    label: "Adjusted EBITDA",         value: "$612K",           provenance: "verified" },
-    { id: "adjMargin", label: "Adjusted EBITDA Margin",  value: "25%",             provenance: "verified" },
-    { id: "sales",     label: "Annual Sales + Growth",   value: "$2.45M · +8% YoY", provenance: "verified" },
+    { id: "revenue",   label: "High-Level Revenue",      value: "$2.45M",          range: "$2M – $3M",          provenance: "verified" },
+    { id: "ebitda",    label: "Adjusted EBITDA",         value: "$612K",           range: "$600K – $620K",      provenance: "verified" },
+    { id: "adjMargin", label: "Adjusted EBITDA Margin",  value: "25%",             range: "20% – 25%",          provenance: "verified" },
+    { id: "sales",     label: "Annual Sales + Growth",   value: "$2.45M · +8% YoY", range: "$2M – $3M · +5–10% YoY", provenance: "verified" },
   ]},
   { group: "Production", items: [
-    { id: "prodByDoctor", label: "Production by Doctor",        value: "$612K avg / DVM",    provenance: "verified" },
+    { id: "prodByDoctor", label: "Production by Doctor",        value: "$612K avg / DVM",    range: "$500K – $750K avg / DVM", provenance: "verified" },
     { id: "dvm",          label: "DVM Concentration + # DVMs",  value: "5 DVMs · top DVM 28%", provenance: "self" },
   ]},
   { group: "Practice Attributes", items: [

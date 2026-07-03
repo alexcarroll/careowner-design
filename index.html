@@ -759,6 +759,38 @@
     .mc-radio-card__title { display: block; font: 600 14px/1.3 "Inter"; color: var(--stone-900); }
     .mc-radio-card__desc { display: block; font: 400 14px/1.4 "Inter"; color: var(--stone-500); margin-top: 4px; }
 
+    /* Buyer sharing defaults — modal + per-metric segmented controls */
+    .mc-share-modal { max-width: 720px; }
+    .mc-share-modal__header { align-items: flex-start; }
+    .mc-share-modal__header h2 { font: 600 20px/1.25 "Inter"; }
+    .mc-share-modal__header p { font: 400 14px/1.5 "Inter"; color: var(--stone-500); margin: 6px 0 0; max-width: 560px; }
+    .mc-share__sectitle { font: 600 16px/1.3 "Inter"; color: var(--stone-900); margin: 24px 0 4px; }
+    .mc-share__sectitle:first-child { margin-top: 0; }
+    .mc-share__secdesc { font: 400 14px/1.5 "Inter"; color: var(--stone-500); margin: 0 0 14px; }
+    .mc-radio-card--slim { align-items: center; padding: 16px; }
+    .mc-radio-card--slim .mc-radio-card__radio { margin-top: 0; }
+    .mc-share-row { display:flex; align-items:center; gap: 16px; padding: 14px 0; border-top: 1px solid var(--stone-100); }
+    .mc-share-row__main { flex: 1; min-width: 0; }
+    .mc-share-row__name { font: 500 14px/1.35 "Inter"; color: var(--stone-900); }
+    .mc-share-row__val { display:flex; align-items:center; gap: 8px; margin-top: 4px; font: 500 14px/1.3 "Inter"; color: var(--teal-brand); flex-wrap: wrap; }
+    .mc-share-row.is-hidden .mc-share-row__main { opacity: 0.45; }
+    .mc-vseg { display:inline-flex; border: 1px solid var(--stone-200); border-radius: 8px; overflow: hidden; flex-shrink: 0; background: #fff; }
+    .mc-vseg__btn { font: 500 14px/1 "Inter"; padding: 10px 16px; border: 0; border-left: 1px solid var(--stone-200); background: transparent; color: var(--stone-500); cursor: pointer; }
+    .mc-vseg__btn:first-child { border-left: 0; }
+    .mc-vseg__btn:hover { background: var(--stone-50); color: var(--stone-900); }
+    .mc-vseg__btn.is-active, .mc-vseg__btn.is-active:hover { background: var(--teal-brand); color: #fff; }
+
+    /* Owner dependency — circular gauge */
+    .mc-depring-row { display:flex; align-items:center; gap: 14px; }
+    .mc-depring { flex-shrink: 0; }
+    .mc-depring__track { stroke: var(--stone-100); }
+    .mc-depring__arc--low { stroke: #10B981; }
+    .mc-depring__arc--moderate { stroke: #E0A33E; }
+    .mc-depring__arc--high { stroke: #E11D48; }
+    .mc-depring__num { font: 700 15px "Inter"; fill: #0A0A0A; }
+    .mc-depring-row__text { font: 400 14px/1.5 "Inter"; color: var(--stone-500); margin: 0; }
+    .mc-depring-row__text b { font-weight: 500; color: var(--stone-700); }
+
     /* New Request — combined metric row anonymized preview */
     .mc-mrow__xform { display:flex; align-items:center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
     .mc-mrow__raw { font: 400 14px/1.3 "Inter"; color: var(--stone-500); }
