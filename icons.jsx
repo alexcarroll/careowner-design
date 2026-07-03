@@ -68,14 +68,11 @@ const Icon = ({ name, size = 16, ...props }) => {
   );
 };
 
+// Real CareOwner lockup — darkbg variant (white "Care" + bright teal "OWNER")
+// for the forest top nav; lightbg variant lives in assets/ for light surfaces.
 const CareOwnerLogo = () => (
   <div className="co-nav__logo">
-    <div className="co-nav__logo-mark">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 21s-7-4.5-7-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-7 11-7 11z" transform="translate(-2.5 0)"/>
-      </svg>
-    </div>
-    <div className="co-nav__logo-text">Care<em>OWNER</em></div>
+    <img className="co-nav__logo-img" src="/assets/careowner-logo-darkbg.svg" alt="CareOwner" />
   </div>
 );
 

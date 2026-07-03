@@ -430,21 +430,42 @@ const MARKET_PROFILE_STAFF = {
   },
 };
 
-// Market Profile — Financials detail. EBITDA is the headline metric buyers price
-// against, so we carry its basis (Reported / Adjusted / SDE) and how owner comp
-// was handled, plus YoY direction and a 3-year-plus-forecast series for the chart.
+// Market Profile — Financials detail. Adjusted EBITDA is the headline metric
+// buyers price against. The bridge itemizes the math both ways: Net Income →
+// EBITDA (interest, taxes, D&A) and EBITDA → Adjusted EBITDA (add-backs).
 const MARKET_PROFILE_FINANCIALS = {
-  revenue: { value: "$2.45M", basis: "TTM", up: true, deltaPct: "8%", deltaLabel: "Up 8% vs 2025" },
+  revenue: { value: "$2.45M", basis: "TTM", up: true, deltaPct: "8%", deltaLabel: "8% vs 2025" },
   ebitda: {
-    value: "$612K", margin: "25%", basis: "Adjusted", up: true, deltaPct: "11%", deltaLabel: "Up 11% vs 2025",
-    reported: "$490K", reportedMargin: "20%", sde: "$735K", addBacks: "$122K",
-    ownerComp: "Owner salary normalized to a $165K market rate; $122K of discretionary and one-time add-backs applied to reported EBITDA.",
+    value: "$612K", margin: "25%", basis: "Adjusted", up: true, deltaPct: "11%", deltaLabel: "11% vs 2025",
+    reported: "$490K", reportedMargin: "20%", addBacks: "$122K",
   },
-  // Three actual years + one forecast year. Values in $M.
+  // Net Income → EBITDA → Adjusted EBITDA. itda lines sum with net income to
+  // reported EBITDA ($385+28+42+24+11 = $490K); add-backs sum to +$122K.
+  // `n` values (in $K) drive the hero build-bar segment widths.
+  bridge: {
+    start: { label: "Net Income", value: "$385K", n: 385 },
+    itda: [
+      { label: "Interest", value: "$28K" },
+      { label: "Taxes", value: "$42K" },
+      { label: "Depreciation", value: "$24K" },
+      { label: "Amortization", value: "$11K" },
+    ],
+    itdaTotal: { value: "$105K", n: 105 },
+    ebitda: { label: "EBITDA", value: "$490K", n: 490 },
+    addBacks: [
+      { label: "Owner salary normalized", note: "to a $165K market rate", value: "$57K" },
+      { label: "Owner's son on payroll", note: "non-operational role", value: "$38K" },
+      { label: "One-time legal settlement", note: "non-recurring expense", value: "$27K" },
+    ],
+    addBackTotal: { value: "$122K", n: 122 },
+    adjusted: { label: "Adjusted EBITDA", value: "$612K", n: 612 },
+  },
+  // Revenue/EBITDA by year, values in $M. Forecast rows are retained in data
+  // but the Financials card charts actual years only.
   series: [
     { year: "2024", revenue: 2.08, ebitda: 0.50, forecast: false },
     { year: "2025", revenue: 2.26, ebitda: 0.55, forecast: false },
-    { year: "2026", revenue: 2.45, ebitda: 0.61, forecast: false },
+    { year: "2026", revenue: 2.45, ebitda: 0.61, forecast: false, ytd: { revenue: 1.42, ebitda: 0.35 } },
     { year: "2027", revenue: 2.69, ebitda: 0.69, forecast: true },
     { year: "2028", revenue: 2.95, ebitda: 0.77, forecast: true },
     { year: "2029", revenue: 3.23, ebitda: 0.85, forecast: true },

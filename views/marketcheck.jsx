@@ -108,20 +108,36 @@ const MCFinChart = ({ series }) => {
     <div className="mc-finchart" onMouseLeave={() => setHov(null)}>
       <div className="mc-finchart__plot">
         {series.map((d, i) => (
-          <div key={d.year} className={"mc-fingroup" + (d.forecast ? " is-forecast" : "") + (hov === i ? " is-hot" : "")} onMouseEnter={() => setHov(i)}>
+          <div key={d.year} className={"mc-fingroup" + (hov === i ? " is-hot" : "")} onMouseEnter={() => setHov(i)}>
             <div className="mc-fingroup__bars">
-              <span className="mc-finbar mc-finbar--rev" style={{ height: h(d.revenue) + "%" }} />
-              <span className="mc-finbar mc-finbar--eb" style={{ height: h(d.ebitda) + "%" }} />
+              {/* Current year (d.ytd): solid actuals booked so far, dashed cap = forecast for the rest of the year */}
+              {d.ytd ? (
+                <span className="mc-finbar mc-finbar--stack" style={{ height: h(d.revenue) + "%" }}>
+                  <span className="mc-finbar__proj mc-finbar__proj--rev" style={{ height: ((d.revenue - d.ytd.revenue) / d.revenue) * 100 + "%" }} />
+                  <span className="mc-finbar__done mc-finbar__done--rev" />
+                </span>
+              ) : (
+                <span className="mc-finbar mc-finbar--rev" style={{ height: h(d.revenue) + "%" }} />
+              )}
+              {d.ytd ? (
+                <span className="mc-finbar mc-finbar--stack" style={{ height: h(d.ebitda) + "%" }}>
+                  <span className="mc-finbar__proj mc-finbar__proj--eb" style={{ height: ((d.ebitda - d.ytd.ebitda) / d.ebitda) * 100 + "%" }} />
+                  <span className="mc-finbar__done mc-finbar__done--eb" />
+                </span>
+              ) : (
+                <span className="mc-finbar mc-finbar--eb" style={{ height: h(d.ebitda) + "%" }} />
+              )}
               {hov === i && (
                 <div className="mc-chart-tip is-center">
-                  <div className="mc-chart-tip__title">{d.year}{d.forecast ? " · Forecast" : ""}</div>
+                  <div className="mc-chart-tip__title">{d.year}{d.ytd ? " · on track" : ""}</div>
                   <div className="mc-chart-tip__row"><span className="mc-chart-tip__sw" style={{ background: "#237F86" }} />Revenue<b>${d.revenue.toFixed(2)}M</b></div>
                   <div className="mc-chart-tip__row"><span className="mc-chart-tip__sw" style={{ background: "#D9A65A" }} />Adj. EBITDA<b>${d.ebitda.toFixed(2)}M</b></div>
+                  {d.ytd && <div className="mc-chart-tip__row mc-chart-tip__row--muted">Booked YTD<b>${d.ytd.revenue.toFixed(2)}M</b></div>}
                   <div className="mc-chart-tip__row mc-chart-tip__row--muted">Margin<b>{Math.round((d.ebitda / d.revenue) * 100)}%</b></div>
                 </div>
               )}
             </div>
-            <div className="mc-fingroup__label"><span>{d.year}</span><span className="mc-fingroup__tag" style={{ visibility: d.forecast ? "visible" : "hidden" }}>Forecast</span></div>
+            <div className="mc-fingroup__label"><span>{d.year}</span></div>
           </div>
         ))}
       </div>
@@ -454,7 +470,7 @@ const MCResponseSlideout = ({ r, onClose }) => (
     <div className="co-slideout">
       <div className="co-slideout__header">
         <div style={{ flex: 1 }}>
-          <div style={{ font: "500 11px/1 Inter", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Buyer Response</div>
+          <div style={{ font: "var(--font-label-sm)", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Buyer Response</div>
           <h2>{r.buyer}</h2>
         </div>
         <button onClick={onClose}><Icon name="x" size={18} /></button>
@@ -466,7 +482,7 @@ const MCResponseSlideout = ({ r, onClose }) => (
         </div>
         <div className="co-card" style={{ marginTop: 0 }}>
           <div className="co-metric__label">Indicative Offer Range</div>
-          <div style={{ font: "700 24px/1 Inter", color: "#047857", marginTop: 6 }}>{fmtRange(r.low, r.high)}</div>
+          <div style={{ font: "700 24px/1 Inter", color: "var(--success-700)", marginTop: 6 }}>{fmtRange(r.low, r.high)}</div>
           <div style={{ font: "400 14px/1 Inter", color: "var(--stone-500)", marginTop: 6 }}>Midpoint ${mcMid(r).toFixed(2)}M · {r.buyerType}</div>
         </div>
         <h3 className="co-sec-title" style={{ marginTop: 20 }}>Feedback</h3>
@@ -563,7 +579,7 @@ const MCEditSlideout = ({ kind, completed, onClose }) => {
       <div className="co-slideout">
         <div className="co-slideout__header">
           <div style={{ flex: 1 }}>
-            <div style={{ font: "500 11px/1 Inter", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Market Profile</div>
+            <div style={{ font: "var(--font-label-sm)", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Market Profile</div>
             <h2>Edit {MC_EDIT_TITLES[kind]}</h2>
           </div>
           <button onClick={onClose}><Icon name="x" size={18} /></button>
@@ -762,19 +778,35 @@ const StaffCard = ({ icon, title, anon, data, preview, edit }) => {
   );
 };
 
-// Market Profile — Financials. EBITDA leads as the headline metric buyers price
-// against: it declares its basis (Reported / Adjusted / SDE) and how owner comp was
-// handled. Revenue and EBITDA each carry a direction-of-trend pill, and a 3-year +
-// forecast chart shows the trajectory that drives the rollover upside.
+// Market Profile — Financials. Adjusted EBITDA leads as the headline metric
+// buyers price against: a hero number with a build-bar showing its composition,
+// beside a ledger with the math for that step. A toggle flips both between the
+// two steps of the bridge — Net Income → EBITDA and EBITDA → Adjusted EBITDA —
+// so the number is explained instead of asserted.
+const MCBridgeRow = ({ label, note, value, plus }) => (
+  <div className="mc-bridge__row">
+    <span className="mc-bridge__label">{label}{note && <span className="mc-bridge__note">{note}</span>}</span>
+    <span className="mc-bridge__val">{plus && <span className="mc-bridge__plus">+</span>}{value}</span>
+  </div>
+);
+
 const MCFinancials = ({ data, edit }) => {
   const f = data;
-  const bases = [
-    { key: "Reported", label: "Reported EBITDA", value: f.ebitda.reported },
-    { key: "Adjusted", label: "Adjusted EBITDA", value: f.ebitda.value },
-    { key: "SDE", label: "Seller's Discretionary Earnings", value: f.ebitda.sde },
+  const b = f.bridge;
+  const [view, setView] = React.useState("adjusted"); // "adjusted" | "ebitda" | "revenue"
+  const isAdj = view === "adjusted";
+  const tabs = [
+    { key: "adjusted", label: "Adjusted EBITDA", value: b.adjusted.value },
+    { key: "ebitda", label: "EBITDA", value: b.ebitda.value },
+    { key: "revenue", label: "Revenue", value: f.revenue.value },
   ];
-  const [basis, setBasis] = React.useState("Adjusted");
-  const active = bases.find(b => b.key === basis) || bases[1];
+  // EBITDA views are one step of the bridge each: a starting number, the lines
+  // added to it, and the resulting total. The hero mirrors the step visually.
+  const startRow = isAdj ? b.ebitda : b.start;
+  const addRows = isAdj ? b.addBacks : b.itda;
+  const addTotal = isAdj ? b.addBackTotal : b.itdaTotal;
+  const total = isAdj ? b.adjusted : b.ebitda;
+  const basePct = (startRow.n / total.n) * 100;
   return (
     <div className="co-card" style={{ marginTop: 0 }}>
       <div className="co-card__head">
@@ -782,47 +814,68 @@ const MCFinancials = ({ data, edit }) => {
         {edit}
       </div>
 
-      <div className="mc-fin">
-        <div className="mc-fin__hero">
-          <div className="mc-fin__herohead">
-            <span className="mc-fin__herolabel">{active.label}</span>
-            <span className="mc-basis-chip">{basis} basis</span>
-          </div>
-          <div className="mc-fin__heroval">{active.value}<span className="mc-trend mc-trend--up mc-fin__herotrend"><Tri up /> {f.ebitda.deltaLabel}</span></div>
-          <div className="mc-fin__bases">
-            {bases.map(b => (
-              <button key={b.key} type="button" className={"mc-fin__base" + (b.key === basis ? " is-active" : "")} onClick={() => setBasis(b.key)} aria-pressed={b.key === basis}>
-                <span className="mc-fin__basek">{b.key}</span>
-                <span className="mc-fin__basev">{b.value}</span>
-              </button>
-            ))}
-          </div>
-          <p className="mc-fin__ownercomp">{f.ebitda.ownerComp}</p>
+      <div className="mc-fin__panel">
+        <div className="mc-fintabs">
+          {tabs.map(t => (
+            <button key={t.key} type="button" className={"mc-fintabs__btn" + (view === t.key ? " is-active" : "")} onClick={() => setView(t.key)} aria-pressed={view === t.key}>
+              {t.label} <b>{t.value}</b>
+            </button>
+          ))}
         </div>
 
-        <div className="mc-fin__side">
-          <div className="mc-fin__stat">
-            <span className="co-metric__label">TTM Revenue</span>
-            <span className="mc-fin__statval">{f.revenue.value}</span>
-            <span className="mc-trend mc-trend--up mc-fin__statpill"><Tri up /> {f.revenue.deltaLabel}</span>
+        {view === "revenue" ? (
+          /* Revenue — TTM stat with the yearly chart beneath */
+          <div className="mc-fin__rev">
+            <div className="mc-fin__revhead">
+              <div>
+                <span className="mc-fin__herolabel">TTM Revenue</span>
+                <div className="mc-fin__heroval">{f.revenue.value}<span className="mc-trend mc-trend--up mc-fin__herotrend"><Tri up /> {f.revenue.deltaLabel}</span></div>
+              </div>
+              <div className="mc-legend">
+                <span className="mc-legend__item"><span className="mc-legend__swatch" style={{ background: "#237F86" }} />Revenue</span>
+                <span className="mc-legend__item"><span className="mc-legend__swatch" style={{ background: "#D9A65A" }} />Adj. EBITDA</span>
+                <span className="mc-legend__item"><span className="mc-legend__swatch mc-legend__swatch--proj" />Forecast</span>
+              </div>
+            </div>
+            <MCFinChart series={f.series.filter(d => !d.forecast)} />
           </div>
-          <div className="mc-fin__stat">
-            <span className="co-metric__label">Adj. EBITDA Margin</span>
-            <span className="mc-fin__statval">{f.ebitda.margin}</span>
-            <span className="mc-fin__statsub">Reported {f.ebitda.reportedMargin}</span>
-          </div>
-        </div>
-      </div>
+        ) : (
+          <div className="mc-fin__cols">
+            {/* Hero — the headline number plus its visual composition */}
+            <div className="mc-fin__left">
+              <span className="mc-fin__herolabel">{total.label}</span>
+              <div className="mc-fin__heroval">
+                {total.value}
+                {isAdj && <span className="mc-trend mc-trend--up mc-fin__herotrend"><Tri up /> {f.ebitda.deltaLabel}</span>}
+              </div>
+              <div className="mc-buildbar">
+                <div className="mc-buildbar__track">
+                  <span className="mc-buildbar__seg mc-buildbar__seg--base" style={{ width: basePct + "%" }} />
+                  <span className="mc-buildbar__seg mc-buildbar__seg--add" />
+                </div>
+                <div className="mc-buildbar__legend">
+                  <span className="mc-buildbar__key"><span className="mc-buildbar__dot" style={{ background: "#237F86" }} />{isAdj ? "Reported EBITDA" : "Net Income"} <b>{startRow.value}</b></span>
+                  <span className="mc-buildbar__key"><span className="mc-buildbar__dot" style={{ background: "var(--success-500)" }} />{isAdj ? "Add-backs" : "Interest, taxes & D&A"} <b>+{addTotal.value}</b></span>
+                </div>
+              </div>
+              <div className="mc-fin__marginrow">
+                <span>{isAdj ? "Adj. EBITDA margin" : "EBITDA margin"}</span>
+                <span className="mc-fin__marginval">
+                  {isAdj ? f.ebitda.margin : f.ebitda.reportedMargin}
+                  <small>{isAdj ? `Reported ${f.ebitda.reportedMargin}` : `Adjusted ${f.ebitda.margin}`}</small>
+                </span>
+              </div>
+            </div>
 
-      <div className="mc-fin__chart">
-        <div className="mc-fin__charthead">
-          <div className="co-metric__label" style={{ margin: 0 }}>Revenue &amp; Adjusted EBITDA</div>
-          <div className="mc-legend">
-            <span className="mc-legend__item"><span className="mc-legend__swatch" style={{ background: "#237F86" }} />Revenue</span>
-            <span className="mc-legend__item"><span className="mc-legend__swatch" style={{ background: "#D9A65A" }} />Adj. EBITDA</span>
+            {/* Ledger — the math for the selected step */}
+            <div className="mc-bridge__col">
+              <div className="mc-bridge__coltitle">Calculations ({isAdj ? "Adj. EBITDA" : "EBITDA"})</div>
+              <MCBridgeRow label={startRow.label} value={startRow.value} />
+              {addRows.map(r => <MCBridgeRow key={r.label} {...r} plus />)}
+              <div className="mc-bridge__total"><span>{total.label}</span><span>{total.value}</span></div>
+            </div>
           </div>
-        </div>
-        <MCFinChart series={f.series} />
+        )}
       </div>
     </div>
   );
@@ -1068,10 +1121,9 @@ const MCMarketProfile = ({ completed }) => {
                 <div><div className="co-deal__label">Occupancy</div><div className="co-deal__value">{PRACTICE.facilities.tenure}</div></div>
                 <div><div className="co-deal__label">Exam Rooms</div><div className="co-deal__value">{PRACTICE.facilities.examRooms}</div></div>
                 <div><div className="co-deal__label">Building Size</div><div className="co-deal__value">{PRACTICE.facilities.buildingSize}</div></div>
-                <div><div className="co-deal__label">Actual Rent</div><div className="co-deal__value">{preview ? "Disclosed in diligence" : PRACTICE.facilities.rent}</div></div>
                 <div><div className="co-deal__label">Related Party</div><div className="co-deal__value">{PRACTICE.facilities.relatedParty}</div></div>
+                <div><div className="co-deal__label">Rent Amount</div><div className="co-deal__value">{preview ? "Disclosed in diligence" : PRACTICE.facilities.rent}</div></div>
                 <div><div className="co-deal__label">Remaining Term</div><div className="co-deal__value">{PRACTICE.facilities.remainingTerm}</div></div>
-                <div><div className="co-deal__label">Renewal Options</div><div className="co-deal__value">{PRACTICE.facilities.renewalOptions}</div></div>
               </div>
             </div>
           ) : <MCEmptyCard icon="building" title="Facilities" blurb="Add your space and facilities details (exam rooms, square footage, lease)." onAdd={() => openEdit("facilities")} />}
@@ -1130,7 +1182,7 @@ const MCMarketProfile = ({ completed }) => {
             <div className="co-info__row"><span className="co-info__k">Founded</span><span className="co-info__v">{preview ? "~10 yrs ago" : PRACTICE.founded}</span></div>
             <div className="co-info__row"><span className="co-info__k">Rating</span><span className="co-info__v"><Icon name="star" size={12} style={{ color: "#F59E0B", fill: "#F59E0B", marginRight: 4, marginBottom: -1 }} />{PRACTICE.rating} ({PRACTICE.reviewCount})</span></div>
             <div style={{ marginTop: 12 }}>
-              <div style={{ font: "500 11px/1 Inter", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--stone-500)", marginBottom: 8 }}>Certifications / Licenses</div>
+              <div style={{ font: "var(--font-label-sm)", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--stone-500)", marginBottom: 8 }}>Certifications / Licenses</div>
               <span className="co-badge co-badge--green">{PRACTICE.cert[0]}</span>
             </div>
           </div>
@@ -1533,10 +1585,9 @@ const MCBuyerDetail = ({ req, onBack }) => {
                   <div><div className="co-deal__label">Occupancy</div><div className="co-deal__value">{PRACTICE.facilities.tenure}</div></div>
                   <div><div className="co-deal__label">Exam Rooms</div><div className="co-deal__value">{PRACTICE.facilities.examRooms}</div></div>
                   <div><div className="co-deal__label">Building Size</div><div className="co-deal__value">{PRACTICE.facilities.buildingSize}</div></div>
-                  <div><div className="co-deal__label">Actual Rent</div><div className="co-deal__value">Disclosed in diligence</div></div>
                   <div><div className="co-deal__label">Related Party</div><div className="co-deal__value">{PRACTICE.facilities.relatedParty}</div></div>
+                  <div><div className="co-deal__label">Rent Amount</div><div className="co-deal__value">Disclosed in diligence</div></div>
                   <div><div className="co-deal__label">Remaining Term</div><div className="co-deal__value">{PRACTICE.facilities.remainingTerm}</div></div>
-                  <div><div className="co-deal__label">Renewal Options</div><div className="co-deal__value">{PRACTICE.facilities.renewalOptions}</div></div>
                 </div>
               </div>
             )}
@@ -1606,10 +1657,10 @@ const BuyerRespondFlow = ({ reqId }) => {
         <div className="co-body">
           <div style={{ maxWidth: 720 }}>
             <div className="co-card" style={{ textAlign: "center", padding: "44px 24px" }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#ECFDF5", color: "#047857", display: "grid", placeItems: "center", margin: "0 auto 16px" }}><Icon name="checkCircle" size={28} /></div>
+              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--success-50)", color: "var(--success-700)", display: "grid", placeItems: "center", margin: "0 auto 16px" }}><Icon name="checkCircle" size={28} /></div>
               <h3 style={{ font: "600 18px/1.3 Inter", margin: "0 0 8px" }}>Response sent to the seller</h3>
               <p style={{ font: "400 14px/1.6 Inter", color: "var(--stone-700)", maxWidth: 460, margin: "0 auto" }}>
-                Indicative value <b>{fmtUSD(lowN)}–{fmtUSD(highN)}</b>{anyImprove && <> · improvement opportunity <b style={{ color: "#047857" }}>+{fmtUSD(totLo)}–{fmtUSD(totHi)}</b></>}.
+                Indicative value <b>{fmtUSD(lowN)}–{fmtUSD(highN)}</b>{anyImprove && <> · improvement opportunity <b style={{ color: "var(--success-700)" }}>+{fmtUSD(totLo)}–{fmtUSD(totHi)}</b></>}.
               </p>
               {interested && <p style={{ font: "400 14px/1.6 Inter", color: "var(--stone-700)", maxWidth: 460, margin: "10px auto 0" }}>We've flagged your interest — the seller can choose to un-anonymize the practice so you can see the full profile.</p>}
               <button className="co-btn co-btn--primary" onClick={back} style={{ marginTop: 20 }}>Back to requests</button>

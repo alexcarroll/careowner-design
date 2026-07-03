@@ -303,7 +303,7 @@ const RightRail = () => (
       <div className="co-info__row"><span className="co-info__k">Website</span><span className="co-info__v"><a>{PRACTICE.website}</a></span></div>
       <div className="co-info__row"><span className="co-info__k">Rating</span><span className="co-info__v"><Icon name="star" size={12} style={{color:"#F59E0B", fill:"#F59E0B", marginRight:4, marginBottom:-1}} />{PRACTICE.rating} ({PRACTICE.reviewCount})</span></div>
       <div style={{ marginTop: 12 }}>
-        <div style={{ font: "500 11px/1 Inter", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--stone-500)", marginBottom: 8 }}>Certifications / Licenses</div>
+        <div style={{ font: "var(--font-label-sm)", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--stone-500)", marginBottom: 8 }}>Certifications / Licenses</div>
         <span className="co-badge co-badge--green">{PRACTICE.cert[0]}</span>
       </div>
     </div>

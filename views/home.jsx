@@ -2,7 +2,7 @@
 
 const HomeView = ({ section, onSection, onNav }) => {
   const tint = (t) => ({
-    green: { bg: "#D1FAE5", c: "#047857" },
+    green: { bg: "var(--success-100)", c: "var(--success-800)" },
     amber: { bg: "#FEF3C7", c: "#92400E" },
     indigo: { bg: "#E0E7FF", c: "#4338CA" },
     rose: { bg: "#FFE4E6", c: "#9F1239" },

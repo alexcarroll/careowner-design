@@ -876,7 +876,7 @@ const StaffDetailsSlideout = ({ member, allStaff, benefits, overrides, onUpdateM
       <div className="co-slideout">
         <div className="co-slideout__header">
           <div style={{ flex: 1 }}>
-            <div style={{ font: "500 11px/1 Inter", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Support Staff</div>
+            <div style={{ font: "var(--font-label-sm)", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Support Staff</div>
             <h2 style={{ margin: "0 0 4px" }}>{fullName(member) === "—" ? "New Staff Member" : fullName(member)}</h2>
             <div style={{ font: "400 14px/1 Inter", color: "var(--stone-500)" }}>{member.role || "—"}</div>
           </div>
@@ -944,7 +944,7 @@ const AddStaffSlideout = ({ onAdd, onClose, nextId }) => {
       <div className="co-slideout">
         <div className="co-slideout__header">
           <div style={{ flex: 1 }}>
-            <div style={{ font: "500 11px/1 Inter", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Support Staff</div>
+            <div style={{ font: "var(--font-label-sm)", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Support Staff</div>
             <h2 style={{ margin: 0 }}>Add Staff Member</h2>
           </div>
           <button className="co-modal__close" onClick={onClose}><Icon name="x" size={18} /></button>
@@ -1085,15 +1085,15 @@ const StatusBadge = ({ status, onChange, compact = false }) => {
         height: compact ? 26 : 30,
         border: interactive ? "1px solid var(--stone-200)" : "1px solid transparent",
         borderRadius: 999,
-        background: isActive ? "#DCFCE7" : "var(--stone-100)",
-        color: isActive ? "#15803D" : "var(--stone-500)",
+        background: isActive ? "var(--success-100)" : "var(--stone-100)",
+        color: isActive ? "var(--success-700)" : "var(--stone-500)",
         font: "500 13px/1 Inter",
         cursor: interactive ? "pointer" : "default",
         whiteSpace: "nowrap",
       }}
       title={interactive ? `Click to mark as ${isActive ? "Inactive" : "Active"}` : undefined}
     >
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: isActive ? "#16A34A" : "var(--stone-500)", flexShrink: 0 }} />
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: isActive ? "var(--success-500)" : "var(--stone-500)", flexShrink: 0 }} />
       {isActive ? "Active" : "Inactive"}
     </Component>
   );
@@ -1326,15 +1326,15 @@ const DoctorCompactCard = ({ doctor, onView }) => {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px", paddingTop: 12, borderTop: "1px solid var(--stone-100)" }}>
         <div>
-          <div style={{ font: "500 11px/1 Inter", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--stone-500)", marginBottom: 4 }}>Employment</div>
+          <div style={{ font: "var(--font-label-sm)", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--stone-500)", marginBottom: 4 }}>Employment</div>
           <div style={{ font: "500 14px/1.3 Inter", color: "var(--stone-900)" }}>{empLabel}</div>
         </div>
         <div>
-          <div style={{ font: "500 11px/1 Inter", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--stone-500)", marginBottom: 4 }}>Salary</div>
+          <div style={{ font: "var(--font-label-sm)", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--stone-500)", marginBottom: 4 }}>Salary</div>
           <div style={{ font: "500 14px/1.3 Inter", color: "var(--stone-900)" }}>{fmtMoney(doctor.compensation)}{doctor.compensationType === "hourly" ? "/hr" : "/yr"}</div>
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
-          <div style={{ font: "500 11px/1 Inter", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--stone-500)", marginBottom: 4 }}>License</div>
+          <div style={{ font: "var(--font-label-sm)", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--stone-500)", marginBottom: 4 }}>License</div>
           <div style={{ font: "500 14px/1.3 Inter", color: "var(--stone-900)" }}>{doctor.license || "—"}{doctor.licenseState ? ` · ${doctor.licenseState}` : ""}</div>
         </div>
       </div>
@@ -1377,7 +1377,7 @@ const TabHeader = ({ title, isEditing, onEdit, onSave, onCancel, hideEdit, extra
 
 const ReadField = ({ label, value, valueColor }) => (
   <div>
-    <div style={{ font: "500 11px/1 Inter", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--stone-500)", marginBottom: 6 }}>{label}</div>
+    <div style={{ font: "var(--font-label-sm)", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--stone-500)", marginBottom: 6 }}>{label}</div>
     <div style={{ font: "400 14px/1.4 Inter", color: valueColor || "var(--stone-900)" }}>{value || "—"}</div>
   </div>
 );
@@ -1544,10 +1544,10 @@ const fmtNumber = (n) => {
 
 const KPICard = ({ label, value, comparison }) => (
   <div className="co-card" style={{ padding: 18 }}>
-    <div style={{ font: "500 12px/1 Inter", textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--stone-500)", marginBottom: 10 }}>{label}</div>
+    <div style={{ font: "var(--font-label-sm)", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--stone-500)", marginBottom: 10 }}>{label}</div>
     <div style={{ font: "700 24px/1.1 Inter", color: "var(--stone-900)", letterSpacing: "-0.02em", marginBottom: 8 }}>{value}</div>
     {comparison && (
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 4, font: "500 13px/1 Inter", color: comparison.positive ? "#15803D" : comparison.negative ? "#BE123C" : "var(--stone-500)" }}>
+      <div style={{ display: "inline-flex", alignItems: "center", gap: 4, font: "500 13px/1 Inter", color: comparison.positive ? "var(--success-700)" : comparison.negative ? "#BE123C" : "var(--stone-500)" }}>
         <Icon name={comparison.positive ? "trendUp" : comparison.negative ? "trendDown" : "activity"} size={12} />
         {comparison.label}
       </div>
@@ -1792,7 +1792,7 @@ const DoctorPerformanceTab = ({ doctor, allDoctors }) => {
               }}>
                 <div>
                   <div style={{ font: "700 22px/1 Inter", color: "var(--stone-900)", letterSpacing: "-0.02em" }}>{fmtCompactCurrency(categoryTotal)}</div>
-                  <div style={{ font: "500 12px/1 Inter", color: "var(--stone-500)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.07em" }}>Total</div>
+                  <div style={{ font: "var(--font-label-sm)", color: "var(--stone-500)", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.5px" }}>Total</div>
                 </div>
               </div>
             </div>
@@ -2478,7 +2478,7 @@ const DoctorSlideout = ({ onSave, onClose }) => {
       <div className="co-slideout" style={{ width: 480 }}>
         <div className="co-slideout__header">
           <div style={{ flex: 1 }}>
-            <div style={{ font: "500 11px/1 Inter", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Doctor</div>
+            <div style={{ font: "var(--font-label-sm)", color: "var(--stone-500)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: 6 }}>Doctor</div>
             <h2 style={{ margin: 0 }}>Add Doctor</h2>
           </div>
           <button className="co-modal__close" onClick={onClose}><Icon name="x" size={18} /></button>
