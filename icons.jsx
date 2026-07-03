@@ -72,7 +72,7 @@ const Icon = ({ name, size = 16, ...props }) => {
 // for the forest top nav; lightbg variant lives in assets/ for light surfaces.
 const CareOwnerLogo = () => (
   <div className="co-nav__logo">
-    <img className="co-nav__logo-img" src="/assets/careowner-logo-darkbg.svg" alt="CareOwner" />
+    <img className="co-nav__logo-img" src="assets/careowner-logo-darkbg.svg" alt="CareOwner" />
   </div>
 );
 
