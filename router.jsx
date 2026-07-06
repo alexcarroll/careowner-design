@@ -11,7 +11,7 @@
 // Note: deep-link refresh of /practice/... requires the static host to serve index.html
 // for unknown paths (SPA fallback). In-app navigation (pushState) works regardless.
 
-const ROUTE_AREAS = ["home", "practice", "buyers", "inquiries", "offers", "messages", "meetings"];
+const ROUTE_AREAS = ["home", "marketplace", "practice", "buyers", "inquiries", "offers", "messages", "meetings"];
 const DEFAULT_AREA = "practice";
 const DEFAULT_SECTION = "overview";
 

@@ -3,6 +3,7 @@
 const TopNav = ({ active, onNav, textSize, onTextSize }) => {
   const items = [
     { id: "home", label: "Home", icon: "home" },
+    { id: "marketplace", label: "Marketplace", icon: "store" },
     { id: "practice", label: "My Practice", icon: "stethoscope" },
     { id: "buyers", label: "Find Buyers", icon: "switchIcon" },
     { id: "inquiries", label: "Inquiries", icon: "inbox" },

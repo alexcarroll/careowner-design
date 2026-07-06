@@ -1,6 +1,6 @@
 // My Practice view — 4 tabs: Overview, Practice Details, Ownership, Deal Preferences
 
-const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection, tab }) => {
+const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection, tab, onManageListing }) => {
   const activeTab = tab || "overview";
   const isTeam = section === "team";
 
@@ -45,7 +45,7 @@ const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection, tab }) => 
             {activeTab === "ownership" && <OwnershipTab onEdit={onEdit} />}
             {activeTab === "deal" && <DealTab onEdit={onEdit} />}
           </div>
-          <RightRail />
+          <RightRail onManageListing={onManageListing} />
         </div>
       )}
     </>
@@ -274,23 +274,17 @@ const DealTab = ({ onEdit }) => (
   </div>
 );
 
-const RightRail = () => (
+const RightRail = ({ onManageListing }) => {
+  const listing = useMyListing();
+  return (
   <aside className="co-aside">
-    <div className="co-preview">
+    <div>
       <div className="co-card__head" style={{ margin: 0, marginBottom: 12 }}>
-        <h3 className="co-card__title"><Icon name="eye" />Preview Listing</h3>
-        <button className="co-edit"><Icon name="edit" /> Edit</button>
+        <h3 className="co-card__title"><Icon name="eye" />Listing Preview</h3>
+        <button className="co-edit" onClick={onManageListing}><Icon name="edit" /> Edit</button>
       </div>
-      <div className="co-preview__img" style={{ backgroundImage: "url(assets/practice-hero.jpg)" }}>
-        <span className="co-preview__tag">Ready to Sell</span>
-      </div>
-      <h4 className="co-preview__title">{PRACTICE.listingTitle}</h4>
-      <p className="co-preview__desc">{PRACTICE.teaser}</p>
-      <div className="co-preview__facts">
-        <span className="co-preview__fact"><Icon name="location" size={12} />IL</span>
-        <span className="co-preview__fact"><Icon name="stethoscope" size={12} />{PRACTICE.doctors} DVMs</span>
-        <span className="co-preview__fact"><Icon name="dollarSign" size={12} />{PRACTICE.askingPrice}</span>
-      </div>
+      <PreviewListingCard listing={listing} />
+      <p className="co-preview__note"><Icon name="eye" size={12} /> How buyers see your listing</p>
     </div>
 
     <div className="co-card" style={{ padding: "18px 20px" }}>
@@ -331,6 +325,7 @@ const RightRail = () => (
       </div>
     </div>
   </aside>
-);
+  );
+};
 
 Object.assign(window, { PracticeView });

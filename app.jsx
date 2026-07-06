@@ -6,6 +6,7 @@ const App = () => {
   const [pub, setPub] = React.useState(true);
   const [modal, setModal] = React.useState(null);
   const [toast, setToast] = React.useState(null);
+  const [listingEditor, setListingEditor] = React.useState(null); // null | "practice" | "marketplace" — tracks which page opened it
 
   // Send the bare root to the default workspace.
   React.useEffect(() => {
@@ -35,16 +36,21 @@ const App = () => {
   const onSection = (section) => navigateTo("/practice/" + section);
 
   const { area, section, sub, tab } = route;
-  const props = { section, sub, tab, onSection, onEdit, onNav };
+  const onManageListing = () => setListingEditor(area);
+  const props = { section, sub, tab, onSection, onEdit, onNav, onToast: showToast, onManageListing };
   const isMarketCheck = area === "practice" && section === "market-check";
+  // The Marketplace is a top-level buyer-facing area with its own filter sidebar,
+  // so it renders full-width without the practice-specific left rail.
+  const showRail = area !== "marketplace";
 
   return (
     <>
       <TopNav active={area} onNav={onNav} textSize={textSize} onTextSize={setTextSize} />
       <div className="co-shell">
-        <LeftRail />
+        {showRail && <LeftRail />}
         <div className="co-shell__main">
           {area === "home" && <HomeView {...props} />}
+          {area === "marketplace" && <MarketplaceView {...props} />}
           {area === "practice" && !isMarketCheck && <PracticeView pub={pub} onTogglePub={onTogglePub} {...props} />}
           {isMarketCheck && <MarketCheckView pub={pub} onTogglePub={onTogglePub} {...props} />}
           {area === "buyers" && <BuyersView {...props} />}
@@ -55,6 +61,14 @@ const App = () => {
         </div>
       </div>
       {modal && <EditModal modal={modal} onClose={() => setModal(null)} onSubmit={onSubmit} />}
+      {listingEditor && (
+        <ListingEditorSlideout
+          fromMarketplace={listingEditor === "marketplace"}
+          onClose={() => setListingEditor(null)}
+          onToast={showToast}
+          onEditProfile={() => { setListingEditor(null); navigateTo("/practice"); }}
+        />
+      )}
       {toast && <Toast message={toast} />}
     </>
   );

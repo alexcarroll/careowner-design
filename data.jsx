@@ -514,6 +514,190 @@ window.MC_SNAPSHOT_RESULTS = MC_SNAPSHOT_RESULTS;
 window.MC_RECOMMENDED_ACTIONS = MC_RECOMMENDED_ACTIONS;
 window.MC_IMPACT_DRIVERS = MC_IMPACT_DRIVERS;
 window.MC_INCOMING_REQUESTS = MC_INCOMING_REQUESTS;
+// ── Marketplace listings ──────────────────────────────────────────────
+// Public practice listings shown as thumbnail cards on the Marketplace page.
+// `revenue` is last-year revenue in dollars (used by the Revenue Range filter);
+// `dvms` is the FTE doctor count (used by the # of DVMs filter). `status`
+// drives the badge dot color (see marketplace.jsx STATUS_META).
+const LISTING_PRACTICE_TYPES = ["Small Animal", "Mixed Animal", "Equine", "Feline", "Specialty & Referral", "Rehab & Sports Med", "Mobile"];
+const LISTING_LOCATION_TYPES = ["Urban", "Suburban", "Rural"];
+const LISTING_STATUSES = ["Active", "Coming Soon", "Offer Pending", "Under Contract"];
+
+const LISTINGS = [
+  {
+    id: "sc-coastal",
+    title: "Loyal Client Base in Prime Coastal Market",
+    state: "SC", locationType: "Suburban", practiceType: "Small Animal",
+    dvms: 4, pt: 1, revenue: 2100000, lastYear: "$2.1M", ytd: "$1.15M", yoy: "+8%",
+    status: "Active", featured: true,
+    image: "assets/listings-images/image 2_3_img.png",
+    description: "Multi-doctor GP with decades of community reputation. Retiring owner offers an 18-month hands-on transition.",
+  },
+  {
+    id: "tx-mixed",
+    title: "Diverse Service Mix in a Growing Community",
+    state: "TX", locationType: "Rural", practiceType: "Mixed Animal",
+    dvms: 3, pt: 1, revenue: 1400000, lastYear: "$1.4M", ytd: "$780K", yoy: "+12%",
+    status: "Coming Soon",
+    image: "assets/listings-images/image 11_1_img.png",
+    description: "Small animal, equine, and cattle revenue streams provide durability. Owner ready to mentor a successor.",
+  },
+  {
+    id: "ca-referral",
+    title: "Multi-Specialty Referral with Strong GP Network",
+    state: "CA", locationType: "Urban", practiceType: "Specialty & Referral",
+    dvms: 11, pt: 2, revenue: 8600000, lastYear: "$8.6M", ytd: "$4.7M", yoy: "+6%",
+    status: "Offer Pending",
+    image: "assets/listings-images/image 18_8_img.png",
+    description: "Established referral hospital with high margins and full multi-doctor coverage. Real estate available.",
+  },
+  {
+    id: "ma-downtown",
+    title: "Multigenerational Client Base in a Walkable Downtown",
+    state: "MA", locationType: "Urban", practiceType: "Small Animal",
+    dvms: 2, pt: 0, revenue: 1050000, lastYear: "$1.05M", ytd: "$560K", yoy: "+4%",
+    status: "Active",
+    image: "assets/listings-images/image 35_5_img.png",
+    description: "Character-filled facility with deep community roots. Owner open to a real estate lease-back.",
+  },
+  {
+    id: "az-subscription",
+    title: "Subscription Wellness Model Driving Recurring Revenue",
+    state: "AZ", locationType: "Suburban", practiceType: "Mobile",
+    dvms: 2, pt: 1, revenue: 895000, lastYear: "$895K", ytd: "$520K", yoy: "+22%",
+    status: "Active",
+    image: "assets/listings-images/image 288_7_img.png",
+    description: "Multi-vehicle mobile practice with a subscription plan powering ~40% of revenue and room to expand.",
+  },
+  {
+    id: "fl-cats",
+    title: "Cats-Only Boutique with a Multi-Month Waitlist",
+    state: "FL", locationType: "Urban", practiceType: "Feline",
+    dvms: 3, pt: 2, revenue: 1300000, lastYear: "$1.3M", ytd: "$720K", yoy: "+11%",
+    status: "Under Contract",
+    image: "assets/listings-images/image 13_1_img.png",
+    description: "Feline-focused practice with premium reputation and consistent new-patient demand. Owner relocating.",
+  },
+  {
+    id: "pa-renovated",
+    title: "Recently Renovated Facility Ready to Scale",
+    state: "PA", locationType: "Suburban", practiceType: "Small Animal",
+    dvms: 9, pt: 3, revenue: 6200000, lastYear: "$6.2M", ytd: "$3.4M", yoy: "+15%",
+    status: "Active",
+    image: "assets/listings-images/image 9_2_img.png",
+    description: "Multi-doctor emergency-capable hospital with recent capex complete. Owner staying for a 3-year post-close role.",
+  },
+  {
+    id: "ky-farm",
+    title: "Long-Term Farm Accounts with High-Margin Contracts",
+    state: "KY", locationType: "Rural", practiceType: "Equine",
+    dvms: 4, pt: 0, revenue: 3400000, lastYear: "$3.4M", ytd: "$1.7M", yoy: "+3%",
+    status: "Coming Soon",
+    image: "assets/listings-images/image 6_3_img.png",
+    description: "Equine sports medicine and imaging practice with durable farm relationships and recurring revenue.",
+  },
+  {
+    id: "or-niche",
+    title: "High-Demand Niche Practice with Extended Waitlist",
+    state: "OR", locationType: "Suburban", practiceType: "Specialty & Referral",
+    dvms: 2, pt: 1, revenue: 780000, lastYear: "$780K", ytd: "$470K", yoy: "+18%",
+    status: "Active",
+    image: "assets/listings-images/image 37_4_img.png",
+    description: "Specialty-focused practice with steady GP referral pipeline and a modern facility.",
+  },
+  {
+    id: "co-rehab",
+    title: "Fast-Growing Companion Animal Practice with Rehab Suite",
+    state: "CO", locationType: "Suburban", practiceType: "Rehab & Sports Med",
+    dvms: 2, pt: 1, revenue: 920000, lastYear: "$920K", ytd: "$580K", yoy: "+25%",
+    status: "Offer Pending",
+    image: "assets/listings-images/image 32_6_img.png",
+    description: "Small animal hospital growing 25% a year, with an in-house canine rehab suite — underwater treadmill, therapeutic laser, and shockwave — driving loyal repeat clients.",
+  },
+];
+
+// ── The seller's own listing (editable via the Listing Editor slideout) ──
+// Recommended watercolor images the seller can pick from (they can't upload their
+// own) — 5 curated for AnimalCare's profile (Suburban IL small-animal GP). The
+// AI-generation flow draws "generated" results from the larger full-library pool.
+const MY_LISTING_RECOMMENDED_IMAGES = [
+  "assets/listings-images/image 9_2_img.png",
+  "assets/listings-images/image 11_1_img.png",
+  "assets/listings-images/image 6_3_img.png",
+  "assets/listings-images/image 37_4_img.png",
+  "assets/listings-images/image 7_4_img.png",
+];
+const LISTING_IMAGE_LIBRARY = [
+  "assets/listings-images/image 9_2_img.png",
+  "assets/listings-images/image 11_1_img.png",
+  "assets/listings-images/image 6_3_img.png",
+  "assets/listings-images/image 2_3_img.png",
+  "assets/listings-images/image 32_6_img.png",
+  "assets/listings-images/image 37_4_img.png",
+  "assets/listings-images/image 7_4_img.png",
+  "assets/listings-images/image 5_2_img.png",
+  "assets/listings-images/image 8_5_img.png",
+  "assets/listings-images/image 13_1_img.png",
+  "assets/listings-images/image 35_5_img.png",
+  "assets/listings-images/image 28_9_img.png",
+];
+
+// AI title/description suggestions (simulated) — tuned to AnimalCare's profile.
+const AI_TITLE_SUGGESTIONS = [
+  "Established Small Animal Practice with a Loyal Following",
+  "Turnkey Veterinary Clinic with a Two-Year Transition",
+  "Cash-Flowing Companion Animal Hospital in Lakeside",
+  "Profitable Small Animal Practice with a Retiring Owner",
+  "Well-Staffed Clinic with Two Decades of Community Goodwill",
+];
+const AI_DESCRIPTION_SUGGESTIONS = [
+  "A well-established small animal practice with a loyal client base and a retiring owner offering a smooth, hands-on transition.",
+  "Fully operational GP hospital with strong cash flow, a tenured support team, and two decades of community trust behind it.",
+  "Turnkey small animal hospital in a stable suburban market, with an experienced owner ready to support a two-year handoff.",
+  "Profitable, well-staffed veterinary practice with consistent revenue growth and a reputation built over more than 20 years.",
+];
+
+const AI_IMAGE_LIMIT = 3;
+
+// Mutable store for the seller's listing. Mirrors the router's event pattern so
+// the Preview card and the editor slideout stay in sync without prop threading.
+const MY_LISTING = {
+  title: PRACTICE.listingTitle,
+  description: PRACTICE.teaser,
+  image: "assets/listings-images/image 9_2_img.png",
+  titlePending: false,         // a manual title edit awaiting CareOwner approval
+  pendingTitle: null,
+  descriptionPending: false,   // a manual description edit awaiting CareOwner approval
+  pendingDescription: null,
+  aiUses: 0,                   // AI image generations consumed (max AI_IMAGE_LIMIT)
+};
+function updateMyListing(patch) {
+  Object.assign(MY_LISTING, patch);
+  window.dispatchEvent(new Event("co:listing"));
+}
+function useMyListing() {
+  const [, force] = React.useState(0);
+  React.useEffect(() => {
+    const h = () => force(n => n + 1);
+    window.addEventListener("co:listing", h);
+    return () => window.removeEventListener("co:listing", h);
+  }, []);
+  return MY_LISTING;
+}
+window.MY_LISTING_RECOMMENDED_IMAGES = MY_LISTING_RECOMMENDED_IMAGES;
+window.LISTING_IMAGE_LIBRARY = LISTING_IMAGE_LIBRARY;
+window.AI_TITLE_SUGGESTIONS = AI_TITLE_SUGGESTIONS;
+window.AI_DESCRIPTION_SUGGESTIONS = AI_DESCRIPTION_SUGGESTIONS;
+window.AI_IMAGE_LIMIT = AI_IMAGE_LIMIT;
+window.MY_LISTING = MY_LISTING;
+window.updateMyListing = updateMyListing;
+window.useMyListing = useMyListing;
+
+window.LISTINGS = LISTINGS;
+window.LISTING_PRACTICE_TYPES = LISTING_PRACTICE_TYPES;
+window.LISTING_LOCATION_TYPES = LISTING_LOCATION_TYPES;
+window.LISTING_STATUSES = LISTING_STATUSES;
+
 window.MARKET_PROFILE_STAFF = MARKET_PROFILE_STAFF;
 window.INQUIRIES = INQUIRIES;
 window.OFFERS = OFFERS;
