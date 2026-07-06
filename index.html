@@ -1379,16 +1379,17 @@
 
     .mk-divider { height: 1px; background: var(--stone-200); margin: 0 0 14px; }
 
-    /* stats */
-    .mk-stats { display:flex; align-items:stretch; gap: 20px; padding-bottom: 16px; }
-    .mk-stat { display:flex; flex-direction: column; gap: 6px; }
-    .mk-stat + .mk-stat { padding-left: 20px; border-left: 1px solid var(--stone-200); }
-    .mk-stat__label { font: var(--font-label-sm); text-transform: uppercase; letter-spacing: 0.5px; color: var(--stone-500); }
-    .mk-stat__val { font: 600 15px/1.2 "Inter"; color: var(--stone-900); }
-    .mk-stat__val small { font: 400 13px/1 "Inter"; color: var(--stone-500); font-weight: 400; margin-left: 2px; }
-    .mk-rev { display:flex; align-items:baseline; gap: 10px; flex-wrap: wrap; }
-    .mk-rev__k { font: 500 12px/1 "Inter"; color: var(--stone-400); }
-    .mk-rev__yoy { font: 600 13px/1 "Inter"; color: var(--success-700); }
+    /* stats — one-line data row, no mid-divider (matches Figma spec) */
+    .mk-stats { display:flex; justify-content: space-between; align-items: flex-start; align-self: stretch; padding-bottom: 16px; }
+    .mk-stat { display:flex; flex-direction: column; align-items: flex-start; gap: 4px; align-self: stretch; min-width: 0; }
+    .mk-stat--revenue { padding-right: 10px; }
+    .mk-stat__label { font: 500 12px/15px "Inter"; text-transform: uppercase; letter-spacing: 0.5px; color: var(--stone-500); white-space: nowrap; }
+    .mk-stat__val { font: 600 15px/15px "Inter"; color: #0A0A0A; white-space: nowrap; }
+    .mk-stat__val small { font: 400 13px/15px "Inter"; color: var(--stone-500); font-weight: 400; margin-left: 2px; }
+    .mk-rev { display:flex; align-items:baseline; gap: 8px; flex-wrap: nowrap; }
+    .mk-rev > span { white-space: nowrap; }
+    .mk-rev__k { font: 500 12px/15px "Inter"; color: var(--stone-400); }
+    .mk-rev__yoy { font: 600 15px/15px "Inter"; color: var(--success-700); white-space: nowrap; }
 
     /* footer buttons */
     .mk-foot { display:flex; align-items:center; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--stone-100); margin-top: auto; }
@@ -1441,6 +1442,14 @@
     /* Preview Listing card (marketplace card without buyer actions) */
     .mk-card--preview:hover { transform: none; box-shadow: none; border-color: var(--stone-200); }
     .mk-card--preview .mk-body { padding-bottom: 16px; }
+    /* The right-rail preview card is narrower than a Marketplace card — tighten the
+       revenue row's internal spacing and type scale so it still stays on one line. */
+    .mk-card--preview .mk-stat--revenue { padding-right: 0; }
+    .mk-card--preview .mk-rev { gap: 4px; }
+    .mk-card--preview .mk-stat__label { font-size: 11px; letter-spacing: 0.2px; }
+    .mk-card--preview .mk-stat__val { font-size: 13px; }
+    .mk-card--preview .mk-rev__k { font-size: 11px; }
+    .mk-card--preview .mk-rev__yoy { font-size: 13px; }
     .co-preview__note { display:flex; align-items:center; gap: 6px; font: 400 12px/1.4 "Inter"; color: var(--stone-500); margin: 10px 2px 0; }
     .co-preview__note svg { color: var(--stone-400); }
 

@@ -31,7 +31,7 @@ const PreviewListingCard = ({ listing }) => (
           <span className="mk-stat__label">FTE DVMs</span>
           <span className="mk-stat__val">{PRACTICE.doctors}<small>· {PRACTICE.team.partTime} PT</small></span>
         </div>
-        <div className="mk-stat">
+        <div className="mk-stat mk-stat--revenue">
           <span className="mk-stat__label">Revenue</span>
           <span className="mk-stat__val mk-rev">
             <span><span className="mk-rev__k">2025</span> $836K</span>

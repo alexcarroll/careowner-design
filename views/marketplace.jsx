@@ -97,7 +97,7 @@ const ListingContent = ({ l }) => (
         <span className="mk-stat__label">FTE DVMs</span>
         <span className="mk-stat__val">{l.dvms}{l.pt > 0 && <small>· {l.pt} PT</small>}</span>
       </div>
-      <div className="mk-stat">
+      <div className="mk-stat mk-stat--revenue">
         <span className="mk-stat__label">Revenue</span>
         <span className="mk-stat__val mk-rev">
           <span><span className="mk-rev__k">2025</span> {l.lastYear}</span>
@@ -169,7 +169,7 @@ const ListingCard = ({ l, layout, saved, menuOpen, onMenu, onCloseMenu, onSave, 
                 <span className="mk-stat__label">FTE DVMs</span>
                 <span className="mk-stat__val">{l.dvms}{l.pt > 0 && <small>· {l.pt} PT</small>}</span>
               </div>
-              <div className="mk-stat">
+              <div className="mk-stat mk-stat--revenue">
                 <span className="mk-stat__label">Revenue</span>
                 <span className="mk-stat__val mk-rev">
                   <span><span className="mk-rev__k">2025</span> {l.lastYear}</span>
