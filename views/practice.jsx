@@ -1,14 +1,17 @@
 // My Practice view — 4 tabs: Overview, Practice Details, Ownership, Deal Preferences
 
-const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection, tab, onManageListing }) => {
+const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection, tab, onManageListing, onToast }) => {
   const activeTab = tab || "overview";
   const isTeam = section === "team";
+  const isServices = section === "services";
+  const fullWidth = isTeam || isServices;
+  const title = isTeam ? "Team" : isServices ? "Services" : "Practice Overview";
 
   return (
     <>
       <SubHeader
-        crumbs={["Marketplace", "AnimalCare"]}
-        title={isTeam ? "Team" : "Practice Overview"}
+        crumbs={[PRACTICE.name, title]}
+        title={title}
         actions={<>
           <button className="co-btn-outline" onClick={() => {
             const blob = new Blob([["field,value", "name,AnimalCare", "revenue,$2.45M", "ebitda,$612K"].join("\n")], { type: "text/csv" });
@@ -19,12 +22,12 @@ const PracticeView = ({ pub, onTogglePub, onEdit, section, onSection, tab, onMan
           }}>
             <Icon name="download" /> Export CSV
           </button>
-          <button className="co-btn-solid" onClick={() => onEdit({ title: "Manage Practice", kind: "manage" })}>Manage</button>
+          {!isServices && <button className="co-btn-solid" onClick={() => onEdit({ title: "Manage Practice", kind: "manage" })}>Manage</button>}
         </>}
       />
-      {isTeam ? (
+      {fullWidth ? (
         <div className="co-body">
-          <TeamSection />
+          {isTeam ? <TeamSection /> : <ServicesSection onToast={onToast} />}
         </div>
       ) : (
         <div className="co-body co-body--cols">

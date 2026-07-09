@@ -447,6 +447,24 @@
     .co-more-details:hover { text-decoration: underline; }
     .co-add-row { display:inline-flex; align-items:center; gap: 8px; padding: 8px 20px 10px 20px; border-radius: 6px; border: 1.5px solid var(--teal-brand); background: #fff; cursor: pointer; font: 500 14px/1 "Inter"; color: var(--teal-brand); }
     .co-add-row:hover { background: var(--brand-hover); color: #fff; border-color: var(--brand-hover); }
+    /* Inline price input with a fixed "$" adornment */
+    .co-tbl-price { display:flex; align-items:center; height: 32px; padding: 0 8px; border: 1px solid var(--stone-200); border-radius: 6px; background: #fff; width: 100%; box-sizing: border-box; }
+    .co-tbl-price:focus-within { border-color: var(--teal-brand); box-shadow: 0 0 0 2px var(--teal-tint); }
+    .co-tbl-price__sign { font: 400 14px/1 "Inter"; color: var(--stone-500); flex-shrink: 0; }
+    .co-tbl-price input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; height: 100%; padding: 0 0 0 2px; font: 400 14px/1 "Inter"; color: var(--stone-900); }
+    /* Import price list — option cards */
+    .co-import-opt { display:flex; align-items:flex-start; gap: 16px; width: 100%; text-align: left; padding: 18px 20px; border: 1.5px dashed var(--stone-300); border-radius: 12px; background: #fff; cursor: pointer; transition: border-color 150ms, background 150ms; }
+    .co-import-opt:hover { border-color: var(--teal-brand); background: var(--teal-tint); }
+    .co-import-opt__icon { flex-shrink: 0; width: 40px; height: 40px; display:grid; place-items:center; color: var(--teal-brand); }
+    .co-import-opt h4 { font: 600 16px/1.3 "Inter"; margin: 0 0 4px; color: var(--stone-900); }
+    .co-import-opt p { font: 400 14px/1.5 "Inter"; margin: 0; color: var(--stone-500); }
+    /* Specialty Programs — condensed, clickable list rows */
+    .co-program-row { display:flex; align-items:center; gap: 12px; width: 100%; text-align: left; background: none; border: 0; border-top: 1px solid var(--stone-100); padding: 12px 4px; cursor: pointer; }
+    .co-program-row:first-of-type { border-top: 0; padding-top: 12px; }
+    .co-program-row:hover { background: var(--stone-50); }
+    .co-program-row__name { font: 600 14px/1.3 "Inter"; color: var(--teal-brand); }
+    .co-program-row:hover .co-program-row__name { text-decoration: underline; }
+    .co-program-row__meta { font: 400 13px/1.4 "Inter"; color: var(--stone-500); margin-top: 3px; }
 
     /* Slideout */
     .co-slideout-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 100; }
@@ -1571,6 +1589,7 @@
   <script type="text/babel" src="views/messages.jsx"></script>
   <script type="text/babel" src="views/meetings.jsx"></script>
   <script type="text/babel" src="views/team.jsx"></script>
+  <script type="text/babel" src="views/services.jsx"></script>
   <script type="text/babel" src="views/home.jsx"></script>
   <script type="text/babel" src="views/marketplace.jsx"></script>
   <script type="text/babel" src="views/listing-editor.jsx"></script>

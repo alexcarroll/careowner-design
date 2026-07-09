@@ -210,6 +210,7 @@ const MarketCheckView = ({ tab, sub }) => {
   return (
     <>
       <SubHeader
+        crumbs={[PRACTICE.name, "Market Check"]}
         title="Market Check"
         subtitle="Prepare your practice for sale and understand market interest"
         actions={<>
@@ -1321,6 +1322,7 @@ const NewRequestFlow = () => {
   return (
     <>
       <SubHeader
+        crumbs={[PRACTICE.name, "Market Check"]}
         title="New Market Check Request"
         subtitle="Build an anonymized snapshot and send it to curated buyers for an indicative valuation."
         actions={<button className="co-btn-outline" onClick={() => navigateTo("/practice/market-check#requests")}><Icon name="x" /> Cancel</button>}

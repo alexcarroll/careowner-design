@@ -59,7 +59,80 @@ const PRACTICE = {
     remainingTerm: "~4.5 yrs (to 12/2030)",
     renewalOptions: "Two 5-year options",
   },
+  // Named provider for each provider type. `value` may be one of `options` or a
+  // free-text custom name ("Other"). Order is meaningful — cards render in this order.
+  providers: [
+    { id: "inhouse",     type: "In-house Lab",   icon: "activity",    desc: "In-house laboratory equipment provider",          value: "Idexx",  options: ["Antech", "Idexx"] },
+    { id: "distributor", type: "Main Distributor", icon: "store",     desc: "Primary product distributor for the practice",     value: "MWI",    options: ["Covetrus", "MWI", "Patterson"] },
+    { id: "reference",   type: "Reference Lab",  icon: "searchCheck", desc: "External reference laboratory for specialized testing", value: "Antech", options: ["Antech", "Idexx"] },
+  ],
+  // Service pricing, grouped into categories. `updated` is an ISO "YYYY-MM" of the
+  // last price change; `prev` is the prior price. % change is derived, never stored.
+  pricing: [
+    { id: "cat-office", name: "Office Visit", items: [
+      { id: "p1", name: "Routine Exam",      price: "$75",  prev: "$71",  updated: "2026-01" },
+      { id: "p2", name: "Sick Visit",        price: "$95",  prev: "$90",  updated: "2026-01" },
+      { id: "p3", name: "Emergency Consult", price: "$150", prev: "$140", updated: "2026-03" },
+    ]},
+    { id: "cat-vax", name: "Vaccinations", items: [
+      { id: "p4", name: "Rabies",      price: "$25", prev: "$24", updated: "2025-06" },
+      { id: "p5", name: "DHPP (Dogs)", price: "$35", prev: "$33", updated: "2025-06" },
+      { id: "p6", name: "FVRCP (Cats)", price: "$32", prev: "$30", updated: "2025-06" },
+    ]},
+    { id: "cat-dental", name: "Dental Services", items: [
+      { id: "p7", name: "Dental Cleaning",  price: "$350–$500", prev: "$325–$465", updated: "2026-02" },
+      { id: "p8", name: "Tooth Extraction", price: "$75–$150",  prev: "$70–$140",  updated: "2026-02" },
+      { id: "p9", name: "Dental X-Rays",    price: "$150",      prev: "$135",      updated: "2026-02" },
+    ]},
+    { id: "cat-surgery", name: "Surgery", items: [
+      { id: "p10", name: "Spay (Cat)",  price: "$250–$350", prev: "$238–$333", updated: "2026-01" },
+      { id: "p11", name: "Spay (Dog)",  price: "$350–$550", prev: "$330–$519", updated: "2026-01" },
+      { id: "p12", name: "Neuter (Cat)", price: "$150–$250", prev: "$144–$239", updated: "2026-01" },
+    ]},
+  ],
+  // Rewards / loyalty / membership / partnership programs surfaced on the Services page.
+  // runBy: "self" | "third-party" | "unsure". joinFee/adminCost: { amount, cadence }.
+  specialtyPrograms: [
+    {
+      id: "sp1",
+      name: "Paws Rewards Program",
+      type: "Client Loyalty / Rewards Program",
+      description: "Our Paws Rewards program helps build client loyalty and encourages repeat visits. Members earn points on every purchase that can be redeemed for services and products.",
+      runBy: "third-party",
+      runTool: "PetDesk Loyalty",
+      joinFee: { amount: "", cadence: "free" },
+      members: "1,240",
+      renewalRate: "86",
+      started: "2019",
+      adminCost: { amount: "199", cadence: "monthly" },
+      perks: ["Points on every purchase", "Birthday rewards", "Exclusive discounts", "Priority booking", "Referral bonuses", "Early access to new services"],
+    },
+    {
+      id: "sp2",
+      name: "Wellness Plan Membership",
+      type: "Membership Subscription",
+      description: "A monthly wellness membership that bundles routine preventive care — exams, core vaccines, and dental cleanings — into one predictable monthly payment for pet owners.",
+      runBy: "self",
+      runTool: "",
+      joinFee: { amount: "39", cadence: "monthly" },
+      members: "310",
+      renewalRate: "74",
+      started: "2022",
+      adminCost: { amount: "", cadence: "none" },
+      perks: ["Two wellness exams per year", "Core vaccines included", "10% off additional services", "Complimentary nail trims"],
+    },
+  ],
 };
+
+// Master checklist of common veterinary services surfaced in the Services editor.
+// PRACTICE.services holds the subset a practice actually offers (plus any customs).
+const SERVICE_OPTIONS = [
+  "Wellness Exams", "Vaccinations", "Surgery", "Dental Care",
+  "Laboratory Services", "Radiology", "Emergency Care", "Rehabilitation",
+  "Ultrasound", "Digital X-Ray", "After Hours / On-Call", "Boarding",
+  "Grooming", "Microchipping", "Pharmacy", "Euthanasia",
+  "Mobile Services", "Specialty Services",
+];
 
 // Canonical buyer types — the same set surfaced on the Buyer Profile type badge
 // and in the Find Buyers "Type" filter. Keep table + profile + filter in sync.
@@ -500,6 +573,7 @@ const MARKET_PROFILE_OWNER = {
 window.MARKET_PROFILE_FINANCIALS = MARKET_PROFILE_FINANCIALS;
 window.MARKET_PROFILE_OWNER = MARKET_PROFILE_OWNER;
 window.OPERATIONS_REVENUE_MIX = OPERATIONS_REVENUE_MIX;
+window.SERVICE_OPTIONS = SERVICE_OPTIONS;
 window.PRACTICE = PRACTICE;
 window.BUYERS = BUYERS;
 window.BUYER_TYPES = BUYER_TYPES;
