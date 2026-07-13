@@ -105,6 +105,11 @@
     .co-sub__back { margin-bottom: 16px; }
     /* Light rule under a page title, separating it from the body below. */
     .co-title-divider { height: 1px; background: var(--stone-200); border: 0; margin: 0 0 24px; }
+
+    /* Creation-flow wizard footer (Back/Cancel + Continue) — sticks to the bottom
+       of the viewport while the step content scrolls past it, and settles back
+       into normal flow once the page is short enough not to need it. */
+    .pr-wizard__footer { position: sticky; bottom: 0; z-index: 5; display:flex; align-items:center; justify-content: space-between; margin-top: 16px; padding: 16px 0; background: #FBFBF9; border-top: 1px solid var(--stone-200); }
     .co-btn-outline { display:inline-flex; align-items:center; gap: 6px; height: 38px; padding: 0 20px; border-radius: 6px; border: 1px solid var(--stone-300); background: #fff; color: #57534E; font: 500 14px/1 "Inter"; cursor: pointer; }
     .co-btn-outline:hover { border-color: var(--stone-200); background: #FBFBF9; }
     .co-btn-outline svg { width: 14px; height: 14px; }

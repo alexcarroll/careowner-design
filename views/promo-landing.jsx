@@ -39,7 +39,7 @@ const PLHeader = ({ mode, onToast }) => {
       <header className="pl-topbar">
         <div className="pl-topbar__inner">
           <div className="pl-topbar__brand">
-            <img className="pl-topbar__logo" src="assets/careowner-logo-lightbg.svg" alt="CareOwner" />
+            <img className="pl-topbar__logo" src={assetUrl("assets/careowner-logo-lightbg.svg")} alt="CareOwner" />
             <span className="pl-topbar__tag">The platform for buying and selling veterinary practices.</span>
           </div>
           <div className="pl-topbar__controls">
@@ -63,7 +63,7 @@ const PLHeader = ({ mode, onToast }) => {
 const PLFooter = ({ note }) => (
   <footer className="pl-footer">
     <div className="pl-footer__inner">
-      <img className="pl-footer__logo" src="assets/careowner-logo-darkbg.svg" alt="CareOwner" />
+      <img className="pl-footer__logo" src={assetUrl("assets/careowner-logo-darkbg.svg")} alt="CareOwner" />
       <p>{note}</p>
       <p className="pl-footer__fine">Practice sales, handled with care · The CareOwner marketplace</p>
     </div>
@@ -275,7 +275,7 @@ const TrustedLanding = ({ token, onToast }) => {
           </div>
         </div>
         <figure className="pl-hero__media">
-          <img src="assets/practice-exterior.jpg" alt={PRACTICE.name} />
+          <img src={assetUrl("assets/practice-exterior.jpg")} alt={PRACTICE.name} />
           <figcaption><Icon name="checkCircle" size={12} /> The real {PRACTICE.name} — no stock photos here</figcaption>
         </figure>
       </section>

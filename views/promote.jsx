@@ -404,7 +404,7 @@ const PromoteHub = ({ onToast }) => {
               <div>
                 <div className="co-card__head" style={{ margin: 0, marginBottom: 12 }}>
                   <h3 className="co-card__title"><Icon name="eye" />Share Listing</h3>
-                  <button className="co-btn-manage" style={{ height: 32, padding: "0 12px" }} onClick={() => window.open("/l/" + listing.id, "_blank", "noopener")}>
+                  <button className="co-btn-manage" style={{ height: 32, padding: "0 12px" }} onClick={() => window.open(promoShareUrl("/l/" + listing.id), "_blank", "noopener")}>
                     <Icon name="externalLink" size={13} /> Preview
                   </button>
                 </div>
@@ -807,7 +807,7 @@ const AdWizard = ({ onToast }) => {
           )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+        <div className="pr-wizard__footer">
           <button className="co-btn co-btn--ghost" onClick={back} disabled={launching}>{step === 1 ? "Cancel" : "Back"}</button>
           {step < 5
             ? <button className="co-btn co-btn--primary" onClick={next} disabled={!canContinue}>Continue <Icon name="chevronRight" size={14} /></button>
@@ -1043,7 +1043,7 @@ const FeaturedFlow = ({ onToast }) => {
           )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+        <div className="pr-wizard__footer">
           <button className="co-btn co-btn--ghost" onClick={back} disabled={paying}>{step === 1 ? "Cancel" : "Back"}</button>
           {step < 4
             ? <button className="co-btn co-btn--primary" onClick={() => setStep(s => s + 1)}>Continue <Icon name="chevronRight" size={14} /></button>
@@ -1316,7 +1316,7 @@ const LocalAdsFlow = ({ onToast }) => {
           )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+        <div className="pr-wizard__footer">
           <button className="co-btn co-btn--ghost" onClick={back} disabled={submitting}>{step === 1 ? "Cancel" : "Back"}</button>
           {step < 4
             ? <button className="co-btn co-btn--primary" onClick={() => setStep(s => s + 1)} disabled={!canContinue}>Continue <Icon name="chevronRight" size={14} /></button>
@@ -1681,7 +1681,7 @@ const PrFlow = ({ onToast }) => {
           )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+        <div className="pr-wizard__footer">
           <button className="co-btn co-btn--ghost" onClick={back} disabled={sending}>{step === 1 ? "Cancel" : "Back"}</button>
           {step < 5
             ? <button className="co-btn co-btn--primary" onClick={() => setStep(s => s + 1)} disabled={!canContinue}>Continue <Icon name="chevronRight" size={14} /></button>

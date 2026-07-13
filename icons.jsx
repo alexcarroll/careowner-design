@@ -90,13 +90,21 @@ const Icon = ({ name, size = 16, ...props }) => {
   );
 };
 
+// Resolve a static file under assets/ against the app's mount base, so it
+// still loads when the current route is nested (e.g. /practice/promotions/ads)
+// on a GitHub Pages project site (served under /<repo>/). Relative "assets/…"
+// src values break here because the browser resolves them against the current
+// pathname's depth, not the site root — see window.__APP_BASE__ in index.html.
+const assetUrl = (path) => (window.__APP_BASE__ || "") + "/" + path;
+
 // Real CareOwner lockup — darkbg variant (white "Care" + bright teal "OWNER")
 // for the forest top nav; lightbg variant lives in assets/ for light surfaces.
 const CareOwnerLogo = () => (
   <div className="co-nav__logo">
-    <img className="co-nav__logo-img" src="assets/careowner-logo-darkbg.svg" alt="CareOwner" />
+    <img className="co-nav__logo-img" src={assetUrl("assets/careowner-logo-darkbg.svg")} alt="CareOwner" />
   </div>
 );
 
 window.Icon = Icon;
 window.CareOwnerLogo = CareOwnerLogo;
+window.assetUrl = assetUrl;

@@ -605,7 +605,7 @@ const LISTINGS = [
     state: "SC", locationType: "Suburban", practiceType: "Small Animal",
     dvms: 4, pt: 1, revenue: 2100000, lastYear: "$2.1M", ytd: "$1.15M", yoy: "+8%",
     status: "Active", featured: true,
-    image: "assets/listings-images/image 2_3_img.png",
+    image: assetUrl("assets/listings-images/image 2_3_img.png"),
     description: "Multi-doctor GP with decades of community reputation. Retiring owner offers an 18-month hands-on transition.",
   },
   {
@@ -614,7 +614,7 @@ const LISTINGS = [
     state: "TX", locationType: "Rural", practiceType: "Mixed Animal",
     dvms: 3, pt: 1, revenue: 1400000, lastYear: "$1.4M", ytd: "$780K", yoy: "+12%",
     status: "Coming Soon",
-    image: "assets/listings-images/image 11_1_img.png",
+    image: assetUrl("assets/listings-images/image 11_1_img.png"),
     description: "Small animal, equine, and cattle revenue streams provide durability. Owner ready to mentor a successor.",
   },
   {
@@ -623,7 +623,7 @@ const LISTINGS = [
     state: "CA", locationType: "Urban", practiceType: "Specialty & Referral",
     dvms: 11, pt: 2, revenue: 8600000, lastYear: "$8.6M", ytd: "$4.7M", yoy: "+6%",
     status: "Offer Pending",
-    image: "assets/listings-images/image 18_8_img.png",
+    image: assetUrl("assets/listings-images/image 18_8_img.png"),
     description: "Established referral hospital with high margins and full multi-doctor coverage. Real estate available.",
   },
   {
@@ -632,7 +632,7 @@ const LISTINGS = [
     state: "MA", locationType: "Urban", practiceType: "Small Animal",
     dvms: 2, pt: 0, revenue: 1050000, lastYear: "$1.05M", ytd: "$560K", yoy: "+4%",
     status: "Active",
-    image: "assets/listings-images/image 35_5_img.png",
+    image: assetUrl("assets/listings-images/image 35_5_img.png"),
     description: "Character-filled facility with deep community roots. Owner open to a real estate lease-back.",
   },
   {
@@ -641,7 +641,7 @@ const LISTINGS = [
     state: "AZ", locationType: "Suburban", practiceType: "Mobile",
     dvms: 2, pt: 1, revenue: 895000, lastYear: "$895K", ytd: "$520K", yoy: "+22%",
     status: "Active",
-    image: "assets/listings-images/image 288_7_img.png",
+    image: assetUrl("assets/listings-images/image 288_7_img.png"),
     description: "Multi-vehicle mobile practice with a subscription plan powering ~40% of revenue and room to expand.",
   },
   {
@@ -650,7 +650,7 @@ const LISTINGS = [
     state: "FL", locationType: "Urban", practiceType: "Feline",
     dvms: 3, pt: 2, revenue: 1300000, lastYear: "$1.3M", ytd: "$720K", yoy: "+11%",
     status: "Under Contract",
-    image: "assets/listings-images/image 13_1_img.png",
+    image: assetUrl("assets/listings-images/image 13_1_img.png"),
     description: "Feline-focused practice with premium reputation and consistent new-patient demand. Owner relocating.",
   },
   {
@@ -659,7 +659,7 @@ const LISTINGS = [
     state: "PA", locationType: "Suburban", practiceType: "Small Animal",
     dvms: 9, pt: 3, revenue: 6200000, lastYear: "$6.2M", ytd: "$3.4M", yoy: "+15%",
     status: "Active",
-    image: "assets/listings-images/image 9_2_img.png",
+    image: assetUrl("assets/listings-images/image 9_2_img.png"),
     description: "Multi-doctor emergency-capable hospital with recent capex complete. Owner staying for a 3-year post-close role.",
   },
   {
@@ -668,7 +668,7 @@ const LISTINGS = [
     state: "KY", locationType: "Rural", practiceType: "Equine",
     dvms: 4, pt: 0, revenue: 3400000, lastYear: "$3.4M", ytd: "$1.7M", yoy: "+3%",
     status: "Coming Soon",
-    image: "assets/listings-images/image 6_3_img.png",
+    image: assetUrl("assets/listings-images/image 6_3_img.png"),
     description: "Equine sports medicine and imaging practice with durable farm relationships and recurring revenue.",
   },
   {
@@ -677,7 +677,7 @@ const LISTINGS = [
     state: "OR", locationType: "Suburban", practiceType: "Specialty & Referral",
     dvms: 2, pt: 1, revenue: 780000, lastYear: "$780K", ytd: "$470K", yoy: "+18%",
     status: "Active",
-    image: "assets/listings-images/image 37_4_img.png",
+    image: assetUrl("assets/listings-images/image 37_4_img.png"),
     description: "Specialty-focused practice with steady GP referral pipeline and a modern facility.",
   },
   {
@@ -686,7 +686,7 @@ const LISTINGS = [
     state: "CO", locationType: "Suburban", practiceType: "Rehab & Sports Med",
     dvms: 2, pt: 1, revenue: 920000, lastYear: "$920K", ytd: "$580K", yoy: "+25%",
     status: "Offer Pending",
-    image: "assets/listings-images/image 32_6_img.png",
+    image: assetUrl("assets/listings-images/image 32_6_img.png"),
     description: "Small animal hospital growing 25% a year, with an in-house canine rehab suite — underwater treadmill, therapeutic laser, and shockwave — driving loyal repeat clients.",
   },
 ];
@@ -696,25 +696,25 @@ const LISTINGS = [
 // own) — 5 curated for AnimalCare's profile (Suburban IL small-animal GP). The
 // AI-generation flow draws "generated" results from the larger full-library pool.
 const MY_LISTING_RECOMMENDED_IMAGES = [
-  "assets/listings-images/image 9_2_img.png",
-  "assets/listings-images/image 11_1_img.png",
-  "assets/listings-images/image 6_3_img.png",
-  "assets/listings-images/image 37_4_img.png",
-  "assets/listings-images/image 7_4_img.png",
+  assetUrl("assets/listings-images/image 9_2_img.png"),
+  assetUrl("assets/listings-images/image 11_1_img.png"),
+  assetUrl("assets/listings-images/image 6_3_img.png"),
+  assetUrl("assets/listings-images/image 37_4_img.png"),
+  assetUrl("assets/listings-images/image 7_4_img.png"),
 ];
 const LISTING_IMAGE_LIBRARY = [
-  "assets/listings-images/image 9_2_img.png",
-  "assets/listings-images/image 11_1_img.png",
-  "assets/listings-images/image 6_3_img.png",
-  "assets/listings-images/image 2_3_img.png",
-  "assets/listings-images/image 32_6_img.png",
-  "assets/listings-images/image 37_4_img.png",
-  "assets/listings-images/image 7_4_img.png",
-  "assets/listings-images/image 5_2_img.png",
-  "assets/listings-images/image 8_5_img.png",
-  "assets/listings-images/image 13_1_img.png",
-  "assets/listings-images/image 35_5_img.png",
-  "assets/listings-images/image 28_9_img.png",
+  assetUrl("assets/listings-images/image 9_2_img.png"),
+  assetUrl("assets/listings-images/image 11_1_img.png"),
+  assetUrl("assets/listings-images/image 6_3_img.png"),
+  assetUrl("assets/listings-images/image 2_3_img.png"),
+  assetUrl("assets/listings-images/image 32_6_img.png"),
+  assetUrl("assets/listings-images/image 37_4_img.png"),
+  assetUrl("assets/listings-images/image 7_4_img.png"),
+  assetUrl("assets/listings-images/image 5_2_img.png"),
+  assetUrl("assets/listings-images/image 8_5_img.png"),
+  assetUrl("assets/listings-images/image 13_1_img.png"),
+  assetUrl("assets/listings-images/image 35_5_img.png"),
+  assetUrl("assets/listings-images/image 28_9_img.png"),
 ];
 
 // AI title/description suggestions (simulated) — tuned to AnimalCare's profile.
@@ -742,7 +742,7 @@ const MY_LISTING = {
   featured: null,              // FeaturedPromotion | null — set by the Featured Listing flow
   title: PRACTICE.listingTitle,
   description: PRACTICE.teaser,
-  image: "assets/listings-images/image 9_2_img.png",
+  image: assetUrl("assets/listings-images/image 9_2_img.png"),
   titlePending: false,         // a manual title edit awaiting CareOwner approval
   pendingTitle: null,
   descriptionPending: false,   // a manual description edit awaiting CareOwner approval
@@ -842,43 +842,43 @@ const PROMO_AUDIENCES = [
 // All copy is anonymized — no practice name, street, city, or owner name.
 const PROMO_CREATIVE_POOL = {
   individual_dvm: [
-    { headline: "Ready to be your own boss?", cta: "See the opportunity", imageUrl: "assets/listings-images/image 9_2_img.png",
+    { headline: "Ready to be your own boss?", cta: "See the opportunity", imageUrl: assetUrl("assets/listings-images/image 9_2_img.png"),
       primaryText: "An established suburban Midwest small-animal practice is for sale — $2M–$3M revenue, ~25% EBITDA margins, and a tenured team that stays. The retiring owner will mentor you through a hands-on transition." },
-    { headline: "Own the practice you'd build yourself", cta: "Request more info", imageUrl: "assets/listings-images/image 37_4_img.png",
+    { headline: "Own the practice you'd build yourself", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 37_4_img.png"),
       primaryText: "Skip the startup years. Step into a cash-flowing suburban practice with 1,200+ active clients, modern workflows, and an owner committed to a 2–3 year handoff." },
-    { headline: "From associate to owner — without the leap of faith", cta: "Get the details", imageUrl: "assets/listings-images/image 7_4_img.png",
+    { headline: "From associate to owner — without the leap of faith", cta: "Get the details", imageUrl: assetUrl("assets/listings-images/image 7_4_img.png"),
       primaryText: "The rare listing built for a first-time owner: verified financials, a loyal client base, and flexible deal structures on the table." },
-    { headline: "Your name on the door in 2026", cta: "Learn more", imageUrl: "assets/listings-images/image 11_1_img.png",
+    { headline: "Your name on the door in 2026", cta: "Learn more", imageUrl: assetUrl("assets/listings-images/image 11_1_img.png"),
       primaryText: "A profitable Midwest small-animal practice with a retiring owner is quietly looking for its next owner-DVM. Confidential until you inquire." },
   ],
   neighbor_practice: [
-    { headline: "Grow by acquisition — right in your backyard", cta: "Request more info", imageUrl: "assets/listings-images/image 6_3_img.png",
+    { headline: "Grow by acquisition — right in your backyard", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 6_3_img.png"),
       primaryText: "A profitable small-animal practice near you is quietly for sale. $2M–$3M revenue, ~25% margins, and a full team in place — a clean bolt-on for a growing practice." },
-    { headline: "Add a second location without starting from zero", cta: "See the numbers", imageUrl: "assets/listings-images/image 2_3_img.png",
+    { headline: "Add a second location without starting from zero", cta: "See the numbers", imageUrl: assetUrl("assets/listings-images/image 2_3_img.png"),
       primaryText: "Established suburban practice with verified financials and a tenured support team. The owner is retiring and prefers a buyer who'll keep the culture intact." },
-    { headline: "A bolt-on opportunity in the suburban Midwest", cta: "Get the details", imageUrl: "assets/listings-images/image 5_2_img.png",
+    { headline: "A bolt-on opportunity in the suburban Midwest", cta: "Get the details", imageUrl: assetUrl("assets/listings-images/image 5_2_img.png"),
       primaryText: "1,200+ active clients, 5 exam rooms, and +8% growth. Expand your footprint with a practice that already runs itself." },
-    { headline: "Your next location is closer than you think", cta: "Learn more", imageUrl: "assets/listings-images/image 8_5_img.png",
+    { headline: "Your next location is closer than you think", cta: "Learn more", imageUrl: assetUrl("assets/listings-images/image 8_5_img.png"),
       primaryText: "Quietly listed: a cash-flowing small-animal practice with room to consolidate services and grow. Anonymous until you request access." },
   ],
   corporate: [
-    { headline: "Verified suburban performer, ready to transact", cta: "Request the snapshot", imageUrl: "assets/listings-images/image 18_8_img.png",
+    { headline: "Verified suburban performer, ready to transact", cta: "Request the snapshot", imageUrl: assetUrl("assets/listings-images/image 18_8_img.png"),
       primaryText: "$2M–$3M revenue, ~25% adjusted EBITDA margin, low staff turnover, and platform-verified financials. Owner open to a 2–3 year transition." },
-    { headline: "A clean add to your Midwest platform", cta: "Request more info", imageUrl: "assets/listings-images/image 28_9_img.png",
+    { headline: "A clean add to your Midwest platform", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 28_9_img.png"),
       primaryText: "Established small-animal GP with durable client economics, tenured staff, and modern facilities. Diligence-ready data room on request." },
-    { headline: "Suburban Midwest GP · +8% YoY", cta: "See the opportunity", imageUrl: "assets/listings-images/image 13_1_img.png",
+    { headline: "Suburban Midwest GP · +8% YoY", cta: "See the opportunity", imageUrl: assetUrl("assets/listings-images/image 13_1_img.png"),
       primaryText: "Multi-doctor practice with consistent growth, verified EBITDA, and an owner who'll support integration. Anonymity protected until you connect." },
-    { headline: "Diligence-ready and quietly for sale", cta: "Get the details", imageUrl: "assets/listings-images/image 35_5_img.png",
+    { headline: "Diligence-ready and quietly for sale", cta: "Get the details", imageUrl: assetUrl("assets/listings-images/image 35_5_img.png"),
       primaryText: "Institutional-quality records meet neighborhood goodwill: verified financials, documented operations, and a motivated, flexible seller." },
   ],
   other: [
-    { headline: "A thriving veterinary practice is for sale", cta: "Request more info", imageUrl: "assets/listings-images/image 32_6_img.png",
+    { headline: "A thriving veterinary practice is for sale", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 32_6_img.png"),
       primaryText: "Established suburban Midwest small-animal practice — strong cash flow, loyal clients, and a retiring owner offering a smooth transition." },
-    { headline: "Know someone ready to own a practice?", cta: "Learn more", imageUrl: "assets/listings-images/image 9_2_img.png",
+    { headline: "Know someone ready to own a practice?", cta: "Learn more", imageUrl: assetUrl("assets/listings-images/image 9_2_img.png"),
       primaryText: "A profitable, well-staffed veterinary practice is quietly on the market. Pass it along — inquiries stay confidential." },
-    { headline: "Quietly for sale: a practice with deep roots", cta: "Get the details", imageUrl: "assets/listings-images/image 11_1_img.png",
+    { headline: "Quietly for sale: a practice with deep roots", cta: "Get the details", imageUrl: assetUrl("assets/listings-images/image 11_1_img.png"),
       primaryText: "Two decades of community trust, verified financials, and a team that stays. The right buyer gets a hands-on handoff." },
-    { headline: "An owner-ready practice, minus the guesswork", cta: "See the opportunity", imageUrl: "assets/listings-images/image 6_3_img.png",
+    { headline: "An owner-ready practice, minus the guesswork", cta: "See the opportunity", imageUrl: assetUrl("assets/listings-images/image 6_3_img.png"),
       primaryText: "Verified numbers, documented operations, and flexible deal structures. Confidential until you're ready to connect." },
   ],
 };
@@ -1088,7 +1088,7 @@ function localAdCreative(candidate, mode) {
       id: promoMockId("cr"), audience: "other", edited: false,
       headline: "AnimalCare — Lakeside's trusted small-animal practice — is for sale",
       primaryText: "After 12 years serving Lakeside families, Dr. Lisa Thompson is seeking the right successor for AnimalCare: $2.45M revenue, a 16-person team, and a loyal 1,240-client base. Hands-on transition offered.",
-      cta: "Inquire about AnimalCare", imageUrl: "assets/practice-hero.jpg",
+      cta: "Inquire about AnimalCare", imageUrl: assetUrl("assets/practice-hero.jpg"),
       formatNote: candidate.format,
     };
   }
@@ -1096,7 +1096,7 @@ function localAdCreative(candidate, mode) {
     id: promoMockId("cr"), audience: "other", edited: false,
     headline: "Established small-animal practice for sale — suburban Chicago area",
     primaryText: "Profitable suburban Midwest practice with $2M–$3M revenue, ~25% EBITDA margins, and a tenured team. Retiring owner offers a 2–3 year transition. Confidential inquiries via CareOwner.",
-    cta: "Request more info", imageUrl: "assets/listings-images/image 9_2_img.png",
+    cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 9_2_img.png"),
     formatNote: candidate.format,
   };
 }
@@ -1133,7 +1133,7 @@ const mockPrService = {
         "4.8★ average across 235 public reviews",
         "AAHA-certified small-animal practice",
       ],
-      photos: ["assets/practice-hero.jpg"],
+      photos: [assetUrl("assets/practice-hero.jpg")],
       boilerplate: "AnimalCare is an AAHA-certified small-animal veterinary practice in Lakeside, Illinois, founded in 2013 by Dr. Lisa Thompson. The practice provides wellness, surgical, dental, and emergency care to more than 1,200 client families.",
     };
   },
