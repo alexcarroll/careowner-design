@@ -3,6 +3,7 @@
 const PRACTICE = {
   name: "AnimalCare",
   location: "Lakeside, IL",
+  address: "412 Lakeview Ave, Lakeside, IL 60045",
   type: "Small Animal Practice",
   founded: 2013,
   website: "animalcareweb.net",
@@ -736,6 +737,9 @@ const AI_IMAGE_LIMIT = 3;
 // Mutable store for the seller's listing. Mirrors the router's event pattern so
 // the Preview card and the editor slideout stay in sync without prop threading.
 const MY_LISTING = {
+  id: "vv-2481",               // public listing id — used in the anonymous landing URL /l/vv-2481
+  status: "live",              // "draft" | "live" — the Promotions hub unlocks only when live
+  featured: null,              // FeaturedPromotion | null — set by the Featured Listing flow
   title: PRACTICE.listingTitle,
   description: PRACTICE.teaser,
   image: "assets/listings-images/image 9_2_img.png",
@@ -778,3 +782,393 @@ window.OFFERS = OFFERS;
 window.THREADS = THREADS;
 window.MEETINGS = MEETINGS;
 window.ACTIVITY = ACTIVITY;
+
+// ─── Promote Your Practice (spec v1.2) ────────────────────────────────────────
+// Data shapes (plain JS mirror of the product spec's types):
+//   PromoAudience  = "neighbor_practice" | "individual_dvm" | "corporate" | "other"
+//   AnonymityMode  = "anonymous" | "named" | "semi_anonymous"
+//   PromoChannel   = "meta_ads" | "share_link" | "featured" | "local_pubs" | "pr"
+//   ChannelMetrics  { impressions, clicks, inquiries }
+//   CreativeVariant { id, audience, headline, primaryText, cta, imageUrl, edited }
+//   AdCampaign      { id, listingId, audiences, variants, anonymityMode ("anonymous"
+//                     unless adAccountMode === "own"), adAccountMode ("vetvet" | "own"),
+//                     dailyBudget, durationDays, status ("draft" | "in_review" |
+//                     "active" | "paused" | "completed"), landingUrl, metrics?, createdAt }
+//   FeaturedPromotion { id, listingId, tier ("featured_14" | "featured_30" | "featured_60"),
+//                     startAt, endAt, status ("active" | "expired" | "cancelled"),
+//                     placements { marketplaceTop, vetvetCarousel, emailBlasts,
+//                     socialPosts, matchingBoost }, autoRenew, metrics? }
+//   PlacementCandidate { id, outletName, type ("vma" | "business_journal" |
+//                     "community_paper" | "digital" | "other"), reachEstimate,
+//                     relevanceScore, relevanceReason, format, estCost, leadTimeDays,
+//                     submissionPath ("self" | "concierge" | "portal") }
+//   PlacementOrder  { id, listingId, candidateId, anonymityMode, creative,
+//                     fulfillment ("self" | "concierge"), status ("draft" |
+//                     "submitted" | "live" | "completed"), landingUrl, metrics? }
+//   PressAngle      { id, title, summary }
+//   PressKit        { bio, history, quotableStats[], photos[], boilerplate }
+//   ReporterTarget  { id, name, outlet, beat, relevanceReason, pitchDraft,
+//                     status ("suggested" | "pitched" | "opened" | "replied" | "published") }
+//   PrCampaign      { id, listingId, angle, kit, targets[], landingUrl, metrics? }
+//   ShareTarget     { mode, url, token? }
+//   Lead            { id, listingId, channel, source?, contact, createdAt }
+//
+// Core principle: anonymity is per-channel. Meta ads + Featured are anonymous;
+// Share Links offer both; Local Advertising is named by default with a
+// semi-anonymous option; Press & PR is always named (real story, real practice).
+
+// Feature flags — one per channel so any can be toggled off (renders the hub
+// card in a disabled "Coming soon" state).
+const PROMO_META_ENABLED = true;
+const PROMO_SHARE_ENABLED = true;
+const PROMO_FEATURED_ENABLED = true;
+const PROMO_LOCALPUBS_ENABLED = true;
+const PROMO_PR_ENABLED = true;
+
+const PROMO_AUDIENCES = [
+  { id: "individual_dvm",   label: "Individual DVM",       icon: "stethoscope", hint: "Highest-probability buyer",
+    desc: "An associate or DVM ready to own (highest-probability buyer for a small practice)." },
+  { id: "neighbor_practice", label: "Neighboring practice", icon: "building",
+    desc: "A nearby practice looking to grow by acquisition." },
+  { id: "corporate",         label: "Corporate / group",    icon: "briefcase",
+    desc: "A corporate or group buyer." },
+  { id: "other",             label: "Other",                icon: "users", freeText: true,
+    desc: "Someone else — describe who you want to reach." },
+];
+
+// Canned creative per audience, each written to a distinct angle (DVM = "be your
+// own boss", neighbor = "bolt-on growth", corporate = "diligence-ready asset").
+// generateCreative deals the first two per audience; "Regenerate" cycles onward.
+// All copy is anonymized — no practice name, street, city, or owner name.
+const PROMO_CREATIVE_POOL = {
+  individual_dvm: [
+    { headline: "Ready to be your own boss?", cta: "See the opportunity", imageUrl: "assets/listings-images/image 9_2_img.png",
+      primaryText: "An established suburban Midwest small-animal practice is for sale — $2M–$3M revenue, ~25% EBITDA margins, and a tenured team that stays. The retiring owner will mentor you through a hands-on transition." },
+    { headline: "Own the practice you'd build yourself", cta: "Request more info", imageUrl: "assets/listings-images/image 37_4_img.png",
+      primaryText: "Skip the startup years. Step into a cash-flowing suburban practice with 1,200+ active clients, modern workflows, and an owner committed to a 2–3 year handoff." },
+    { headline: "From associate to owner — without the leap of faith", cta: "Get the details", imageUrl: "assets/listings-images/image 7_4_img.png",
+      primaryText: "The rare listing built for a first-time owner: verified financials, a loyal client base, and flexible deal structures on the table." },
+    { headline: "Your name on the door in 2026", cta: "Learn more", imageUrl: "assets/listings-images/image 11_1_img.png",
+      primaryText: "A profitable Midwest small-animal practice with a retiring owner is quietly looking for its next owner-DVM. Confidential until you inquire." },
+  ],
+  neighbor_practice: [
+    { headline: "Grow by acquisition — right in your backyard", cta: "Request more info", imageUrl: "assets/listings-images/image 6_3_img.png",
+      primaryText: "A profitable small-animal practice near you is quietly for sale. $2M–$3M revenue, ~25% margins, and a full team in place — a clean bolt-on for a growing practice." },
+    { headline: "Add a second location without starting from zero", cta: "See the numbers", imageUrl: "assets/listings-images/image 2_3_img.png",
+      primaryText: "Established suburban practice with verified financials and a tenured support team. The owner is retiring and prefers a buyer who'll keep the culture intact." },
+    { headline: "A bolt-on opportunity in the suburban Midwest", cta: "Get the details", imageUrl: "assets/listings-images/image 5_2_img.png",
+      primaryText: "1,200+ active clients, 5 exam rooms, and +8% growth. Expand your footprint with a practice that already runs itself." },
+    { headline: "Your next location is closer than you think", cta: "Learn more", imageUrl: "assets/listings-images/image 8_5_img.png",
+      primaryText: "Quietly listed: a cash-flowing small-animal practice with room to consolidate services and grow. Anonymous until you request access." },
+  ],
+  corporate: [
+    { headline: "Verified suburban performer, ready to transact", cta: "Request the snapshot", imageUrl: "assets/listings-images/image 18_8_img.png",
+      primaryText: "$2M–$3M revenue, ~25% adjusted EBITDA margin, low staff turnover, and platform-verified financials. Owner open to a 2–3 year transition." },
+    { headline: "A clean add to your Midwest platform", cta: "Request more info", imageUrl: "assets/listings-images/image 28_9_img.png",
+      primaryText: "Established small-animal GP with durable client economics, tenured staff, and modern facilities. Diligence-ready data room on request." },
+    { headline: "Suburban Midwest GP · +8% YoY", cta: "See the opportunity", imageUrl: "assets/listings-images/image 13_1_img.png",
+      primaryText: "Multi-doctor practice with consistent growth, verified EBITDA, and an owner who'll support integration. Anonymity protected until you connect." },
+    { headline: "Diligence-ready and quietly for sale", cta: "Get the details", imageUrl: "assets/listings-images/image 35_5_img.png",
+      primaryText: "Institutional-quality records meet neighborhood goodwill: verified financials, documented operations, and a motivated, flexible seller." },
+  ],
+  other: [
+    { headline: "A thriving veterinary practice is for sale", cta: "Request more info", imageUrl: "assets/listings-images/image 32_6_img.png",
+      primaryText: "Established suburban Midwest small-animal practice — strong cash flow, loyal clients, and a retiring owner offering a smooth transition." },
+    { headline: "Know someone ready to own a practice?", cta: "Learn more", imageUrl: "assets/listings-images/image 9_2_img.png",
+      primaryText: "A profitable, well-staffed veterinary practice is quietly on the market. Pass it along — inquiries stay confidential." },
+    { headline: "Quietly for sale: a practice with deep roots", cta: "Get the details", imageUrl: "assets/listings-images/image 11_1_img.png",
+      primaryText: "Two decades of community trust, verified financials, and a team that stays. The right buyer gets a hands-on handoff." },
+    { headline: "An owner-ready practice, minus the guesswork", cta: "See the opportunity", imageUrl: "assets/listings-images/image 6_3_img.png",
+      primaryText: "Verified numbers, documented operations, and flexible deal structures. Confidential until you're ready to connect." },
+  ],
+};
+
+// CTA choices offered in the creative editor.
+const PROMO_CTA_OPTIONS = ["Request more info", "Learn more", "See the opportunity", "Get the details", "See the numbers", "Request the snapshot"];
+
+// Pre-written captions for the Trusted Share link, one per audience. {url} is
+// replaced with the tokenized link carrying that audience's ?src= tag so mock
+// metrics can attribute inquiries per channel.
+const PROMO_SHARE_CAPTIONS = [
+  { audience: "individual_dvm", src: "dvm", label: "To an associate / DVM",
+    text: "Before this goes any wider — I've decided to sell AnimalCare, and I think you'd be a phenomenal owner. Here's the full picture, shared privately: {url}" },
+  { audience: "neighbor_practice", src: "neighbor", label: "To a neighboring practice",
+    text: "Hi — I'm quietly exploring a sale of AnimalCare and wanted you to see the details before anyone else: {url}" },
+  { audience: "corporate", src: "corp", label: "To a corporate / group buyer",
+    text: "Hello — sharing the full profile of my practice, AnimalCare, ahead of any broader process. Details here: {url}" },
+  { audience: "other", src: "direct", label: "To anyone you trust",
+    text: "I'm selling my veterinary practice and wanted to share the details with you directly: {url}" },
+];
+
+// Terms that would de-anonymize the practice if they leak into anonymous-mode ad
+// copy. The creative editor lints edited text against these.
+const PROMO_IDENTIFYING_TERMS = [PRACTICE.name, "412 Lakeview", "Lakeside", PRACTICE.website, "Thompson"];
+function lintAnonymity(text) {
+  const t = (text || "").toLowerCase();
+  return PROMO_IDENTIFYING_TERMS.filter(term => t.includes(term.toLowerCase()));
+}
+
+// ── Promo store (event pattern, same as MY_LISTING) ──
+// The trusted-share token survives refresh via localStorage so an open /l/s/:token
+// tab keeps working; everything else is in-memory prototype state.
+const PROMO = {
+  campaigns: [],       // AdCampaign[], newest first — populated when the wizard launches
+  namedToken: (() => { try { return localStorage.getItem("co.promoToken"); } catch (e) { return null; } })(),
+  ownAccount: null,    // { connected, pageName } after the mock Facebook OAuth
+  leads: [],           // { id, name, email, note, mode, src, at } — mock lead capture
+  placements: [],      // PlacementOrder[] — Local Advertising orders, newest first
+  prCampaign: null,    // PrCampaign | null — the active Press & PR outreach
+  assets: [],          // reusable asset library: creative + press kits generated anywhere
+};
+function updatePromo(patch) {
+  Object.assign(PROMO, patch);
+  window.dispatchEvent(new Event("co:promo"));
+}
+function usePromo() {
+  const [, force] = React.useState(0);
+  React.useEffect(() => {
+    const h = () => force(n => n + 1);
+    window.addEventListener("co:promo", h);
+    return () => window.removeEventListener("co:promo", h);
+  }, []);
+  return PROMO;
+}
+// Mint the unlisted trusted-share token on first use.
+function ensureNamedToken() {
+  if (!PROMO.namedToken) {
+    const token = "t-" + Math.random().toString(36).slice(2, 8);
+    try { localStorage.setItem("co.promoToken", token); } catch (e) {}
+    updatePromo({ namedToken: token });
+  }
+  return PROMO.namedToken;
+}
+// Absolute URL for a share path (prepends the GitHub Pages mount base when set).
+function promoShareUrl(path) {
+  return window.location.origin + (window.__APP_BASE__ || "") + path;
+}
+
+// TODO(api): push to HubSpot/CRM — for now landing-page inquiries land here.
+function addPromoLead(lead) {
+  PROMO.leads = [{ id: "lead_" + Math.random().toString(36).slice(2, 8), at: "Just now", ...lead }, ...PROMO.leads];
+  window.dispatchEvent(new Event("co:promo"));
+}
+
+// ── Mock services ──
+const promoDelay = (ms) => new Promise(res => setTimeout(res, ms));
+const promoMockId = (prefix) => prefix + "_" + Math.random().toString(36).slice(2, 10);
+
+// TODO(api): replace with the real AI creative-generation endpoint.
+// Returns two CreativeVariant drafts per selected audience.
+async function generateCreative(listing, audiences) {
+  await promoDelay(1100 + Math.random() * 500);
+  return audiences.flatMap(aud =>
+    (PROMO_CREATIVE_POOL[aud] || PROMO_CREATIVE_POOL.other).slice(0, 2).map((t, i) => ({
+      id: promoMockId("cr"), audience: aud, headline: t.headline, primaryText: t.primaryText,
+      cta: t.cta, imageUrl: t.imageUrl, edited: false, poolIdx: i,
+    }))
+  );
+}
+
+// Mock "regenerate": deal the next canned variant for this audience.
+async function regenerateCreative(variant) {
+  await promoDelay(600 + Math.random() * 400);
+  const pool = PROMO_CREATIVE_POOL[variant.audience] || PROMO_CREATIVE_POOL.other;
+  const next = ((variant.poolIdx == null ? 0 : variant.poolIdx) + 1) % pool.length;
+  const t = pool[next];
+  return { ...variant, headline: t.headline, primaryText: t.primaryText, cta: t.cta, imageUrl: t.imageUrl, edited: false, poolIdx: next };
+}
+
+// Ad-account handling sits behind this service interface so the real Meta wiring
+// can slot in later without touching the wizard.
+// TODO(api): replace mockAdService with a Meta Marketing API implementation.
+const mockAdService = {
+  async launchViaVetVet(campaign) { await promoDelay(1400); return { campaignId: promoMockId("cmp") }; },
+  async connectOwnAccount() { await promoDelay(1600); return { connected: true, pageName: "AnimalCare Veterinary Clinic" }; }, // mock OAuth
+  async launchViaOwnAccount(campaign) { await promoDelay(1800); return { campaignId: promoMockId("cmp") }; },
+};
+
+// Believable day-one numbers so the hub's results strip renders after a launch.
+function mockCampaignMetrics() {
+  const impressions = 9200 + Math.floor(Math.random() * 4800);
+  const clicks = Math.round(impressions * (0.028 + Math.random() * 0.012));
+  const inquiries = 3 + Math.floor(Math.random() * 5);
+  return { impressions, clicks, inquiries };
+}
+// Smaller numbers for owned-channel / print placements.
+function mockSmallMetrics() {
+  const impressions = 1800 + Math.floor(Math.random() * 2600);
+  const clicks = Math.round(impressions * (0.04 + Math.random() * 0.02));
+  const inquiries = 1 + Math.floor(Math.random() * 3);
+  return { impressions, clicks, inquiries };
+}
+
+// ── Featured Listing ──
+// Benefit bundles per tier. `placements` mirrors the FeaturedPromotion interface;
+// `extras` are display-only perks for higher tiers.
+const FEATURED_TIERS = [
+  { id: "featured_14", days: 14, price: 99, label: "14 days",
+    placements: { marketplaceTop: true, vetvetCarousel: true, emailBlasts: 1, socialPosts: 1, matchingBoost: false },
+    extras: [] },
+  { id: "featured_30", days: 30, price: 179, label: "30 days", recommended: true,
+    placements: { marketplaceTop: true, vetvetCarousel: true, emailBlasts: 2, socialPosts: 2, matchingBoost: true },
+    extras: ["Enhanced listing card"] },
+  { id: "featured_60", days: 60, price: 299, label: "60 days",
+    placements: { marketplaceTop: true, vetvetCarousel: true, emailBlasts: 4, socialPosts: 4, matchingBoost: true },
+    extras: ["Enhanced listing card", "“Just Listed” spotlight"] },
+];
+
+// Fair rotation among active featured listings: shift the order once a day so no
+// listing permanently owns the top slot. TODO(api): server-side round-robin.
+function rotateFeatured(list) {
+  if (list.length < 2) return list;
+  const shift = Math.floor(Date.now() / 86400000) % list.length;
+  return list.slice(shift).concat(list.slice(0, shift));
+}
+
+// TODO(api): replace with the real billing + placement backend.
+const mockFeaturedService = {
+  async activate(listingId, tierId, autoRenew) {
+    await promoDelay(1500);
+    const tier = FEATURED_TIERS.find(t => t.id === tierId);
+    const start = new Date();
+    const end = new Date(start.getTime() + tier.days * 86400000);
+    const fmt = (d) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return {
+      id: promoMockId("feat"), listingId, tier: tierId,
+      startAt: fmt(start), endAt: fmt(end), endTs: end.getTime(),
+      status: "active", placements: { ...tier.placements }, autoRenew: !!autoRenew,
+      metrics: mockSmallMetrics(),
+    };
+  },
+  async cancel(id) { await promoDelay(900); },
+};
+
+// ── Local Advertising (placement finder) ──
+const PLACEMENT_TYPE_LABELS = { vma: "State VMA", business_journal: "Business journal", community_paper: "Community paper", digital: "Digital / niche", other: "Other" };
+
+const PLACEMENT_CANDIDATES = [
+  { id: "pc-ivma", outletName: "Illinois VMA — Epitome newsletter", type: "vma",
+    reachEstimate: "4,200 member DVMs", relevanceScore: 94,
+    relevanceReason: "Every reader is a licensed Illinois veterinarian — the densest buyer audience available.",
+    format: "Quarter-page classified + digital edition", estCost: 425, leadTimeDays: 21, submissionPath: "concierge" },
+  { id: "pc-vetdaily", outletName: "VetPractice Daily", type: "digital",
+    reachEstimate: "31,000 subscribers", relevanceScore: 88,
+    relevanceReason: "National practice-owner newsletter with a dedicated practices-for-sale section.",
+    format: "Sponsored listing + one newsletter slot", estCost: 390, leadTimeDays: 5, submissionPath: "concierge" },
+  { id: "pc-cbj", outletName: "Chicago Business Journal", type: "business_journal",
+    reachEstimate: "58,000 readers", relevanceScore: 81,
+    relevanceReason: "Reaches acquisition-minded owners and investors across the Chicago metro.",
+    format: "Businesses-for-sale listing (print + web)", estCost: 650, leadTimeDays: 10, submissionPath: "portal" },
+  { id: "pc-mwvet", outletName: "Midwest Veterinarian Quarterly", type: "vma",
+    reachEstimate: "9,800 readers", relevanceScore: 74,
+    relevanceReason: "Regional profession press covering IL / WI / IN with strong associate-DVM readership.",
+    format: "Half-page display", estCost: 540, leadTimeDays: 30, submissionPath: "concierge" },
+  { id: "pc-lakeg", outletName: "Lakeside Gazette", type: "community_paper",
+    reachEstimate: "12,500 households", relevanceScore: 62,
+    relevanceReason: "Hyper-local reach — good for finding a neighbor buyer, but higher identification risk in a small market.",
+    format: "Eighth-page display ad", estCost: 180, leadTimeDays: 7, submissionPath: "self" },
+];
+
+// TODO(api): replace with the real placement-discovery + insertion-order backend.
+const mockLocalPubsService = {
+  async findPlacements(region, type, budget) {
+    await promoDelay(1200 + Math.random() * 500);
+    return PLACEMENT_CANDIDATES
+      .filter(c => type === "all" || c.type === type)
+      .sort((a, b) => b.relevanceScore - a.relevanceScore);
+  },
+  async submit(order) { await promoDelay(1300); return { orderId: promoMockId("po") }; },
+};
+
+// Outlet-sized creative per anonymity mode. Named copy uses the real practice;
+// semi-anonymous keeps region + practice type only.
+function localAdCreative(candidate, mode) {
+  if (mode === "named") {
+    return {
+      id: promoMockId("cr"), audience: "other", edited: false,
+      headline: "AnimalCare — Lakeside's trusted small-animal practice — is for sale",
+      primaryText: "After 12 years serving Lakeside families, Dr. Lisa Thompson is seeking the right successor for AnimalCare: $2.45M revenue, a 16-person team, and a loyal 1,240-client base. Hands-on transition offered.",
+      cta: "Inquire about AnimalCare", imageUrl: "assets/practice-hero.jpg",
+      formatNote: candidate.format,
+    };
+  }
+  return {
+    id: promoMockId("cr"), audience: "other", edited: false,
+    headline: "Established small-animal practice for sale — suburban Chicago area",
+    primaryText: "Profitable suburban Midwest practice with $2M–$3M revenue, ~25% EBITDA margins, and a tenured team. Retiring owner offers a 2–3 year transition. Confidential inquiries via CareOwner.",
+    cta: "Request more info", imageUrl: "assets/listings-images/image 9_2_img.png",
+    formatNote: candidate.format,
+  };
+}
+
+// ── Press & PR ──
+const PR_INTERVIEW_QUESTIONS = [
+  { id: "years", label: "How long have you been practicing?", placeholder: "e.g. 15 years — the last 12 of them here in Lakeside" },
+  { id: "proudest", label: "What's your proudest moment at the practice?", placeholder: "e.g. Our first free vaccine clinic drew 200 families" },
+  { id: "why", label: "Why are you moving on?", placeholder: "e.g. Retiring near family — and I want the practice in good hands" },
+  { id: "story", label: "A patient story people remember you by", placeholder: "e.g. The great dane who visits every year on his adoption day" },
+];
+
+// TODO(api): replace with the real PR-assistant backend (LLM + media database).
+const mockPrService = {
+  async generateAngles(listing, interview) {
+    await promoDelay(1400 + Math.random() * 500);
+    return [
+      { id: "angle-succession", title: "After 12 years, Lakeside's neighborhood vet searches for a successor",
+        summary: "A retirement-and-succession human-interest story: Dr. Thompson isn't selling to the highest bidder — she's choosing the next caretaker for 1,240 families' pets." },
+      { id: "angle-independent", title: "The vanishing independent vet: one Lakeside practice bucks the corporate trend",
+        summary: "A trend piece. As corporate groups consolidate veterinary care, AnimalCare's owner wants to keep it independent — and is using a marketplace to find an owner-DVM." },
+      { id: "angle-community", title: "From vaccine clinics to school visits: the practice that became a town fixture",
+        summary: "A community-impact angle built on AnimalCare's free clinics, school programs, and two decades of local goodwill." },
+    ];
+  },
+  async buildKit(listing, interview) {
+    await promoDelay(1500);
+    return {
+      bio: "Dr. Lisa Thompson has practiced veterinary medicine for over 15 years and opened AnimalCare in 2013 with a mission to provide compassionate, high-quality care to Lakeside's pets and their families.",
+      history: "Founded in 2013, AnimalCare grew from a two-person clinic into an AAHA-certified, 3-doctor practice with a 13-person support team, serving 1,240 active client families across the Lakeside area.",
+      quotableStats: [
+        "1,240 active client families",
+        "16-person team with a 6.4-year average support-staff tenure",
+        "4.8★ average across 235 public reviews",
+        "AAHA-certified small-animal practice",
+      ],
+      photos: ["assets/practice-hero.jpg"],
+      boilerplate: "AnimalCare is an AAHA-certified small-animal veterinary practice in Lakeside, Illinois, founded in 2013 by Dr. Lisa Thompson. The practice provides wellness, surgical, dental, and emergency care to more than 1,200 client families.",
+    };
+  },
+  async findReporters(region) {
+    await promoDelay(1300);
+    return [
+      { id: "rep-delgado", name: "Maria Delgado", outlet: "Lakeside Gazette", beat: "Community & local business",
+        relevanceReason: "Covers local institutions and ownership changes — wrote three small-business succession stories this year.",
+        status: "suggested",
+        pitchDraft: "Hi Maria — after 12 years caring for Lakeside's pets, Dr. Lisa Thompson is preparing to hand AnimalCare to its next owner. She's turning away corporate buyers to find a veterinarian who'll keep it independent. Happy to arrange a visit — the waiting room alone is a story." },
+      { id: "rep-barrett", name: "Tom Barrett", outlet: "WLKS Radio", beat: "Morning community show",
+        relevanceReason: "Runs a weekly “Main Street” segment on local business milestones and transitions.",
+        status: "suggested",
+        pitchDraft: "Hi Tom — a Main Street idea: Lakeside's own AnimalCare is for sale, and owner Dr. Lisa Thompson is picking her successor the old-fashioned way — by who'll take best care of the town's pets. She's a warm, funny interview." },
+      { id: "rep-woo", name: "Janelle Woo", outlet: "Chicago Business Journal", beat: "Small business & M&A",
+        relevanceReason: "Covers independent-practice sales and healthcare consolidation across the metro.",
+        status: "suggested",
+        pitchDraft: "Hi Janelle — data point for your consolidation coverage: an independent Lakeside veterinary practice ($2.45M revenue) is testing a marketplace model to sell to an individual DVM instead of a corporate group. The owner can speak to the economics candidly." },
+      { id: "rep-shah", name: "Priya Shah", outlet: "Veterinary Practice News", beat: "Practice management & transitions",
+        relevanceReason: "Profession press — actively commissioning succession-planning features this quarter.",
+        status: "suggested",
+        pitchDraft: "Hi Priya — a succession case study: AnimalCare (Lakeside, IL) is running a structured owner-to-DVM transition with a 2–3 year mentorship handoff. Dr. Thompson will share the full playbook, numbers included." },
+    ];
+  },
+  async sendPitch(target) { await promoDelay(1100); return { ok: true }; },
+};
+
+Object.assign(window, {
+  PROMO_META_ENABLED, PROMO_SHARE_ENABLED, PROMO_FEATURED_ENABLED,
+  PROMO_LOCALPUBS_ENABLED, PROMO_PR_ENABLED,
+  PROMO_AUDIENCES, PROMO_CREATIVE_POOL, PROMO_CTA_OPTIONS,
+  PROMO_SHARE_CAPTIONS, lintAnonymity, PROMO, updatePromo, usePromo,
+  ensureNamedToken, promoShareUrl, addPromoLead, generateCreative,
+  regenerateCreative, mockAdService, mockCampaignMetrics, mockSmallMetrics,
+  FEATURED_TIERS, rotateFeatured, mockFeaturedService,
+  PLACEMENT_TYPE_LABELS, PLACEMENT_CANDIDATES, mockLocalPubsService, localAdCreative,
+  PR_INTERVIEW_QUESTIONS, mockPrService,
+});

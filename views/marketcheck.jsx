@@ -1322,10 +1322,9 @@ const NewRequestFlow = () => {
   return (
     <>
       <SubHeader
-        crumbs={[PRACTICE.name, "Market Check"]}
         title="New Market Check Request"
         subtitle="Build an anonymized snapshot and send it to curated buyers for an indicative valuation."
-        actions={<button className="co-btn-outline" onClick={() => navigateTo("/practice/market-check#requests")}><Icon name="x" /> Cancel</button>}
+        backAction={<button className="co-btn-outline" onClick={() => navigateTo("/practice/market-check#requests")}><Icon name="x" /> Cancel</button>}
       />
       <div className="co-body">
         <div>
@@ -1678,7 +1677,7 @@ const BuyerRespondFlow = ({ reqId }) => {
       <SubHeader
         title="Respond to Market Check"
         subtitle={`${req.type} · ${req.region} · anonymized snapshot`}
-        actions={<button className="co-btn-outline" onClick={back}><Icon name="x" /> Cancel</button>}
+        backAction={<button className="co-btn-outline" onClick={back}><Icon name="x" /> Cancel</button>}
       />
       <div className="co-body">
         <div style={{ maxWidth: 920 }}>

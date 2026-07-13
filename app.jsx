@@ -39,9 +39,21 @@ const App = () => {
   const onManageListing = () => setListingEditor(area);
   const props = { section, sub, tab, onSection, onEdit, onNav, onToast: showToast, onManageListing };
   const isMarketCheck = area === "practice" && section === "market-check";
+  const isPromotions = area === "practice" && section === "promotions";
   // The Marketplace is a top-level buyer-facing area with its own filter sidebar,
   // so it renders full-width without the practice-specific left rail.
   const showRail = area !== "marketplace";
+
+  // Public promo landing pages (/l/:listingId and /l/s/:token) render standalone —
+  // buyers see a VetVet-style marketing page, never the seller app shell.
+  if (area === "l") {
+    return (
+      <>
+        <LandingView slug={section} token={sub} onToast={showToast} />
+        {toast && <Toast message={toast} />}
+      </>
+    );
+  }
 
   return (
     <>
@@ -51,8 +63,9 @@ const App = () => {
         <div className="co-shell__main">
           {area === "home" && <HomeView {...props} />}
           {area === "marketplace" && <MarketplaceView {...props} />}
-          {area === "practice" && !isMarketCheck && <PracticeView pub={pub} onTogglePub={onTogglePub} {...props} />}
+          {area === "practice" && !isMarketCheck && !isPromotions && <PracticeView pub={pub} onTogglePub={onTogglePub} {...props} />}
           {isMarketCheck && <MarketCheckView pub={pub} onTogglePub={onTogglePub} {...props} />}
+          {isPromotions && <PromoteView {...props} />}
           {area === "buyers" && <BuyersView {...props} />}
           {area === "inquiries" && <InquiriesView {...props} />}
           {area === "offers" && <OffersView {...props} />}

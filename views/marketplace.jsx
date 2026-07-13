@@ -220,8 +220,20 @@ const CheckRow = ({ checked, onChange, label, count, dot }) => (
 
 const STATUS_DOT = { "Active": "#12B76A", "Coming Soon": "#F59E0B", "Offer Pending": "#2E6BE6", "Under Contract": "#7C4DDB" };
 
+// The seller's own listing as a marketplace card — injected (anonymized) while a
+// Featured boost is active. Figures mirror the Listing Preview card.
+const myFeaturedListing = (listing) => ({
+  id: listing.id, mine: true, featured: true,
+  title: listing.title, description: listing.description, image: listing.image,
+  state: "IL", locationType: "Suburban", practiceType: "Small Animal",
+  dvms: PRACTICE.doctors, pt: PRACTICE.team.partTime,
+  revenue: 836000, lastYear: "$836K", ytd: "$541.2K", yoy: "+10%",
+  status: "Active",
+});
+
 const MarketplaceView = ({ onToast, onManageListing }) => {
   const notify = onToast || (() => {});
+  const myListing = useMyListing();
   const [tab, setTab] = React.useState("discover");
   const [layout, setLayout] = React.useState("grid");
   const [sort, setSort] = React.useState("featured");
@@ -238,7 +250,12 @@ const MarketplaceView = ({ onToast, onManageListing }) => {
   const [hidden, setHidden] = React.useState(new Set());
   const [openMenu, setOpenMenu] = React.useState(null);
 
-  const visible = React.useMemo(() => LISTINGS.filter(l => !hidden.has(l.id)), [hidden]);
+  const boosted = myListing.featured && myListing.featured.status === "active";
+  const allListings = React.useMemo(
+    () => boosted ? [myFeaturedListing(myListing), ...LISTINGS] : LISTINGS,
+    [boosted, myListing.title, myListing.description, myListing.image]
+  );
+  const visible = React.useMemo(() => allListings.filter(l => !hidden.has(l.id)), [allListings, hidden]);
   const countBy = (pred) => visible.filter(pred).length;
 
   const filtered = React.useMemo(() => {
@@ -257,7 +274,12 @@ const MarketplaceView = ({ onToast, onManageListing }) => {
     if (sort === "rev-desc") list.sort((a, b) => b.revenue - a.revenue);
     else if (sort === "rev-asc") list.sort((a, b) => a.revenue - b.revenue);
     else if (sort === "growth") list.sort((a, b) => yoyNum(b.yoy) - yoyNum(a.yoy));
-    else list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0)); // Featured: promoted listings first
+    else {
+      // Featured sort: boosted listings float to the top, rotated fairly
+      // (round-robin by day) so no one permanently owns the first slot.
+      const feat = rotateFeatured(list.filter(l => l.featured));
+      list = feat.concat(list.filter(l => !l.featured));
+    }
     return list;
   }, [visible, q, stateVal, practiceTypes, locationTypes, statuses, revBrackets, dvmBrackets, sort]);
 
@@ -390,6 +412,27 @@ const MarketplaceView = ({ onToast, onManageListing }) => {
       <div className="mk-layout">
         {sidebar}
         <div>
+          {tab === "discover" && visible.some(l => l.featured) && (
+            <div className="mk-caro">
+              <div className="mk-caro__head">
+                <span className="mk-caro__title-row"><Icon name="star" size={14} /> Featured Practices</span>
+                <span className="mk-caro__sub">Boosted by their owners · rotated daily</span>
+              </div>
+              <div className="mk-caro__track">
+                {rotateFeatured(visible.filter(l => l.featured)).map(l => (
+                  <button key={l.id} className={`mk-caro__card ${l.mine ? "is-mine" : ""}`}
+                    onClick={() => l.mine ? navigateTo("/l/" + l.id) : notify("Opening listing…")}>
+                    <img src={l.image} alt="" loading="lazy" />
+                    <span className="mk-caro__body">
+                      <span className="mk-caro__meta">{l.state} · {l.locationType} · {l.practiceType}</span>
+                      <span className="mk-caro__name">{l.title}</span>
+                      {l.mine && <span className="mk-caro__mine"><Icon name="star" size={10} /> Your listing</span>}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {showResultsBar && (
             <div className="mk-toolbar">
               <div className="mk-count"><b>{tab === "saved" ? filtered.filter(l => saved.has(l.id)).length : filtered.length}</b> {(tab === "saved" ? "saved" : "")} {filtered.length === 1 ? "practice" : "practices"}</div>

@@ -32,27 +32,32 @@ const TopNav = ({ active, onNav, textSize, onTextSize }) => {
   );
 };
 
-const SubHeader = ({ crumbs, title, subtitle, actions }) => (
-  <div className="co-sub">
+// `backAction` turns this into a creation-flow header: a single button (Cancel /
+// Back-to-main) sits top-left above the title, breadcrumbs are dropped, and the
+// vertical rhythm opens up (button → title → progress bar).
+const SubHeader = ({ crumbs, title, subtitle, actions, backAction }) => (
+  <div className={"co-sub" + (backAction ? " co-sub--flow" : "")}>
     <div className="co-sub__wrap">
       <div>
-        {crumbs && crumbs.length > 0 && (
-          <div className="co-crumb">
-            <Icon name="home" size={14} />
-            {crumbs.map((c, i) => (
-              <React.Fragment key={i}>
-                <Icon name="chevronRight" size={12} />
-                {i === crumbs.length - 1
-                  ? <span className="co-crumb__current">{c}</span>
-                  : <a href="#">{c}</a>}
-              </React.Fragment>
-            ))}
-          </div>
-        )}
+        {backAction
+          ? <div className="co-sub__back">{backAction}</div>
+          : crumbs && crumbs.length > 0 && (
+            <div className="co-crumb">
+              <Icon name="home" size={14} />
+              {crumbs.map((c, i) => (
+                <React.Fragment key={i}>
+                  <Icon name="chevronRight" size={12} />
+                  {i === crumbs.length - 1
+                    ? <span className="co-crumb__current">{c}</span>
+                    : <a href="#">{c}</a>}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
         <h1>{title}</h1>
         {subtitle && <p className="co-sub__subtitle">{subtitle}</p>}
       </div>
-      <div className="co-sub__actions">{actions}</div>
+      {actions && <div className="co-sub__actions">{actions}</div>}
     </div>
   </div>
 );
@@ -113,6 +118,7 @@ const LeftRail = () => {
   ];
   const deals = [
     { id: "market-check", label: "Market Check", icon: "searchCheck", path: "/practice/market-check" },
+    { id: "promotions", label: "Promotions", icon: "megaphone", path: "/practice/promotions" },
     { id: "deal-preparation", label: "Deal Preparation", icon: "briefcase", locked: true },
     { id: "deal-team", label: "Deal Team", icon: "users", locked: true },
   ];
