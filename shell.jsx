@@ -6,8 +6,7 @@ const TopNav = ({ active, onNav, textSize, onTextSize }) => {
     { id: "marketplace", label: "Marketplace", icon: "store" },
     { id: "practice", label: "My Practice", icon: "stethoscope" },
     { id: "buyers", label: "Find Buyers", icon: "switchIcon" },
-    { id: "inquiries", label: "Inquiries", icon: "inbox" },
-    { id: "offers", label: "Offers", icon: "dollarSign" },
+    { id: "requests", label: "Requests", icon: "inbox" },
     { id: "messages", label: "Messages", icon: "message" },
     { id: "meetings", label: "Meetings", icon: "calendar" },
   ];
@@ -113,7 +112,7 @@ const LeftRail = () => {
     { id: "meetings", label: "Meetings", icon: "calendar", path: "/meetings" },
     { id: "messages", label: "Messages", icon: "message", badge: 3, path: "/messages" },
     { id: "offers", label: "Offers", icon: "dollarSign", badge: 4, path: "/offers" },
-    { id: "inquiries", label: "Inquiries", icon: "inbox", badge: 5, path: "/inquiries" },
+    { id: "requests", label: "Requests", icon: "inbox", badge: 5, path: "/requests" },
     { id: "people", label: "People", icon: "user", locked: true },
   ];
   const deals = [

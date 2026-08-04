@@ -67,7 +67,7 @@ const App = () => {
           {isMarketCheck && <MarketCheckView pub={pub} onTogglePub={onTogglePub} {...props} />}
           {isPromotions && <PromoteView {...props} />}
           {area === "buyers" && <BuyersView {...props} />}
-          {area === "inquiries" && <InquiriesView {...props} />}
+          {(area === "requests" || area === "inquiries") && <RequestsView {...props} />}
           {area === "offers" && <OffersView {...props} />}
           {area === "messages" && <MessagesView {...props} />}
           {area === "meetings" && <MeetingsView {...props} />}

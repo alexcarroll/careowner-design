@@ -153,13 +153,34 @@ const BUYERS = [
   { id: 8, name: "Rachel Okafor",     company: "Harbor Ridge Capital",         type: "Acquisition Group", location: "Boston, MA",       practices: 52, funds: "$20M+",      interest: "",       lastActive: "2d ago", status: "active" },
 ];
 
-const INQUIRIES = [
-  { id: 1, from: "Paws & Whiskers Group", subject: "Interested in financial verification call", date: "Apr 17", status: "new", priority: "high" },
-  { id: 2, from: "Dr. Marcus Chen", subject: "Questions on lease terms and equipment list", date: "Apr 16", status: "replied", priority: "medium" },
-  { id: 3, from: "Heartland Veterinary Partners", subject: "Request for Q1 2026 financials", date: "Apr 15", status: "new", priority: "high" },
-  { id: 4, from: "Dr. Priya Natarajan", subject: "Timing of ownership transition", date: "Apr 14", status: "replied", priority: "low" },
-  { id: 5, from: "Midwest Animal Holdings", subject: "Site visit availability next week", date: "Apr 13", status: "new", priority: "high" },
-  { id: 6, from: "Dr. James Okafor", subject: "Client retention statistics", date: "Apr 11", status: "closed", priority: "medium" },
+// Requests — every inbound connection request, from any counterparty type:
+//   "buyer"      → a potential buyer or buying group on the marketplace
+//   "specialist" → a Talent Acquisition Specialist (see TA_SPECIALISTS)
+//   "partner"    → a vetted third-party partner (lenders, brokers, valuation firms)
+// `org` is the company behind the person, when there is one.
+const REQUEST_TYPE_LABELS = { buyer: "Buyer", specialist: "Talent Specialist", partner: "Partner" };
+
+const REQUESTS = [
+  { id: 1, from: "Paws & Whiskers Group", org: "Corporate Group", type: "buyer",
+    subject: "Interested in financial verification call", date: "Apr 17", status: "new", priority: "high" },
+  { id: 2, from: "Jordan Beckett", org: "VetTalent Partners", type: "specialist",
+    subject: "Has two DVMs exploring ownership near Lakeside", date: "Apr 17", status: "new", priority: "high" },
+  { id: 3, from: "Dr. Marcus Chen", org: "Individual Buyer", type: "buyer",
+    subject: "Questions on lease terms and equipment list", date: "Apr 16", status: "replied", priority: "medium" },
+  { id: 4, from: "Heartland Veterinary Partners", org: "Private Equity", type: "buyer",
+    subject: "Request for Q1 2026 financials", date: "Apr 15", status: "new", priority: "high" },
+  { id: 5, from: "Corrine Ashby", org: "Lakeshore Practice Lending", type: "partner",
+    subject: "Buyer financing pre-qualification for your listing", date: "Apr 15", status: "new", priority: "medium" },
+  { id: 6, from: "Dr. Priya Natarajan", org: "Individual Buyer", type: "buyer",
+    subject: "Timing of ownership transition", date: "Apr 14", status: "replied", priority: "low" },
+  { id: 7, from: "Maria Santos", org: "Heartland Vet Recruiting", type: "specialist",
+    subject: "Relief DVM in her network is ready to buy", date: "Apr 14", status: "replied", priority: "medium" },
+  { id: 8, from: "Midwest Animal Holdings", org: "Corporate Group", type: "buyer",
+    subject: "Site visit availability next week", date: "Apr 13", status: "new", priority: "high" },
+  { id: 9, from: "Nathan Pierce", org: "Sterling Valuation Group", type: "partner",
+    subject: "Third-party valuation ahead of diligence", date: "Apr 12", status: "closed", priority: "low" },
+  { id: 10, from: "Dr. James Okafor", org: "Individual Buyer", type: "buyer",
+    subject: "Client retention statistics", date: "Apr 11", status: "closed", priority: "medium" },
 ];
 
 const OFFERS = [
@@ -777,7 +798,8 @@ window.LISTING_LOCATION_TYPES = LISTING_LOCATION_TYPES;
 window.LISTING_STATUSES = LISTING_STATUSES;
 
 window.MARKET_PROFILE_STAFF = MARKET_PROFILE_STAFF;
-window.INQUIRIES = INQUIRIES;
+window.REQUESTS = REQUESTS;
+window.REQUEST_TYPE_LABELS = REQUEST_TYPE_LABELS;
 window.OFFERS = OFFERS;
 window.THREADS = THREADS;
 window.MEETINGS = MEETINGS;
@@ -790,10 +812,12 @@ window.ACTIVITY = ACTIVITY;
 //   PromoChannel   = "meta_ads" | "share_link" | "featured" | "local_pubs" | "pr"
 //   ChannelMetrics  { impressions, clicks, inquiries }
 //   CreativeVariant { id, audience, headline, primaryText, cta, imageUrl, edited }
-//   AdCampaign      { id, listingId, audiences, variants, anonymityMode ("anonymous"
-//                     unless adAccountMode === "own"), adAccountMode ("vetvet" | "own"),
-//                     dailyBudget, durationDays, status ("draft" | "in_review" |
-//                     "active" | "paused" | "completed"), landingUrl, metrics?, createdAt }
+//   AdCampaign      { id, listingId, audiences, variants, anonymityMode (always
+//                     "anonymous" — ads run from VetVet's Meta ad account),
+//                     plan ("starter" | "standard" | "max"), planLabel, price,
+//                     durationDays, status ("in_review" → CareOwner review →
+//                     "awaiting_payment" → paid → "active" | "completed"),
+//                     landingUrl, metrics?, createdAt }
 //   FeaturedPromotion { id, listingId, tier ("featured_14" | "featured_30" | "featured_60"),
 //                     startAt, endAt, status ("active" | "expired" | "cancelled"),
 //                     placements { marketplaceTop, vetvetCarousel, emailBlasts,
@@ -824,16 +848,17 @@ const PROMO_SHARE_ENABLED = true;
 const PROMO_FEATURED_ENABLED = true;
 const PROMO_LOCALPUBS_ENABLED = true;
 const PROMO_PR_ENABLED = true;
+const PROMO_DVM_ENABLED = true;
 
 const PROMO_AUDIENCES = [
-  { id: "individual_dvm",   label: "Individual DVM",       icon: "stethoscope", hint: "Highest-probability buyer",
-    desc: "An associate or DVM ready to own (highest-probability buyer for a small practice)." },
-  { id: "neighbor_practice", label: "Neighboring practice", icon: "building",
-    desc: "A nearby practice looking to grow by acquisition." },
+  { id: "individual_dvm",   label: "Individual DVMs",      icon: "stethoscope", hint: "Recommended",
+    desc: "An associate or DVM ready to own." },
+  { id: "neighbor_practice", label: "Nearby practices",     icon: "building",
+    desc: "Local practices looking to expand." },
   { id: "corporate",         label: "Corporate / group",    icon: "briefcase",
     desc: "A corporate or group buyer." },
   { id: "other",             label: "Other",                icon: "users", freeText: true,
-    desc: "Someone else — describe who you want to reach." },
+    desc: "Someone else — enter details." },
 ];
 
 // Canned creative per audience, each written to a distinct angle (DVM = "be your
@@ -978,14 +1003,77 @@ async function regenerateCreative(variant) {
   return { ...variant, headline: t.headline, primaryText: t.primaryText, cta: t.cta, imageUrl: t.imageUrl, edited: false, poolIdx: next };
 }
 
-// Ad-account handling sits behind this service interface so the real Meta wiring
-// can slot in later without touching the wizard.
-// TODO(api): replace mockAdService with a Meta Marketing API implementation.
+// Campaign requests go to CareOwner's ads desk, not straight to Meta: the team
+// reviews the request, emails an approval + payment link, and only launches
+// (manually, from VetVet's Meta ad account) once the flat rate is paid.
+// TODO(api): replace mockAdService with the real request/approval/checkout backend.
 const mockAdService = {
-  async launchViaVetVet(campaign) { await promoDelay(1400); return { campaignId: promoMockId("cmp") }; },
-  async connectOwnAccount() { await promoDelay(1600); return { connected: true, pageName: "AnimalCare Veterinary Clinic" }; }, // mock OAuth
-  async launchViaOwnAccount(campaign) { await promoDelay(1800); return { campaignId: promoMockId("cmp") }; },
+  async submitRequest(campaign) { await promoDelay(1400); return { campaignId: promoMockId("cmp") }; },
 };
+
+// ── Meta ads — one flat managed price ──
+// A single prepaid price covers everything: creative, delivery from VetVet's Meta
+// ad account, and hands-on management by the CareOwner ads team. Sellers never set
+// budgets or see Meta invoices, and the price is shown up front on the overview so
+// there's nothing to "select" mid-flow. We deliberately don't surface an included
+// ad-spend figure — the gap between price and delivered spend is our management fee,
+// and itemizing it just prompts "where's the rest going?" questions.
+// TODO(api): checkout happens via the emailed payment link after CareOwner approves.
+const META_AD_PLAN = {
+  price: 500, days: 30,
+  benefits: [
+    "30-day campaign on Facebook & Instagram",
+    "Ads built, launched, and managed for you",
+    "Est. 8K–15K impressions in your target market",
+    "End-of-campaign results report",
+  ],
+};
+
+// Past + in-pipeline promotions seeded so the hub's Created tab has history on
+// first load. Live items created this session (PROMO.campaigns, MY_LISTING
+// .featured, PROMO.placements, PROMO.prCampaign) render above these. Rows use
+// the Created-tab display shape, not the per-channel store shapes.
+// `channel` keys each row to its dashboard tab (meta_ads | dvm | featured |
+// local_pubs | pr) so a tab can filter to just its own promotions.
+const PROMO_HISTORY = [
+  { id: "hist-1", channel: "meta_ads", icon: "facebook", name: "Facebook & Instagram — Individual DVMs + Nearby practices",
+    type: "Meta Ads", status: "awaiting_payment", created: "Jul 28, 2026",
+    window: "Starts after payment", amount: "$500", path: "/practice/promotions/ads" },
+  { id: "hist-2", channel: "meta_ads", icon: "facebook", name: "Facebook & Instagram — Individual DVMs",
+    type: "Meta Ads", status: "completed", created: "Jun 2, 2026",
+    window: "Jun 5 → Jul 5", amount: "$500", path: "/practice/promotions/ads" },
+  { id: "hist-3", channel: "featured", icon: "star", name: "Featured Listing — 14 days",
+    type: "Featured Listing", status: "expired", created: "May 2, 2026",
+    window: "May 2 → May 16", amount: "$99", path: "/practice/promotions/featured" },
+  { id: "hist-4", channel: "local_pubs", icon: "newspaper", name: "Illinois VMA — Epitome newsletter",
+    type: "Local ad", plan: "Concierge placement", status: "completed", created: "Apr 14, 2026",
+    window: "Ran in the May issue", amount: "$524", path: "/practice/promotions/local-ads" },
+  { id: "hist-5", channel: "dvm", icon: "users", name: "Priya Raman — NextChapter Veterinary",
+    type: "DVM referral", plan: "Talent Acquisition Specialist", status: "active", created: "Jul 19, 2026",
+    window: "2 DVMs introduced", amount: "No cost", path: "/practice/promotions/dvm-buyers" },
+];
+
+// Dashboard activity feed — the latest status changes and notifications across
+// every channel, newest first. `tint` drives the icon chip color; `attention`
+// pulls the item to the top styling-wise (something needs the owner's action).
+// TODO(api): replace with the real notifications stream.
+const PROMO_UPDATES = [
+  { id: "up-1", icon: "dollarSign", tint: "amber", attention: true,
+    text: "<b>Meta ads campaign approved</b> — pay to launch your 30-day campaign.",
+    time: "2h ago", path: "/practice/promotions#meta" },
+  { id: "up-2", icon: "message", tint: "teal",
+    text: "<b>Priya Raman</b> replied about a DVM who's ready to buy.",
+    time: "1d ago", path: "/messages" },
+  { id: "up-3", icon: "eye", tint: "indigo",
+    text: "Your landing page got <b>34 views</b> from ads this week.",
+    time: "2d ago", path: "/practice/promotions#meta" },
+  { id: "up-4", icon: "star", tint: "gray",
+    text: "<b>Featured Listing</b> boost ended after 14 days.",
+    time: "Jul 16", path: "/practice/promotions#featured" },
+  { id: "up-5", icon: "newspaper", tint: "gray",
+    text: "Your <b>Illinois VMA</b> ad ran in the May issue.",
+    time: "May 3", path: "/practice/promotions#local" },
+];
 
 // Believable day-one numbers so the hub's results strip renders after a launch.
 function mockCampaignMetrics() {
@@ -1101,6 +1189,119 @@ function localAdCreative(candidate, mode) {
   };
 }
 
+// ── Find DVM Buyers — Talent Acquisition Specialist network ──
+// Recruiters who place DVMs in practices for a living — which means they know
+// which associates in their networks are quietly exploring ownership. CareOwner
+// pays the specialist a referral fee when their intro leads to a sale; sellers
+// pay nothing extra. All contact happens in CareOwner Messages so the thread
+// (and any referral outcome) is tracked end to end.
+//
+// This is the platform-wide directory: every specialist is discoverable, and
+// `connection` tracks where the seller stands with each one —
+//   "open"      → on the platform, not messaged yet
+//   "sent"      → messaged, still waiting on a first reply
+//   "connected" → replied; the specialist can now see the practice profile
+// `unread` counts messages waiting on the seller in that thread.
+// TODO(api): replace with the vetted-recruiter directory service.
+const TA_SPECIALISTS = [
+  { id: "ta-1", name: "Jordan Beckett", initials: "JB", color: "teal", agency: "VetTalent Partners",
+    title: "Senior DVM Recruiter", location: "Chicago, IL", regions: ["Illinois", "Wisconsin", "Indiana"],
+    focus: "Small animal GP", worksWith: ["Associate DVMs", "GP practice owners", "New graduates"],
+    dvmNetwork: 240, buyerReady: 7, placements: 31, avgResponse: "~3 hours", verified: true,
+    connection: "connected", unread: 1,
+    about: "Twelve years placing associates across Chicagoland general practices. Keeps a running shortlist of DVMs who ask about ownership on every placement call — several are actively looking to buy in the suburbs." },
+  { id: "ta-2", name: "Maria Santos", initials: "MS", color: "amber", agency: "Heartland Vet Recruiting",
+    title: "Principal Recruiter", location: "Madison, WI", regions: ["Wisconsin", "Minnesota", "Iowa"],
+    focus: "Small animal GP", worksWith: ["Associate DVMs", "Practice managers", "Relief veterinarians"],
+    dvmNetwork: 185, buyerReady: 5, placements: 24, avgResponse: "~1 day", verified: true,
+    connection: "connected", unread: 0,
+    about: "Runs the upper Midwest's largest relief-DVM network. Relief vets see dozens of practices a year — the ones ready to settle down often want to buy, and Maria knows who they are." },
+  { id: "ta-3", name: "Devon Clarke", initials: "DC", color: "indigo", agency: "Clarke & Associates",
+    title: "Veterinary Search Consultant", location: "Indianapolis, IN", regions: ["Indiana", "Ohio", "Kentucky", "Illinois"],
+    focus: "Emergency & specialty", worksWith: ["Specialty DVMs", "ER veterinarians", "Medical directors"],
+    dvmNetwork: 150, buyerReady: 3, placements: 19, avgResponse: "~5 hours", verified: true,
+    connection: "connected", unread: 0,
+    about: "Places specialty and emergency clinicians across the lower Midwest. Works with several medical directors leaving corporate medicine who want to own an independent practice instead." },
+  { id: "ta-4", name: "Priya Raman", initials: "PR", color: "violet", agency: "NextChapter Veterinary",
+    title: "Founder & Lead Recruiter", location: "Minneapolis, MN", regions: ["Minnesota", "Wisconsin", "National (remote)"],
+    focus: "Corporate-exit DVMs", worksWith: ["Corporate associates", "Regional medical directors", "Practice buyers"],
+    dvmNetwork: 320, buyerReady: 11, placements: 42, avgResponse: "~2 hours", verified: true,
+    connection: "sent", unread: 0,
+    about: "Specializes in DVMs leaving consolidator groups — the single richest pool of ownership-minded buyers. Maintains an ownership-interest waitlist she re-verifies every quarter." },
+  { id: "ta-5", name: "Sam Whitaker", initials: "SW", color: "green", agency: "Prairie State Talent",
+    title: "DVM Recruiter", location: "Springfield, IL", regions: ["Illinois", "Missouri"],
+    focus: "Rural & mixed animal", worksWith: ["Mixed-animal DVMs", "Rural practice owners", "New graduates"],
+    dvmNetwork: 95, buyerReady: 2, placements: 12, avgResponse: "~2 days", verified: false,
+    connection: "open", unread: 0,
+    about: "Covers downstate Illinois and Missouri farm country. Smaller network, deep roots — knows the handful of mixed-animal DVMs serious about taking over a rural practice." },
+  { id: "ta-6", name: "Elaine Foster", initials: "EF", color: "rose", agency: "Foster Veterinary Search",
+    title: "Executive Recruiter", location: "Columbus, OH", regions: ["Ohio", "Michigan", "Pennsylvania"],
+    focus: "Multi-doctor practices", worksWith: ["Senior associates", "Practice partners", "Buying groups"],
+    dvmNetwork: 210, buyerReady: 6, placements: 28, avgResponse: "~4 hours", verified: true,
+    connection: "open", unread: 0,
+    about: "Twenty years recruiting for multi-doctor hospitals. Works with senior associates assembling partner groups to buy larger practices — a strong match for listings above $2M revenue." },
+  { id: "ta-7", name: "Marcus Webb", initials: "MW", color: "teal", agency: "Great Lakes Vet Search",
+    title: "Senior Recruiter", location: "Detroit, MI", regions: ["Michigan", "Ohio", "Indiana"],
+    focus: "Small animal GP", worksWith: ["Associate DVMs", "Practice managers"],
+    dvmNetwork: 165, buyerReady: 4, placements: 22, avgResponse: "~6 hours", verified: true,
+    connection: "sent", unread: 0,
+    about: "Covers the Great Lakes corridor with a focus on associates in their first five years of practice — the group most likely to be weighing ownership for the first time." },
+  { id: "ta-8", name: "Alicia Nunez", initials: "AN", color: "amber", agency: "Bright Path Veterinary",
+    title: "Talent Partner", location: "St. Louis, MO", regions: ["Missouri", "Illinois", "Kansas"],
+    focus: "Small animal GP", worksWith: ["Associate DVMs", "New graduates", "Relief veterinarians"],
+    dvmNetwork: 140, buyerReady: 3, placements: 17, avgResponse: "~1 day", verified: true,
+    connection: "sent", unread: 0,
+    about: "Places new and early-career graduates across the lower Midwest, and keeps in touch long after placement — several of her alumni are now shopping for their first practice." },
+  { id: "ta-9", name: "Grant Halloway", initials: "GH", color: "indigo", agency: "Halloway Veterinary Talent",
+    title: "Managing Director", location: "Nashville, TN", regions: ["Tennessee", "Kentucky", "Georgia"],
+    focus: "Multi-doctor practices", worksWith: ["Senior associates", "Medical directors", "Buying groups"],
+    dvmNetwork: 230, buyerReady: 8, placements: 35, avgResponse: "~3 hours", verified: true,
+    connection: "open", unread: 0,
+    about: "Recruits leadership for multi-doctor hospitals across the Southeast, and regularly advises medical directors who want equity rather than another salaried role." },
+  { id: "ta-10", name: "Nina Petrova", initials: "NP", color: "violet", agency: "Summit Vet Recruiting",
+    title: "Principal Recruiter", location: "Denver, CO", regions: ["Colorado", "Utah", "New Mexico"],
+    focus: "Corporate-exit DVMs", worksWith: ["Corporate associates", "Regional medical directors"],
+    dvmNetwork: 275, buyerReady: 9, placements: 38, avgResponse: "~2 hours", verified: true,
+    connection: "open", unread: 0,
+    about: "Built her desk on consolidator burnout — she talks with Mountain West DVMs leaving corporate groups every week, and many say ownership is the only thing that would keep them in clinical practice." },
+  { id: "ta-11", name: "Terrence Boyd", initials: "TB", color: "green", agency: "Boyd & Kline Search",
+    title: "Veterinary Search Consultant", location: "Columbus, OH", regions: ["Ohio", "West Virginia", "Pennsylvania"],
+    focus: "Emergency & specialty", worksWith: ["ER veterinarians", "Specialty DVMs"],
+    dvmNetwork: 120, buyerReady: 2, placements: 15, avgResponse: "~8 hours", verified: false,
+    connection: "open", unread: 0,
+    about: "Emergency and specialty desk covering the Ohio Valley. Smaller network, but ER clinicians burn out fast and a surprising number ask about buying a daytime GP practice." },
+  { id: "ta-12", name: "Hannah Reyes", initials: "HR", color: "rose", agency: "Cornerstone Vet Careers",
+    title: "Founder", location: "Austin, TX", regions: ["Texas", "Oklahoma", "Louisiana"],
+    focus: "Small animal GP", worksWith: ["Associate DVMs", "Practice owners", "New graduates"],
+    dvmNetwork: 295, buyerReady: 10, placements: 44, avgResponse: "~4 hours", verified: true,
+    connection: "open", unread: 0,
+    about: "Runs the largest independent veterinary recruiting practice in Texas. Maintains a private ownership-interest list she refreshes twice a year." },
+  { id: "ta-13", name: "Owen Fitzgerald", initials: "OF", color: "teal", agency: "Northlight Talent Group",
+    title: "DVM Recruiter", location: "Minneapolis, MN", regions: ["Minnesota", "North Dakota", "Wisconsin"],
+    focus: "Rural & mixed animal", worksWith: ["Mixed-animal DVMs", "Rural practice owners"],
+    dvmNetwork: 110, buyerReady: 3, placements: 14, avgResponse: "~2 days", verified: false,
+    connection: "open", unread: 0,
+    about: "Specializes in hard-to-fill rural and mixed-animal roles across the northern plains, where succession is the number one reason a practice comes to market." },
+  { id: "ta-14", name: "Claire Dunn", initials: "CD", color: "amber", agency: "Dunn Veterinary Partners",
+    title: "Executive Recruiter", location: "Philadelphia, PA", regions: ["Pennsylvania", "New Jersey", "Delaware"],
+    focus: "Multi-doctor practices", worksWith: ["Senior associates", "Practice partners"],
+    dvmNetwork: 190, buyerReady: 5, placements: 26, avgResponse: "~5 hours", verified: true,
+    connection: "open", unread: 0,
+    about: "Places partner-track associates into multi-doctor hospitals along the eastern corridor, and often ends up brokering the partnership conversation herself." },
+  { id: "ta-15", name: "Rafael Ortiz", initials: "RO", color: "indigo", agency: "Pacific Vet Talent",
+    title: "Senior Recruiter", location: "Portland, OR", regions: ["Oregon", "Washington", "Idaho"],
+    focus: "Small animal GP", worksWith: ["Associate DVMs", "Relief veterinarians", "New graduates"],
+    dvmNetwork: 205, buyerReady: 6, placements: 29, avgResponse: "~6 hours", verified: true,
+    connection: "open", unread: 0,
+    about: "Covers the Pacific Northwest, where high practice values push many associates to look for ownership in more affordable Midwest markets." },
+  { id: "ta-16", name: "Sofia Marchetti", initials: "SM", color: "violet", agency: "Marchetti Search",
+    title: "Talent Acquisition Lead", location: "Kansas City, MO", regions: ["Missouri", "Kansas", "Nebraska", "Iowa"],
+    focus: "Corporate-exit DVMs", worksWith: ["Corporate associates", "Practice managers"],
+    dvmNetwork: 175, buyerReady: 7, placements: 21, avgResponse: "~1 day", verified: true,
+    connection: "open", unread: 0,
+    about: "Focused on the heartland's consolidated markets. Most of her candidates have already worked inside a corporate group and know exactly what they'd do differently as owners." },
+];
+
 // ── Press & PR ──
 const PR_INTERVIEW_QUESTIONS = [
   { id: "years", label: "How long have you been practicing?", placeholder: "e.g. 15 years — the last 12 of them here in Lakeside" },
@@ -1163,11 +1364,12 @@ const mockPrService = {
 
 Object.assign(window, {
   PROMO_META_ENABLED, PROMO_SHARE_ENABLED, PROMO_FEATURED_ENABLED,
-  PROMO_LOCALPUBS_ENABLED, PROMO_PR_ENABLED,
+  PROMO_LOCALPUBS_ENABLED, PROMO_PR_ENABLED, PROMO_DVM_ENABLED,
   PROMO_AUDIENCES, PROMO_CREATIVE_POOL, PROMO_CTA_OPTIONS,
   PROMO_SHARE_CAPTIONS, lintAnonymity, PROMO, updatePromo, usePromo,
   ensureNamedToken, promoShareUrl, addPromoLead, generateCreative,
   regenerateCreative, mockAdService, mockCampaignMetrics, mockSmallMetrics,
+  META_AD_PLAN, PROMO_HISTORY, PROMO_UPDATES, TA_SPECIALISTS,
   FEATURED_TIERS, rotateFeatured, mockFeaturedService,
   PLACEMENT_TYPE_LABELS, PLACEMENT_CANDIDATES, mockLocalPubsService, localAdCreative,
   PR_INTERVIEW_QUESTIONS, mockPrService,

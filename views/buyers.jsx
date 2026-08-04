@@ -1,4 +1,13 @@
-// Find Buyers view — sortable, selectable table with dropdown filters.
+// Find Buyers view — every way to reach a buyer, split into two tabs:
+//   Buyers (default)      → buyers already on CareOwner: sortable, selectable
+//                           table with dropdown filters; a row opens their profile.
+//   #specialists          → Talent Acquisition Specialists, recruiters whose DVM
+//                           networks hold buyers who aren't listed here. Renders
+//                           TaSpecialistsPanel (views/dvm-buyers.jsx) so it stays
+//                           identical to the Promotions channel page.
+// The two are tabs rather than one merged table on purpose: you contact a buyer
+// directly, but you ask a specialist for an introduction, and their columns
+// (interest/funds vs network size/response time) have nothing in common.
 
 // US states for the Location → State filter. value = postal abbr (matches the
 // trailing ", XX" in each buyer's location string), label = full name.
@@ -121,7 +130,8 @@ const InterestBadge = ({ level }) => {
   return <span className={`co-badge ${cls}`}>{level}</span>;
 };
 
-const BuyersView = ({ section, onSection, onEdit }) => {
+const BuyersView = ({ tab, section, onSection, onEdit, onToast }) => {
+  const activeTab = tab === "specialists" ? "specialists" : "buyers";
   const [q, setQ] = React.useState("");
   const [typeFilter, setTypeFilter] = React.useState("all");
   const [interestFilter, setInterestFilter] = React.useState("all");
@@ -185,14 +195,29 @@ const BuyersView = ({ section, onSection, onEdit }) => {
     );
   }
 
+  // Reach framing: buyers listed here plus the DVMs specialists say are exploring
+  // ownership — the demand you can't see in the table below.
+  const hiddenDvms = TA_SPECIALISTS.reduce((n, t) => n + t.buyerReady, 0);
+
   return (
     <>
-      <SubHeader crumbs={["Find Buyers"]} title="Find Buyers" actions={<>
-        <button className="co-btn-outline"><Icon name="filter" /> Saved Searches</button>
-        <button className="co-btn-solid"><Icon name="plus" /> Invite Buyer</button>
-      </>} />
+      <SubHeader crumbs={["Find Buyers"]} title="Find Buyers"
+        subtitle="Browse buyers on CareOwner, or reach the ones who aren't listed through recruiter networks."
+        actions={activeTab === "buyers" ? <>
+          <button className="co-btn-outline"><Icon name="filter" /> Saved Searches</button>
+          <button className="co-btn-solid"><Icon name="plus" /> Invite Buyer</button>
+        </> : null} />
       <div className="co-body">
         <div style={{ gridColumn: "2 / -1" }}>
+          <div className="co-tabs" style={{ marginBottom: 20 }}>
+            <button className={activeTab === "buyers" ? "is-active" : ""} onClick={() => navigateTo("/buyers")}>Buyers</button>
+            <button className={activeTab === "specialists" ? "is-active" : ""} onClick={() => navigateTo("/buyers#specialists")}>Talent Specialists</button>
+          </div>
+
+          {activeTab === "specialists" && <TaSpecialistsPanel onToast={onToast} />}
+
+          {activeTab === "buyers" && (
+          <>
           <div className="bf-filters">
             <div className="co-search bf-search">
               <Icon name="search" />
@@ -244,6 +269,19 @@ const BuyersView = ({ section, onSection, onEdit }) => {
             </table>
             {filtered.length === 0 && <div className="co-empty">No buyers match your filters.</div>}
           </div>
+
+          <button className="fb-cross" onClick={() => navigateTo("/buyers#specialists")}>
+            <span className="fb-cross__icon"><Icon name="users" size={16} /></span>
+            <span className="fb-cross__body">
+              <span className="fb-cross__title">Not seeing the right buyer? <Icon name="chevronRight" size={16} /></span>
+              <span className="fb-cross__desc">
+                Talent Acquisition Specialists know <b>{hiddenDvms} DVMs</b> exploring ownership who aren't listed here.
+                Ask one for an introduction — CareOwner pays their referral fee, so you pay nothing extra.
+              </span>
+            </span>
+          </button>
+          </>
+          )}
         </div>
       </div>
     </>

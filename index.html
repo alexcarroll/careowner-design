@@ -109,7 +109,12 @@
     /* Creation-flow wizard footer (Back/Cancel + Continue) — sticks to the bottom
        of the viewport while the step content scrolls past it, and settles back
        into normal flow once the page is short enough not to need it. */
-    .pr-wizard__footer { position: sticky; bottom: 0; z-index: 5; display:flex; align-items:center; justify-content: space-between; margin-top: 16px; padding: 16px 0; background: #FBFBF9; border-top: 1px solid var(--stone-200); }
+    /* Sticky wizard footer. Negative side margins (−32px) break it out of
+       .co-shell__main's 32px horizontal padding so the top border runs edge to
+       edge — left to the nav border, right to the content edge. The −96px bottom
+       margin cancels .co-shell__main's 96px bottom padding so no empty gap shows
+       past the footer once you've scrolled to the end. */
+    .pr-wizard__footer { position: sticky; bottom: 0; z-index: 5; display:flex; align-items:center; justify-content: space-between; margin: 16px -32px -96px; padding: 16px 32px; background: #fff; border-top: 1px solid var(--stone-200); }
     .co-btn-outline { display:inline-flex; align-items:center; gap: 6px; height: 38px; padding: 0 20px; border-radius: 6px; border: 1px solid var(--stone-300); background: #fff; color: #57534E; font: 500 14px/1 "Inter"; cursor: pointer; }
     .co-btn-outline:hover { border-color: var(--stone-200); background: #FBFBF9; }
     .co-btn-outline svg { width: 14px; height: 14px; }
@@ -137,6 +142,7 @@
     .co-card-grid .co-card { margin-top: 0; }
     .co-card__head { display:flex; align-items:center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
     .co-card__title { font: 600 16px/1 "Inter"; display:flex; align-items:center; gap: 10px; margin: 0; }
+    .co-card__subtitle { font: 400 13px/1.4 "Inter"; color: var(--stone-500); margin: 5px 0 0; }
     .co-card__meta { font: 400 12px/1 "Inter"; color: var(--stone-500); display:inline-flex; align-items:center; gap: 6px; }
     .co-card__meta .dot { color: #00AA55; }
     .co-edit { display:inline-flex; align-items:center; gap: 6px; background: none; border: 0; cursor: pointer; color: var(--stone-500); font: 500 13px/1 "Inter"; padding: 4px 8px; border-radius: 6px; }
@@ -1758,6 +1764,163 @@
     .pr-ack-gate { border: 1px solid #FCD34D; border-radius: 10px; padding: 14px 16px; margin-top: 16px; display:flex; flex-direction: column; gap: 12px; background: #FFFBEB; }
     .pr-ack-gate .pr-warn { background: transparent; border: 0; padding: 0; }
 
+    /* Hub — dashboard tabs, promotions tables, updates feed */
+    .pr-created { display:flex; align-items:center; gap: 12px; }
+    .pr-created .pr-camp__icon { width: 32px; height: 32px; background: var(--stone-100); color: var(--stone-500); }
+    .pr-dashtabs button { position: relative; }
+    .pr-tabdot { position: absolute; top: 6px; right: 6px; }
+
+    /* Status dots — same language as the left rail's section dots */
+    .pr-dot { display:inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pr-dot--attention { background: #F59E0B; }
+    .pr-dot--pending { background: #60A5FA; }
+    .pr-dot--live { background: var(--success-500); }
+    .pr-dot--muted { background: var(--stone-300); }
+    .pr-table__dotcell { padding-right: 0 !important; text-align: center; }
+    /* Give the promotion name room so it reads on one or two lines rather than
+       three, without pushing the trailing CTA column out of the card. */
+    .pr-table th:nth-child(2), .pr-table td:nth-child(2) { min-width: 240px; }
+    /* Status badges must never wrap to a second line inside a table cell. */
+    .pr-badge { white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; display: inline-block; }
+    /* Row-level call to action (Pay now) — green text link, wide enough to stay on one line. */
+    .pr-table__cta { text-align: right; white-space: nowrap; }
+    .pr-cta { background: none; border: 0; padding: 0; font: 600 14px/1.3 "Inter"; color: var(--success-700); cursor: pointer; white-space: nowrap; }
+    .pr-cta:hover { color: var(--success-800); text-decoration: underline; }
+
+    .pr-panelbar { display:flex; align-items:center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .pr-panelbar__count { font: 400 14px/1 "Inter"; color: var(--stone-500); }
+
+    /* Updates feed (dashboard right column) */
+    .pr-feed { background: #fff; border: 1px solid var(--stone-200); border-radius: 12px; overflow: hidden; }
+    .pr-feed__item { display:flex; align-items:flex-start; gap: 10px; width: 100%; text-align: left; padding: 12px 14px; background: none; border: 0; border-top: 1px solid var(--stone-100); cursor: pointer; font-family: "Inter"; }
+    .pr-feed__item:first-child { border-top: 0; }
+    .pr-feed__item:hover { background: var(--stone-50); }
+    .pr-feed__item.is-attention { background: #FFFCF5; }
+    .pr-feed__item.is-attention:hover { background: #FFF9EC; }
+    .pr-feed__icon { width: 28px; height: 28px; border-radius: 8px; display:grid; place-items:center; flex-shrink: 0; background: var(--stone-100); color: var(--stone-500); }
+    .pr-feed__icon--amber { background: #FEF3C7; color: #B45309; }
+    .pr-feed__icon--teal { background: var(--teal-tint); color: var(--teal-brand); }
+    .pr-feed__icon--indigo { background: #EEF2FB; color: #3B5998; }
+    .pr-feed__body { flex: 1; min-width: 0; }
+    .pr-feed__text { display:block; font: 400 13.5px/1.5 "Inter"; color: var(--stone-700); }
+    .pr-feed__text b { font-weight: 600; color: var(--stone-900); }
+    .pr-feed__time { display:block; font: 400 12px/1 "Inter"; color: var(--stone-400); margin-top: 5px; }
+
+    /* Stepper — completed steps are clickable (jump back) */
+    button.mc-step { background: none; border: 0; padding: 0; font-family: "Inter"; }
+    .mc-step--link { cursor: pointer; }
+    .mc-step--link:hover .mc-step__num { background: #C7E0E3; }
+    .mc-step--link:hover .mc-step__label { color: var(--teal-brand); }
+
+    /* Text-link button (Preview, Edit creative) */
+    .pr-link { display:inline-flex; align-items:center; gap: 5px; background: none; border: 0; padding: 0; font: 600 14px/1.3 "Inter"; color: var(--teal-brand); cursor: pointer; }
+    .pr-link:hover { text-decoration: underline; }
+    .pr-link svg { flex-shrink: 0; }
+
+    /* Meta ad — overview (pre-flow) page: how-it-works card + pricing card */
+    .pr-adov { display:grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+    .pr-adov__eyebrow { font: 600 12px/1 "Inter"; text-transform: uppercase; letter-spacing: 0.6px; color: var(--teal-brand); margin-bottom: 12px; }
+    .pr-adov__title { font: 600 17px/1.3 "Inter"; letter-spacing: -0.01em; color: var(--stone-900); margin: 0 0 8px; }
+    .pr-adov__lede { font: 400 14px/1.6 "Inter"; color: var(--stone-500); margin: 0 0 18px; }
+    .pr-adov__grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .pr-adov__item { border: 1px solid var(--stone-200); border-radius: 12px; padding: 18px; background: #fff; }
+    .pr-adov__icon { width: 40px; height: 40px; border-radius: 10px; background: var(--teal-tint); color: var(--teal-brand); display:grid; place-items:center; }
+    .pr-adov__item h4 { font: 600 14px/1.3 "Inter"; color: var(--stone-900); margin: 12px 0 5px; }
+    .pr-adov__item p { font: 400 13.5px/1.55 "Inter"; color: var(--stone-500); margin: 0; }
+    .pr-adov__price { align-self: start; }
+    .pr-adov__amount { font: 700 34px/1 "Inter"; letter-spacing: -0.02em; color: var(--stone-900); }
+    .pr-adov__list { margin-top: 16px; }
+    .pr-adov__cta { margin-top: 16px; padding: 16px; background: var(--stone-50); border: 1px solid var(--stone-100); border-radius: 10px; text-align: center; }
+    .pr-adov__cta-q { font: 600 14px/1.3 "Inter"; color: var(--stone-900); margin-bottom: 12px; }
+    .pr-adov__cta .co-btn { width: 100%; justify-content: center; }
+
+    /* Ad wizard — Creative step preview rail */
+    .pr-step-cols { display:grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+    .pr-sharecard__note { font: 400 13px/1.55 "Inter"; color: var(--stone-500); margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--stone-100); }
+
+    /* Ad wizard — Review step: left summary card + right "what happens next" card.
+       The cards are grid siblings, so the global `.co-card + .co-card` top margin
+       would push the right column down — zero it out so both tops align. */
+    .pr-review-cols { display:grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+    .pr-review-cols > .co-card + .co-card { margin-top: 0; }
+    .pr-rev__row { display:flex; align-items: baseline; gap: 16px; padding: 14px 0; border-top: 1px solid var(--stone-100); }
+    .pr-rev__row:first-child { padding-top: 0; border-top: 0; }
+    .pr-rev__row:last-child { padding-bottom: 0; }
+    .pr-rev__label { flex: 0 0 120px; font: 500 13px/1.4 "Inter"; color: var(--stone-500); }
+    .pr-rev__val { flex: 1; min-width: 0; font: 500 14px/1.4 "Inter"; color: var(--stone-900); }
+    .pr-rev__sub { display:block; font: 400 13px/1.4 "Inter"; color: var(--stone-500); margin-top: 4px; }
+    .pr-rev__edit { flex-shrink: 0; align-self: center; }
+    .pr-next-card { align-self: start; }
+    .pr-next__list { margin: 0; padding: 0; list-style: none; counter-reset: prnext; }
+    .pr-next__list li { position: relative; counter-increment: prnext; padding: 12px 0 12px 40px; font: 400 14px/1.6 "Inter"; color: var(--stone-700); border-top: 1px solid var(--stone-100); }
+    .pr-next__list li:first-child { border-top: 0; padding-top: 0; }
+    .pr-next__list li:first-child::before { top: 0; }
+    .pr-next__list li::before { content: counter(prnext); position: absolute; left: 0; top: 13px; width: 26px; height: 26px; border-radius: 50%; background: var(--teal-tint); color: var(--teal-brand); font: 600 13px/26px "Inter"; text-align: center; }
+    .pr-next__list b { font-weight: 600; color: var(--stone-900); }
+
+    /* Find Buyers — cross-link from the Buyers tab into the specialist network */
+    .fb-cross { display:flex; align-items:flex-start; gap: 12px; width: 100%; text-align: left; margin-top: 16px; padding: 16px 18px; border: 1px solid var(--stone-200); background: #fff; border-radius: 10px; cursor: pointer; font-family: "Inter"; }
+    .fb-cross:hover { border-color: var(--teal-button); background: #FBFEFE; }
+    .fb-cross__icon { width: 36px; height: 36px; border-radius: 9px; background: var(--teal-tint); color: var(--teal-brand); display:grid; place-items:center; flex-shrink: 0; }
+    .fb-cross__body { flex: 1; min-width: 0; }
+    .fb-cross__title { display:inline-flex; align-items:center; gap: 6px; font: 600 14px/1.3 "Inter"; color: var(--stone-900); }
+    .fb-cross__title svg { color: var(--stone-500); }
+    .fb-cross__desc { display:block; font: 400 14px/1.55 "Inter"; color: var(--stone-500); margin-top: 5px; }
+    .fb-cross__desc b { font-weight: 600; color: var(--stone-700); }
+
+    /* Requests — mixed inbox (buyers · talent specialists · partners) */
+    .rq-toolbar { display:flex; align-items:center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--stone-200); }
+    .rq-type { display:inline-flex; align-items:center; gap: 5px; padding: 3px 9px; border-radius: 9999px; font: 500 12px/1.5 "Inter"; white-space: nowrap; border: 1px solid transparent; }
+    .rq-type svg { flex-shrink: 0; }
+    .rq-type--buyer { background: #EEF2FB; color: #1D3C78; border-color: #C9D6F2; }
+    .rq-type--specialist { background: var(--teal-tint); color: var(--teal-brand); border-color: #B8D9DC; }
+    .rq-type--partner { background: #FFFCF5; color: #92400E; border-color: #F0E6CA; }
+
+    /* Find DVM Buyers — directory + profile slideout */
+    .ta-head { margin-bottom: 16px; }
+    .ta-head__title { font: 600 20px/1.3 "Inter"; letter-spacing: -0.01em; color: var(--stone-900); margin: 0 0 4px; }
+    .ta-head__sub { font: 400 14px/1.5 "Inter"; color: var(--stone-500); margin: 0; }
+    /* Toolbar above the table: status chips left, focus + search right. */
+    .ta-toolbar { display:flex; align-items:center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--stone-200); }
+    .ta-toolbar__right { display:flex; align-items:center; gap: 16px; flex-wrap: wrap; }
+    .ta-search { flex: 0 0 240px; max-width: 240px; }
+    .ta-search input { height: 36px; }
+    .ta-table th:nth-child(2), .ta-table td:nth-child(2) { min-width: 230px; }
+    .ta-interest { font: 600 14px/1.3 "Inter"; color: var(--teal-brand); }
+    .ta-table__end { text-align: right; white-space: nowrap; }
+    .ta-table__end > * + * { margin-left: 8px; }
+    /* Unread-messages pill on rows with a waiting reply. */
+    .ta-unread { display:inline-flex; align-items:center; gap: 4px; padding: 3px 8px; border-radius: 9999px; background: var(--teal-tint); color: var(--teal-brand); font: 600 12px/1.3 "Inter"; vertical-align: middle; }
+    .ta-unread svg { flex-shrink: 0; }
+
+    .ta-intro { display:flex; gap: 12px; align-items:flex-start; background: var(--teal-tint); border: 1px solid #B8D9DC; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; font: 400 14px/1.6 "Inter"; color: var(--stone-700); }
+    .ta-intro__icon { width: 36px; height: 36px; border-radius: 9px; background: var(--teal-brand); color: #fff; display:grid; place-items:center; flex-shrink: 0; }
+    .ta-intro b { font-weight: 600; color: var(--stone-900); }
+    .ta-select { height: 36px; min-width: 160px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--stone-200); background: #fff; color: var(--stone-900); font: 500 14px/1 "Inter"; cursor: pointer; }
+    .ta-select:hover { border-color: var(--stone-300); }
+    .ta-count { font: 400 13px/1 "Inter"; color: var(--stone-500); margin-left: auto; }
+    .ta-cell { display:flex; align-items:center; gap: 12px; }
+    .ta-avatar { display:grid; place-items:center; border-radius: 50%; color: #fff; font-weight: 600; font-family: "Inter"; flex-shrink: 0; }
+    .ta-foot { display:flex; align-items:center; gap: 7px; font: 400 13px/1.5 "Inter"; color: var(--stone-500); margin: 12px 2px 0; }
+    .ta-slideout .co-slideout__header h2 { font: 600 12px/1 "Inter"; text-transform: uppercase; letter-spacing: 0.5px; color: var(--stone-500); align-self: center; }
+    .ta-prof { display:flex; gap: 14px; align-items:flex-start; }
+    .ta-prof h3 { font: 600 17px/1.25 "Inter"; color: var(--stone-900); margin: 0; display:flex; align-items:center; gap: 8px; flex-wrap: wrap; }
+    .ta-prof__sub { font: 400 14px/1.4 "Inter"; color: var(--stone-700); margin-top: 3px; }
+    .ta-prof__loc { display:flex; align-items:center; gap: 5px; font: 400 13px/1.4 "Inter"; color: var(--stone-500); margin-top: 3px; }
+    .ta-stats { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0 4px; }
+    .ta-stat { border: 1px solid var(--stone-100); background: var(--stone-50); border-radius: 10px; padding: 12px 8px; text-align: center; }
+    .ta-stat__num { font: 700 16px/1.1 "Inter"; color: var(--stone-900); }
+    .ta-stat__label { font: var(--font-label-sm); text-transform: uppercase; letter-spacing: 0.4px; color: var(--stone-500); margin-top: 6px; }
+    .ta-section { margin-top: 16px; }
+    .ta-section p { font: 400 14px/1.6 "Inter"; color: var(--stone-700); margin: 4px 0 0; }
+    .ta-refnote { display:flex; gap: 10px; align-items:flex-start; margin-top: 18px; background: #FFFCF5; border: 1px solid #F0E6CA; border-radius: 10px; padding: 12px 14px; font: 400 13.5px/1.6 "Inter"; color: var(--stone-700); }
+    .ta-refnote svg { color: #C68A22; flex-shrink: 0; margin-top: 2px; }
+    .ta-refnote b { font-weight: 600; color: var(--stone-900); }
+    .ta-sent { text-align: center; padding: 26px 12px 8px; }
+    .ta-sent__icon { color: var(--success-700); }
+    .ta-sent h3 { font: 600 16px/1.3 "Inter"; margin: 10px 0 6px; }
+    .ta-sent p { font: 400 14px/1.6 "Inter"; color: var(--stone-500); margin: 0 auto; max-width: 360px; }
+
     /* Featured Listing — tier cards + preview */
     .pr-tiers { display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
     .pr-tier { position: relative; display:flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 20px; border: 1px solid var(--stone-200); border-radius: 12px; background: #fff; cursor: pointer; font-family: "Inter"; }
@@ -1962,7 +2125,7 @@
   <script type="text/babel" src="views/marketcheck.jsx"></script>
   <script type="text/babel" src="views/buyerprofile.jsx"></script>
   <script type="text/babel" src="views/buyers.jsx"></script>
-  <script type="text/babel" src="views/inquiries.jsx"></script>
+  <script type="text/babel" src="views/requests.jsx"></script>
   <script type="text/babel" src="views/offers.jsx"></script>
   <script type="text/babel" src="views/messages.jsx"></script>
   <script type="text/babel" src="views/meetings.jsx"></script>
@@ -1972,6 +2135,7 @@
   <script type="text/babel" src="views/marketplace.jsx"></script>
   <script type="text/babel" src="views/listing-editor.jsx"></script>
   <script type="text/babel" src="views/promote.jsx"></script>
+  <script type="text/babel" src="views/dvm-buyers.jsx"></script>
   <script type="text/babel" src="views/promo-landing.jsx"></script>
   <script type="text/babel" src="app.jsx"></script>
 </body>

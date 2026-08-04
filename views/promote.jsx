@@ -1,10 +1,17 @@
-// Promote Your Practice — seller self-promotion hub (spec v1.2).
-//   /practice/promotions            → channel hub (locked until the listing is live)
-//   /practice/promotions/ads        → Facebook & Instagram ad builder (5-step wizard)
+// Promote Your Practice — seller self-promotion hub (spec v1.3).
+//   /practice/promotions            → dashboard Overview (locked until the listing is live):
+//                                     results, the Create Promotions cards, updates feed + share rail
+//   /practice/promotions#<channel>  → one tab per channel (meta · dvm · featured · local · pr),
+//                                     each listing that channel's promotions or an empty state
+//   /practice/promotions/ads        → Facebook & Instagram ad builder
+//                                     (Overview → Audience → Creative → Select Plan → Review;
+//                                     requests go to CareOwner for review → emailed payment
+//                                     link → the team launches manually from VetVet's ad account)
 //   /practice/promotions/share      → share-links screen (anonymous + trusted)
 //   /practice/promotions/featured   → Featured Listing (tiers → preview → pay)
 //   /practice/promotions/local-ads  → Local Advertising (placement finder)
 //   /practice/promotions/pr         → Press & PR (interview → angles → kit → pitches)
+//   /practice/promotions/dvm-buyers → Find DVM Buyers (recruiter directory, views/dvm-buyers.jsx)
 // The public landing pages the links point at live in views/promo-landing.jsx.
 // All external actions resolve against mock services in data.jsx (TODO(api) seams).
 (() => {
@@ -194,16 +201,20 @@ const PromoteLocked = ({ onManageListing }) => (
 );
 
 // ─── Hub ──────────────────────────────────────────────────────────────────────
+// `short` is the table-safe label — badges in a table cell must stay on one line,
+// so anything long ("Awaiting payment") gets a compact form. `dot` drives the
+// row's leading status dot: attention = needs the owner to act.
 const STATUS_BADGE = {
-  active:    { cls: "co-badge--green", label: "Active" },
-  in_review: { cls: "co-badge--amber", label: "In review" },
-  submitted: { cls: "co-badge--amber", label: "Submitted" },
-  live:      { cls: "co-badge--green", label: "Live" },
-  paused:    { cls: "co-badge--gray",  label: "Paused" },
-  completed: { cls: "co-badge--gray",  label: "Completed" },
-  cancelled: { cls: "co-badge--gray",  label: "Cancelled" },
-  expired:   { cls: "co-badge--gray",  label: "Expired" },
-  draft:     { cls: "co-badge--gray",  label: "Draft" },
+  active:    { cls: "co-badge--green", label: "Active",    dot: "live" },
+  in_review: { cls: "co-badge--amber", label: "In review", dot: "pending" },
+  awaiting_payment: { cls: "co-badge--blue", label: "Awaiting payment", short: "Payment due", dot: "attention" },
+  submitted: { cls: "co-badge--amber", label: "Submitted", dot: "pending" },
+  live:      { cls: "co-badge--green", label: "Live",      dot: "live" },
+  paused:    { cls: "co-badge--gray",  label: "Paused",    dot: "muted" },
+  completed: { cls: "co-badge--gray",  label: "Completed", dot: "muted" },
+  cancelled: { cls: "co-badge--gray",  label: "Cancelled", dot: "muted" },
+  expired:   { cls: "co-badge--gray",  label: "Expired",   dot: "muted" },
+  draft:     { cls: "co-badge--gray",  label: "Draft",     dot: "muted" },
 };
 
 const RoiRow = ({ icon, iconCls, name, meta, metrics, hint, status, action }) => {
@@ -237,13 +248,17 @@ const RoiStrip = ({ promo, listing, onToast }) => {
   const add = (m) => { if (m) { totals.imp += m.impressions || 0; totals.clk += m.clicks || 0; totals.inq += m.inquiries || 0; } };
 
   promo.campaigns.forEach(c => {
-    const m = c.status === "in_review" ? null : c.metrics;
+    const m = c.status === "in_review" || c.status === "awaiting_payment" ? null : c.metrics;
     add(m);
     rows.push(
       <RoiRow key={c.id} icon="facebook" iconCls="pr-camp__icon--fb"
         name={`Facebook & Instagram — ${c.audiences.map(a => audienceMeta(a).label).join(" + ")}`}
-        meta={`Launched ${c.createdAt} · $${c.dailyBudget}/day × ${c.durationDays} days · ${c.adAccountMode === "vetvet" ? "VetVet's ad account" : "Your Facebook account"}`}
-        metrics={m} hint="Metrics appear once Meta approves the ads" status={c.status} />
+        meta={`Submitted ${c.createdAt} · $${fmtInt(c.price)} flat rate · VetVet's ad account`}
+        metrics={m}
+        hint={c.status === "in_review"
+          ? "In CareOwner review — we'll email you a payment link once approved"
+          : c.status === "awaiting_payment" ? "Approved — pay via the link in your email to launch" : "Metrics appear once your ads launch"}
+        status={c.status} />
     );
   });
 
@@ -324,17 +339,187 @@ const RoiStrip = ({ promo, listing, onToast }) => {
   );
 };
 
-const PromoteHub = ({ onToast }) => {
+// ── Promotion rows — the shared model behind every dashboard tab's table ──
+// Live items from the channel stores render first (newest work on top), then the
+// PROMO_HISTORY seeds. Row shape: { id, channel, icon, name, type, plan?, status,
+// created, window, amount, path }. `channel` is what each tab filters on.
+const createdRows = (promo, listing) => {
+  const rows = [];
+  promo.campaigns.forEach(c => rows.push({
+    id: c.id, channel: "meta_ads", icon: "facebook",
+    name: `Facebook & Instagram — ${c.audiences.map(a => audienceMeta(a).label).join(" + ")}`,
+    type: "Meta Ads", status: c.status, created: c.createdAt,
+    window: c.status === "in_review" || c.status === "awaiting_payment"
+      ? "Starts after payment" : `${c.durationDays} days`,
+    amount: `$${fmtInt(c.price)}`,
+    path: "/practice/promotions/ads",
+  }));
+  const f = listing.featured;
+  if (f) {
+    const tier = FEATURED_TIERS.find(t => t.id === f.tier) || {};
+    rows.push({
+      id: f.id, channel: "featured", icon: "star", name: `Featured Listing — ${tier.label || f.tier}`,
+      type: "Featured Listing", status: f.status, created: f.startAt,
+      window: `${f.startAt} → ${f.endAt}`, amount: tier.price != null ? `$${tier.price}` : "—",
+      path: "/practice/promotions/featured",
+    });
+  }
+  promo.placements.forEach(p => {
+    const cand = PLACEMENT_CANDIDATES.find(c => c.id === p.candidateId);
+    const cost = cand ? cand.estCost + (p.fulfillment === "concierge" ? 99 : 0) : null;
+    rows.push({
+      id: p.id, channel: "local_pubs", icon: "newspaper", name: p.outletName,
+      type: "Local ad", plan: p.fulfillment === "concierge" ? "Concierge placement" : "Self-submitted",
+      status: p.status, created: p.createdAt, window: p.format,
+      amount: cost != null ? `$${fmtInt(cost)}` : "—", path: "/practice/promotions/local-ads",
+    });
+  });
+  if (promo.prCampaign) {
+    const pr = promo.prCampaign;
+    const published = pr.targets.filter(t => t.status === "published").length;
+    rows.push({
+      id: pr.id, channel: "pr", icon: "megaphone", name: `Press & PR — “${pr.angle.title}”`,
+      type: "Press & PR", status: published ? "live" : "in_review", created: todayLabel(),
+      window: `${pr.targets.length} pitched · ${published} published`, amount: "Included",
+      path: "/practice/promotions/pr",
+    });
+  }
+  // Specialist outreach started this session — each messaged specialist is an
+  // in-flight DVM referral (threads are created by views/dvm-buyers.jsx).
+  (typeof THREADS !== "undefined" ? THREADS : []).forEach(t => {
+    if (!t.id || String(t.id).indexOf("ta-thread-") !== 0) return;
+    const spec = TA_SPECIALISTS.find(s => "ta-thread-" + s.id === t.id);
+    rows.push({
+      id: t.id, channel: "dvm", icon: "users",
+      name: spec ? `${spec.name} — ${spec.agency}` : t.name,
+      type: "DVM referral", plan: "Talent Acquisition Specialist",
+      status: "in_review", created: todayLabel(),
+      window: "Awaiting reply", amount: "No cost",
+      path: "/practice/promotions/dvm-buyers",
+    });
+  });
+  return rows.concat(PROMO_HISTORY);
+};
+
+// One table shared by every dashboard tab. Each row leads with a status dot
+// (same language as the left rail) so anything needing action is scannable.
+const PromotionsTable = ({ rows, onToast }) => (
+  <div className="co-card" style={{ padding: 0, overflow: "hidden" }}>
+    <table className="co-table pr-table">
+      <thead>
+        <tr>
+          <th style={{ width: 28 }}></th>
+          <th>Promotion</th><th>Type</th><th>Status</th><th>Created</th><th>Schedule</th><th>Total</th>
+          <th style={{ width: 96 }}></th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map(r => {
+          const b = STATUS_BADGE[r.status] || STATUS_BADGE.draft;
+          return (
+            <tr key={r.id} onClick={() => navigateTo(r.path)} style={{ cursor: "pointer" }}>
+              <td className="pr-table__dotcell">
+                <span className={`pr-dot pr-dot--${b.dot}`} title={b.label} />
+              </td>
+              <td>
+                <div className="pr-created">
+                  <span className={`pr-camp__icon ${r.icon === "facebook" ? "pr-camp__icon--fb" : r.icon === "star" ? "pr-camp__icon--star" : ""}`}><Icon name={r.icon} size={15} /></span>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="co-table__name">{r.name}</div>
+                    {r.plan && <div className="co-table__sub">{r.plan}</div>}
+                  </div>
+                </div>
+              </td>
+              <td style={{ whiteSpace: "nowrap" }}>{r.type}</td>
+              <td><span className={`co-badge ${b.cls} pr-badge`}>{b.short || b.label}</span></td>
+              <td style={{ color: "var(--stone-500)", whiteSpace: "nowrap" }}>{r.created}</td>
+              <td style={{ color: "var(--stone-500)", whiteSpace: "nowrap" }}>{r.window}</td>
+              <td style={{ whiteSpace: "nowrap" }}>{r.amount}</td>
+              <td className="pr-table__cta" onClick={e => e.stopPropagation()}>
+                {r.status === "awaiting_payment"
+                  ? <button className="pr-cta" onClick={() => onToast("Secure checkout opened (mock) — same link as the one in your email")}>Pay now</button>
+                  : <Icon name="chevronRight" size={14} style={{ color: "var(--stone-400)" }} />}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+);
+
+// Per-channel tab body: this channel's promotions, or an empty state that
+// routes into its creation flow.
+const ChannelPanel = ({ tab, rows, onToast }) => {
+  const mine = rows.filter(r => r.channel === tab.channel);
+  if (mine.length === 0) {
+    return (
+      <div className="co-card">
+        <div className="co-coming-soon">
+          <div className="co-coming-soon__icon"><Icon name={tab.icon} size={22} /></div>
+          <h3>{tab.emptyTitle}</h3>
+          <p style={{ maxWidth: 460, margin: "0 auto" }}>{tab.emptyDesc}</p>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+            <button className="co-btn-solid" onClick={() => navigateTo(tab.path)}>{tab.cta}</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="pr-panelbar">
+        <span className="pr-panelbar__count">{mine.length} {mine.length === 1 ? "promotion" : "promotions"}</span>
+        <button className="co-btn-solid" onClick={() => navigateTo(tab.path)}><Icon name="plus" size={14} /> {tab.cta}</button>
+      </div>
+      <PromotionsTable rows={mine} onToast={onToast} />
+    </>
+  );
+};
+
+// Dashboard tabs: an Overview that launches new work, then one tab per channel
+// listing that channel's promotions (or an empty state into its flow).
+const PROMO_TABS = [
+  { id: "overview", label: "Overview", hash: "" },
+  { id: "meta", label: "Meta Ads", hash: "meta", channel: "meta_ads", icon: "facebook",
+    path: "/practice/promotions/ads", cta: "Create campaign",
+    emptyTitle: "No ad campaigns yet",
+    emptyDesc: "Run anonymous Facebook & Instagram ads for one flat rate — we build them, run them from VetVet's ad account, and manage delivery." },
+  { id: "dvm", label: "DVM Buyers", hash: "dvm", channel: "dvm", icon: "users",
+    path: "/practice/promotions/dvm-buyers", cta: "Browse specialists",
+    emptyTitle: "No specialist outreach yet",
+    emptyDesc: "Message a Talent Acquisition Specialist to see if a veterinarian in their network is ready to buy a practice." },
+  { id: "featured", label: "Featured Listing", hash: "featured", channel: "featured", icon: "star",
+    path: "/practice/promotions/featured", cta: "Feature my listing",
+    emptyTitle: "No featured boosts yet",
+    emptyDesc: "Boost your anonymous listing to the top of the Marketplace and across CareOwner's owned channels." },
+  { id: "local", label: "Local Advertising", hash: "local", channel: "local_pubs", icon: "newspaper",
+    path: "/practice/promotions/local-ads", cta: "Find placements",
+    emptyTitle: "No local placements yet",
+    emptyDesc: "Place ads in the local and trade publications buyers actually read — VMA newsletters, business journals, community papers." },
+  { id: "pr", label: "Press & PR", hash: "pr", channel: "pr", icon: "megaphone",
+    path: "/practice/promotions/pr", cta: "Pitch your story",
+    emptyTitle: "No press outreach yet",
+    emptyDesc: "Turn your sale into a story — AI-drafted angles, a ready-to-send press kit, and pitches to reporters who cover your town." },
+];
+
+const PromoteHub = ({ tab, onToast }) => {
   const promo = usePromo();
   const listing = useMyListing();
   const f = listing.featured;
   const featuredActive = f && f.status === "active";
+  const activeTab = (PROMO_TABS.find(t => t.hash && t.hash === tab) || PROMO_TABS[0]).id;
 
   const channels = [
     {
       id: "meta_ads", flag: PROMO_META_ENABLED, icon: "facebook", title: "Facebook & Instagram Ads",
-      desc: "Audience-targeted ads that never reveal your practice. VetVet can run them for you — no Facebook Business account needed.",
+      desc: "Audience-targeted ads that never reveal your practice. We build and run them for you for one flat rate — no Facebook account needed.",
       meta: "Always anonymous · AI-drafted creative", cta: "Build an ad campaign", path: "/practice/promotions/ads",
+    },
+    {
+      id: "dvm_buyers", flag: PROMO_DVM_ENABLED, icon: "users", title: "Find DVM Buyers",
+      desc: "Tap into our network of Talent Acquisition Specialists — recruiters who work with DVMs every day — to see if a veterinarian in their network is interested in buying a practice.",
+      meta: "Recruiter referrals · In-platform messaging", cta: "Browse specialists", path: "/practice/promotions#dvm",
     },
     {
       id: "featured", flag: PROMO_FEATURED_ENABLED, icon: "star", title: "Featured Listing",
@@ -356,6 +541,59 @@ const PromoteHub = ({ onToast }) => {
     },
   ];
 
+  const rows = createdRows(promo, listing);
+  const tabDef = PROMO_TABS.find(t => t.id === activeTab) || PROMO_TABS[0];
+
+  const shareAside = (
+    <aside className="co-aside">
+      <div>
+        <div className="co-card__head" style={{ margin: 0, marginBottom: 12 }}>
+          <h3 className="co-card__title"><Icon name="activity" />Latest updates</h3>
+        </div>
+        <div className="pr-feed">
+          {PROMO_UPDATES.map(u => (
+            <button key={u.id} className={`pr-feed__item ${u.attention ? "is-attention" : ""}`} onClick={() => navigateTo(u.path)}>
+              <span className={`pr-feed__icon pr-feed__icon--${u.tint}`}><Icon name={u.icon} size={14} /></span>
+              <span className="pr-feed__body">
+                <span className="pr-feed__text" dangerouslySetInnerHTML={{ __html: u.text }} />
+                <span className="pr-feed__time">{u.time}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="co-card__head" style={{ margin: 0, marginBottom: 12 }}>
+          <h3 className="co-card__title"><Icon name="eye" />Share Listing</h3>
+          <button className="co-btn-manage" style={{ height: 32, padding: "0 12px" }} onClick={() => window.open(promoShareUrl("/l/" + listing.id), "_blank", "noopener")}>
+            <Icon name="externalLink" size={13} /> Preview
+          </button>
+        </div>
+        <div className="pr-sharecard">
+          <div className="pr-sharecard__top">
+            <div className="pr-sharecard__text">
+              <h4 className="pr-sharecard__title">{listing.title}</h4>
+              <div className="pr-sharecard__bars"><span /><span /><span /></div>
+            </div>
+            <div className="pr-sharecard__media"><img src={listing.image} alt="Landing page preview" /></div>
+          </div>
+          <button className="co-btn co-btn--primary" onClick={() => navigateTo("/practice/promotions/share")}>
+            Get share links <Icon name="chevronRight" size={14} />
+          </button>
+        </div>
+      </div>
+      {!featuredActive && (
+        <button className="pr-upsell" onClick={() => navigateTo("/practice/promotions/featured")}>
+          <span className="pr-upsell__icon"><Icon name="star" size={16} /></span>
+          <span>
+            <span className="pr-upsell__title">Get seen first <Icon name="chevronRight" size={18} /></span>
+            <span className="pr-upsell__desc">Feature your listing at the top of the Marketplace.</span>
+          </span>
+        </button>
+      )}
+    </aside>
+  );
+
   return (
     <>
       <SubHeader
@@ -363,17 +601,37 @@ const PromoteHub = ({ onToast }) => {
         title="Promote Your Practice"
         subtitle="Set up promotions to attract buyers, team members, and more."
       />
-      <hr className="co-title-divider" />
       <div className="co-body">
-        <section className="pr-section">
-          <div className="pr-section__head">
-            <h2 className="pr-section__title">Marketplace Listing</h2>
-            <p className="pr-section__sub">Create paid campaigns, share a landing page with your network, or generate press coverage.</p>
-          </div>
+        <div className="co-tabs pr-dashtabs" style={{ marginBottom: 20 }}>
+          {PROMO_TABS.map(t => {
+            const attention = t.channel
+              ? rows.some(r => r.channel === t.channel && (STATUS_BADGE[r.status] || {}).dot === "attention")
+              : false;
+            return (
+              <button key={t.id} className={activeTab === t.id ? "is-active" : ""}
+                onClick={() => navigateTo("/practice/promotions" + (t.hash ? "#" + t.hash : ""))}>
+                {t.label}
+                {attention && <span className="pr-dot pr-dot--attention pr-tabdot" />}
+              </button>
+            );
+          })}
+        </div>
 
+        {/* DVM Buyers is a live directory of every specialist on the platform,
+            not a list of past promotions — it renders the shared panel instead. */}
+        {activeTab === "dvm" && <TaSpecialistsPanel onToast={onToast} />}
+        {activeTab !== "overview" && activeTab !== "dvm" && <ChannelPanel tab={tabDef} rows={rows} onToast={onToast} />}
+
+        {activeTab === "overview" && (
+        <section className="pr-section">
           <div className="pr-section__cols">
             <div>
               <RoiStrip promo={promo} listing={listing} onToast={onToast} />
+
+              <div className="pr-section__head">
+                <h2 className="pr-section__title">Create Promotions</h2>
+                <p className="pr-section__sub">Create paid campaigns, share a landing page with your network, or generate press coverage.</p>
+              </div>
 
               <div className="pr-channels">
                 {channels.map(ch => {
@@ -400,56 +658,36 @@ const PromoteHub = ({ onToast }) => {
               </div>
             </div>
 
-            <aside className="co-aside">
-              <div>
-                <div className="co-card__head" style={{ margin: 0, marginBottom: 12 }}>
-                  <h3 className="co-card__title"><Icon name="eye" />Share Listing</h3>
-                  <button className="co-btn-manage" style={{ height: 32, padding: "0 12px" }} onClick={() => window.open(promoShareUrl("/l/" + listing.id), "_blank", "noopener")}>
-                    <Icon name="externalLink" size={13} /> Preview
-                  </button>
-                </div>
-                <div className="pr-sharecard">
-                  <div className="pr-sharecard__top">
-                    <div className="pr-sharecard__text">
-                      <h4 className="pr-sharecard__title">{listing.title}</h4>
-                      <div className="pr-sharecard__bars"><span /><span /><span /></div>
-                    </div>
-                    <div className="pr-sharecard__media"><img src={listing.image} alt="Landing page preview" /></div>
-                  </div>
-                  <button className="co-btn co-btn--primary" onClick={() => navigateTo("/practice/promotions/share")}>
-                    Get share links <Icon name="chevronRight" size={14} />
-                  </button>
-                </div>
-              </div>
-              {!featuredActive && (
-                <button className="pr-upsell" onClick={() => navigateTo("/practice/promotions/featured")}>
-                  <span className="pr-upsell__icon"><Icon name="star" size={16} /></span>
-                  <span>
-                    <span className="pr-upsell__title">Get seen first <Icon name="chevronRight" size={18} /></span>
-                    <span className="pr-upsell__desc">Feature your listing at the top of the Marketplace.</span>
-                  </span>
-                </button>
-              )}
-            </aside>
+            {shareAside}
           </div>
         </section>
+        )}
       </div>
     </>
   );
 };
 
 // ─── Wizard scaffolding shared by the flows ───────────────────────────────────
-const Stepper = ({ steps, step }) => (
+// Completed steps are clickable when `onStepClick` is provided — every flow
+// passes its setStep so users can hop back to any step they've already passed.
+const Stepper = ({ steps, step, onStepClick }) => (
   <div className="mc-steps">
     {steps.map((label, i) => {
       const n = i + 1;
-      const cls = n === step ? "is-active" : n < step ? "is-done" : "";
+      const done = n < step;
+      const clickable = done && !!onStepClick;
+      const cls = `mc-step ${n === step ? "is-active" : done ? "is-done" : ""} ${clickable ? "mc-step--link" : ""}`;
+      const inner = (
+        <>
+          <span className="mc-step__num">{done ? <Icon name="check" /> : n}</span>
+          <span className="mc-step__label">{label}</span>
+        </>
+      );
       return (
         <React.Fragment key={label}>
-          <div className={`mc-step ${cls}`}>
-            <div className="mc-step__num">{n < step ? <Icon name="check" /> : n}</div>
-            <div className="mc-step__label">{label}</div>
-          </div>
+          {clickable
+            ? <button type="button" className={cls} title={`Go back to ${label}`} onClick={() => onStepClick(n)}>{inner}</button>
+            : <div className={cls}>{inner}</div>}
           {n < steps.length && <div className="mc-step__line" />}
         </React.Fragment>
       );
@@ -458,8 +696,26 @@ const Stepper = ({ steps, step }) => (
 );
 
 // ─── Meta ad builder wizard ───────────────────────────────────────────────────
-const AD_STEPS = ["Audience", "Creative", "Anonymity", "Ad account", "Review & launch"];
-const DURATIONS = [7, 14, 30, 45];
+// A standalone overview page (no stepper — the price is flat and shown up front)
+// leads into a 3-step flow: Audience → Creative (with a live landing-page preview
+// rail) → Review. The request goes to CareOwner's ads desk: manual review, an
+// approval email with a payment link, then a hand-managed launch from VetVet's
+// Meta ad account.
+const AD_STEPS = ["Audience", "Creative", "Review"];
+
+// Overview "How it works" grid (Figma 253:4722). The 4th tile restates the
+// anonymity guarantee so the overview stands on its own without the full
+// hidden/shown table.
+const AD_HOW_IT_WORKS = [
+  { icon: "sparkles", title: "Build inside CareOwner",
+    desc: "AI drafts your ad set based on your desired audience. You can review and edit every word before any ads are submitted." },
+  { icon: "facebook", title: "We run them for you",
+    desc: "Your ads run from VetVet's Meta ad account, managed hands-on by the CareOwner team — no Facebook account, budgets, or Meta invoices on your side." },
+  { icon: "inbox", title: "Buyers come to you",
+    desc: "Every ad links to your landing page. Interested buyers request info through CareOwner, and you approve who learns your name." },
+  { icon: "eyeOff", title: "Ads are always anonymous",
+    desc: "Your practice name and location stay hidden until a buyer requests information and you approve them." },
+];
 
 const LintWarning = ({ hits }) => hits.length === 0 ? null : (
   <div className="pr-lint">
@@ -508,32 +764,28 @@ const VariantCard = ({ v, onChange, onRegen, regenBusy }) => {
 
 const AdWizard = ({ onToast }) => {
   const listing = useMyListing();
-  const [step, setStep] = React.useState(1);
+  const [started, setStarted] = React.useState(false); // false = overview page, true = 3-step flow
+  const [step, setStep] = React.useState(1);            // 1 Audience · 2 Creative · 3 Review
   const [audiences, setAudiences] = React.useState(["individual_dvm"]);
   const [otherNote, setOtherNote] = React.useState("");
   const [variants, setVariants] = React.useState(null);
   const [generatedFor, setGeneratedFor] = React.useState("");
   const [generating, setGenerating] = React.useState(false);
   const [regenId, setRegenId] = React.useState(null);
-  const [accountMode, setAccountMode] = React.useState("vetvet");
-  const [dailyBudget, setDailyBudget] = React.useState(25);
-  const [durationDays, setDurationDays] = React.useState(14);
-  const [connecting, setConnecting] = React.useState(false);
-  const [ack, setAck] = React.useState(false);
-  const [launching, setLaunching] = React.useState(false);
-  const promo = usePromo();
+  const [submitting, setSubmitting] = React.useState(false);
+  const plan = META_AD_PLAN;
 
   const audKey = audiences.slice().sort().join(",");
   const toggleAudience = (id) => setAudiences(a => a.includes(id) ? a.filter(x => x !== id) : [...a, id]);
 
   // Draft creative whenever the Creative step is entered with a changed audience mix.
   React.useEffect(() => {
-    if (step !== 2 || generating || (variants && generatedFor === audKey)) return;
+    if (!started || step !== 2 || generating || (variants && generatedFor === audKey)) return;
     setGenerating(true);
     generateCreative(listing, audiences).then(vs => {
       setVariants(vs); setGeneratedFor(audKey); setGenerating(false);
     });
-  }, [step, audKey]);
+  }, [started, step, audKey]);
 
   const updateVariant = (nv) => setVariants(vs => vs.map(v => v.id === nv.id ? nv : v));
   const regen = (v) => {
@@ -541,65 +793,137 @@ const AdWizard = ({ onToast }) => {
     regenerateCreative(v).then(nv => { updateVariant(nv); setRegenId(null); });
   };
 
-  const connectFacebook = () => {
-    setConnecting(true);
-    mockAdService.connectOwnAccount().then(res => {
-      updatePromo({ ownAccount: res });
-      setConnecting(false);
-      onToast("Facebook connected — " + res.pageName);
-    });
-  };
-
   const lintHits = (variants || []).filter(v => lintAnonymity(v.headline + " " + v.primaryText).length > 0).length;
   const editedCount = (variants || []).filter(v => v.edited).length;
-  const estTotal = dailyBudget * durationDays;
+  const variantCount = (variants || []).length;
   const landingPath = "/l/" + listing.id;
-  const connected = !!(promo.ownAccount && promo.ownAccount.connected);
+  const openLanding = () => window.open(promoShareUrl(landingPath), "_blank", "noopener");
 
   const canContinue =
     step === 1 ? audiences.length > 0 :
-    step === 2 ? !!variants && !generating :
-    step === 4 ? (accountMode === "vetvet" || (connected && ack)) : true;
+    step === 2 ? !!variants && !generating : true;
 
-  const back = () => step === 1 ? navigateTo("/practice/promotions") : setStep(s => s - 1);
-  const next = () => setStep(s => Math.min(5, s + 1));
+  const back = () => step === 1 ? setStarted(false) : setStep(s => s - 1);
+  const next = () => setStep(s => Math.min(3, s + 1));
 
-  const launch = () => {
-    setLaunching(true);
-    const own = accountMode === "own";
-    const call = own ? mockAdService.launchViaOwnAccount : mockAdService.launchViaVetVet;
-    call({}).then(({ campaignId }) => {
+  // Submit the request to CareOwner's ads desk — nothing launches (and nothing
+  // is charged) until the team approves it and the emailed payment link is paid.
+  const submitRequest = () => {
+    setSubmitting(true);
+    mockAdService.submitRequest({}).then(({ campaignId }) => {
       const campaign = {
         id: campaignId, listingId: listing.id, audiences: audiences.slice(),
-        variants, anonymityMode: own ? "named" : "anonymous", // own account exposes the Page identity
-        adAccountMode: accountMode, dailyBudget, durationDays,
-        status: own ? "in_review" : "active",
+        variants, anonymityMode: "anonymous",
+        price: plan.price, durationDays: plan.days,
+        status: "in_review",
         landingUrl: landingPath + "?src=meta",
-        metrics: own ? { impressions: 0, clicks: 0, inquiries: 0 } : mockCampaignMetrics(),
+        metrics: null,
         createdAt: todayLabel(),
       };
       variants.forEach(v => saveAsset({ kind: "creative", channel: "meta_ads", label: v.headline, data: v }));
       updatePromo({ campaigns: [campaign, ...PROMO.campaigns] });
-      navigateTo("/practice/promotions");
-      onToast(own ? "Campaign submitted — Meta review usually takes about a day" : "Campaign launched — your ads are live");
+      navigateTo("/practice/promotions#meta");
+      onToast("Request submitted — we'll email you when your ads are approved");
     });
   };
+
+  const subtitle = "We build, run, and manage anonymous ads for one flat rate.";
+
+  // ── Overview (pre-flow) — no stepper; the flat price is shown up front ──
+  if (!started) {
+    return (
+      <>
+        <SubHeader
+          title="Create Meta ad campaign"
+          subtitle={subtitle}
+          backAction={<button className="co-btn-outline" onClick={() => navigateTo("/practice/promotions")}><Icon name="x" /> Cancel</button>}
+        />
+        <div className="co-body">
+          <div className="pr-adov">
+            <div className="co-card pr-adov__how">
+              <div className="pr-adov__eyebrow">How it works</div>
+              <h3 className="pr-adov__title">Run Facebook and Instagram ads to expand your reach</h3>
+              <p className="pr-adov__lede">Anonymity is locked for ads — your practice name and location stay hidden until a
+              buyer requests info and you approve them. Here's exactly what buyers will and won't see:</p>
+              <div className="pr-adov__grid">
+                {AD_HOW_IT_WORKS.map(s => (
+                  <div key={s.title} className="pr-adov__item">
+                    <span className="pr-adov__icon"><Icon name={s.icon} size={18} /></span>
+                    <h4>{s.title}</h4>
+                    <p>{s.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <aside className="co-card pr-adov__price">
+              <div className="pr-adov__eyebrow">Monthly pricing</div>
+              <div className="pr-adov__amount">${fmtInt(plan.price)}</div>
+              <ul className="pr-tier__list pr-adov__list">
+                {plan.benefits.map(b => <li key={b}><Icon name="check" size={12} /> {b}</li>)}
+              </ul>
+              <div className="pr-adov__cta">
+                <div className="pr-adov__cta-q">Ready to build your ad campaign?</div>
+                <button className="co-btn co-btn--primary" onClick={() => setStarted(true)}>
+                  Get Started <Icon name="chevronRight" size={14} />
+                </button>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <div className="pr-wizard__footer">
+          <span />
+          <button className="co-btn co-btn--primary" onClick={() => setStarted(true)}>Get Started <Icon name="chevronRight" size={14} /></button>
+        </div>
+      </>
+    );
+  }
+
+  // Creative step's sticky right rail — the landing page the ads click through
+  // to, in the same miniature used by the hub's Share Listing card.
+  const previewRail = (
+    <aside className="co-aside">
+      <div>
+        <div className="co-card__head" style={{ margin: 0, marginBottom: 12 }}>
+          <h3 className="co-card__title"><Icon name="eye" />Where your ads lead</h3>
+          <button className="co-btn-manage" style={{ height: 32, padding: "0 12px" }} onClick={openLanding}>
+            <Icon name="externalLink" size={13} /> Preview
+          </button>
+        </div>
+        <div className="pr-sharecard">
+          <div className="pr-sharecard__top">
+            <div className="pr-sharecard__text">
+              <h4 className="pr-sharecard__title">{listing.title}</h4>
+              <div className="pr-sharecard__bars"><span /><span /><span /></div>
+            </div>
+            <div className="pr-sharecard__media"><img src={listing.image} alt="Landing page preview" /></div>
+          </div>
+          <p className="pr-sharecard__note">Buyers who click any of your ads land on this anonymous page — generalized location, banded financials, illustrative artwork. Never your practice name.</p>
+        </div>
+      </div>
+    </aside>
+  );
 
   return (
     <>
       <SubHeader
         title="Create Meta ad campaign"
-        subtitle="Build an anonymous ad campaign that sends buyers to your teaser page."
+        subtitle={subtitle}
         backAction={<button className="co-btn-outline" onClick={() => navigateTo("/practice/promotions")}><Icon name="x" /> Cancel</button>}
       />
       <div className="co-body">
-        <Stepper steps={AD_STEPS} step={step} />
+        <Stepper steps={AD_STEPS} step={step} onStepClick={setStep} />
 
+        <div className={step === 2 ? "pr-step-cols" : step === 3 ? "pr-review-cols" : undefined}>
         <div className="co-card">
           {step === 1 && (
             <>
               <div className="co-card__head">
-                <h3 className="co-card__title">Who should see your ads?</h3>
+                <div>
+                  <h3 className="co-card__title">Who should see your ads?</h3>
+                  <p className="co-card__subtitle">We'll draft ads with a different angle per audience.</p>
+                </div>
                 <span className="co-card__meta">{audiences.length} selected · select all that apply</span>
               </div>
               <div className="pr-auds">
@@ -623,7 +947,6 @@ const AdWizard = ({ onToast }) => {
                   <textarea rows={2} value={otherNote} onChange={e => setOtherNote(e.target.value)} placeholder="e.g. Practice managers in the Chicago area who may know a buyer…" />
                 </div>
               )}
-              <div className="pr-tip"><Icon name="sparkles" size={14} /> We'll draft creative with a different angle per audience — DVMs see "be your own boss", neighbors see "grow by acquisition".</div>
             </>
           )}
 
@@ -660,159 +983,57 @@ const AdWizard = ({ onToast }) => {
 
           {step === 3 && (
             <>
-              <div className="co-card__head"><h3 className="co-card__title">Anonymity</h3></div>
-              {accountMode === "own" ? (
-                <div className="pr-anon-state pr-anon-state--warn">
-                  <div className="pr-anon-state__icon"><Icon name="alertTriangle" size={20} /></div>
-                  <div>
-                    <div className="pr-anon-state__title">Anonymity is compromised by your ad account choice</div>
-                    <p>You've chosen to run ads from your own Facebook account, so they'll carry your Page name and
-                    identity even though the ad copy stays anonymized. Switch back to VetVet's account in the next
-                    step to stay anonymous.</p>
-                  </div>
+              <div className="co-card__head"><h3 className="co-card__title">Review your ad</h3></div>
+              <div className="pr-rev">
+                <div className="pr-rev__row">
+                  <div className="pr-rev__label">Audience</div>
+                  <div className="pr-rev__val">{audiences.map(a => audienceMeta(a).label).join(", ")}</div>
+                  <button className="co-edit pr-rev__edit" onClick={() => setStep(1)}>Edit</button>
                 </div>
-              ) : (
-                <div className="pr-anon-state">
-                  <div className="pr-anon-state__icon"><Icon name="lock" size={20} /></div>
-                  <div>
-                    <div className="pr-anon-state__title">Anonymous mode — locked for ads <span className="co-badge co-badge--gray" style={{ marginLeft: 8 }}>Read-only</span></div>
-                    <p>Ads always run anonymously — your practice name and location stay hidden until a buyer requests
-                    info. That's also why we recommend running them through VetVet's ad account in the next step.</p>
-                  </div>
+                <div className="pr-rev__row">
+                  <div className="pr-rev__label">Ad creative</div>
+                  <div className="pr-rev__val">{variantCount} {variantCount === 1 ? "variant" : "variants"}
+                    <span className="pr-rev__sub">{editedCount} edited · {variantCount - editedCount} AI {variantCount - editedCount === 1 ? "draft" : "drafts"}</span></div>
+                  <button className="co-edit pr-rev__edit" onClick={() => setStep(2)}>Edit</button>
                 </div>
-              )}
-              <div className="pr-anon-cols">
-                <div>
-                  <div className="pr-anon-coltitle"><Icon name="eyeOff" size={13} /> Hidden from buyers</div>
-                  <ul className="pr-anon-list">
-                    <li>Practice name & logo</li>
-                    <li>Street address & city</li>
-                    <li>Real photos of your building</li>
-                    <li>Owner & staff names</li>
-                  </ul>
+                <div className="pr-rev__row">
+                  <div className="pr-rev__label">Landing page</div>
+                  <div className="pr-rev__val"><button className="pr-link" onClick={openLanding}><Icon name="externalLink" size={13} /> Preview</button></div>
                 </div>
-                <div>
-                  <div className="pr-anon-coltitle"><Icon name="eye" size={13} /> Shown to buyers</div>
-                  <ul className="pr-anon-list">
-                    <li>Generalized location — “Suburban Midwest”</li>
-                    <li>Revenue band & EBITDA margin</li>
-                    <li>Practice type & team size</li>
-                    <li>Illustrative artwork (no real photos)</li>
-                  </ul>
+                <div className="pr-rev__row">
+                  <div className="pr-rev__label">Price</div>
+                  <div className="pr-rev__val">${fmtInt(plan.price)}
+                    <span className="pr-rev__sub">One-time · {plan.days}-day campaign</span></div>
                 </div>
-              </div>
-            </>
-          )}
-
-          {step === 4 && (
-            <>
-              <div className="co-card__head"><h3 className="co-card__title">Choose an ad account</h3></div>
-              <div className="pr-accts">
-                <button type="button" className={`mc-radio-card pr-acct ${accountMode === "vetvet" ? "is-selected" : ""}`} onClick={() => setAccountMode("vetvet")}>
-                  <span className="mc-radio-card__radio" />
-                  <span style={{ flex: 1 }}>
-                    <span className="mc-radio-card__title">Use VetVet's ad account <span className="co-badge co-badge--green" style={{ marginLeft: 6 }}>Recommended</span></span>
-                    <span className="mc-radio-card__desc">VetVet runs the ad for you and keeps your practice anonymous. You never need a Facebook Business account.</span>
-                  </span>
-                </button>
-                <button type="button" className={`mc-radio-card pr-acct ${accountMode === "own" ? "is-selected" : ""}`} onClick={() => setAccountMode("own")}>
-                  <span className="mc-radio-card__radio" />
-                  <span style={{ flex: 1 }}>
-                    <span className="mc-radio-card__title">Use my own Facebook account <span className="co-badge co-badge--gray" style={{ marginLeft: 6 }}>Not recommended</span></span>
-                    <span className="mc-radio-card__desc">Run the same campaign from your own Page and Meta ad account, billed by Meta directly.</span>
-                  </span>
-                </button>
-              </div>
-
-              {accountMode === "own" && (
-                <div className="pr-own">
-                  <div className="pr-warn">
-                    <Icon name="alertTriangle" size={16} />
-                    <div>Ads from your own account are tied to your Page and identity — <b>your practice cannot stay
-                    anonymous this way.</b> Only choose this if you're comfortable revealing that your practice is for sale.</div>
-                  </div>
-                  {connected ? (
-                    <div className="pr-fb-connected">
-                      <span className="pr-fb-chip"><Icon name="facebook" size={14} /> Connected: <b>{promo.ownAccount.pageName}</b></span>
-                      <button className="co-edit" onClick={() => { updatePromo({ ownAccount: null }); setAck(false); }}>Disconnect</button>
-                    </div>
-                  ) : (
-                    <button className="pr-fb-btn" disabled={connecting} onClick={connectFacebook}>
-                      <Icon name="facebook" size={15} /> {connecting ? "Connecting to Facebook…" : "Connect Facebook"}
-                    </button>
-                  )}
-                  <label className="pr-ack">
-                    <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} disabled={!connected} />
-                    I understand my practice won't be anonymous
-                  </label>
-                </div>
-              )}
-
-              <div className="mc-group-title">Budget & schedule</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                <div className="co-field"><label>Daily budget</label>
-                  <div className="pr-money"><span>$</span>
-                    <input type="number" min="5" step="5" value={dailyBudget}
-                      onChange={e => setDailyBudget(Math.max(0, parseInt(e.target.value, 10) || 0))} />
-                    <span className="pr-money__per">/day</span>
-                  </div>
-                </div>
-                <div className="co-field"><label>Duration</label>
-                  <select value={durationDays} onChange={e => setDurationDays(parseInt(e.target.value, 10))}>
-                    {DURATIONS.map(d => <option key={d} value={d}>{d} days</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="pr-est">
-                <span>Estimated total <b>${fmtInt(estTotal)}</b></span>
-                <span className="pr-est__note">{accountMode === "vetvet" ? "You'll be billed by VetVet — no Meta account or invoices on your side." : "Billed by Meta to your own ad account."}</span>
-              </div>
-            </>
-          )}
-
-          {step === 5 && (
-            <>
-              <div className="co-card__head"><h3 className="co-card__title">Review & launch</h3></div>
-              <div className="co-deals" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-                <div><div className="co-deal__label">Audiences</div><div className="co-deal__value">{audiences.map(a => audienceMeta(a).label).join(", ")}</div></div>
-                <div><div className="co-deal__label">Creative</div><div className="co-deal__value">{(variants || []).length} ad variants</div>
-                  <div style={{ font: "400 13px/1.4 Inter", color: "var(--stone-500)", marginTop: 4 }}>{editedCount} edited · {(variants || []).length - editedCount} AI drafts</div></div>
-                <div><div className="co-deal__label">Anonymity</div>
-                  {accountMode === "own"
-                    ? <div className="co-deal__value" style={{ color: "#B45309", display: "flex", alignItems: "center", gap: 6 }}><Icon name="alertTriangle" size={15} /> Not anonymous</div>
-                    : <div className="co-deal__value" style={{ display: "flex", alignItems: "center", gap: 6 }}><Icon name="lock" size={14} /> Anonymous — enforced</div>}
-                </div>
-              </div>
-              <div style={{ borderTop: "1px solid var(--stone-100)", margin: "16px 0" }} />
-              <div className="co-deals" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-                <div><div className="co-deal__label">Ad account</div><div className="co-deal__value">{accountMode === "vetvet" ? "VetVet-managed" : (promo.ownAccount ? promo.ownAccount.pageName : "Your Facebook account")}</div></div>
-                <div><div className="co-deal__label">Budget</div><div className="co-deal__value">${dailyBudget}/day × {durationDays} days</div>
-                  <div style={{ font: "400 13px/1.4 Inter", color: "var(--stone-500)", marginTop: 4 }}>≈ ${fmtInt(estTotal)} total</div></div>
-                <div><div className="co-deal__label">Ads link to</div><div className="co-deal__value" style={{ fontSize: 14 }}>{promoShareUrl(landingPath)}</div>
-                  <div style={{ font: "400 13px/1.4 Inter", color: "var(--stone-500)", marginTop: 4 }}>Your anonymous teaser page</div></div>
               </div>
               {lintHits > 0 && (
                 <div className="pr-warn" style={{ marginTop: 16 }}>
                   <Icon name="alertTriangle" size={16} />
-                  <div><b>{lintHits} {lintHits === 1 ? "variant" : "variants"}</b> still {lintHits === 1 ? "contains" : "contain"} identifying details. Go back to Creative to clean {lintHits === 1 ? "it" : "them"} up before launching.</div>
+                  <div><b>{lintHits} {lintHits === 1 ? "variant" : "variants"}</b> still {lintHits === 1 ? "contains" : "contain"} identifying details. <button className="pr-link" onClick={() => setStep(2)}>Edit creative</button> to clean {lintHits === 1 ? "it" : "them"} up before submitting.</div>
                 </div>
               )}
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, font: "400 14px/1.5 Inter", color: "var(--stone-700)", marginTop: 16 }}>
-                <Icon name={accountMode === "own" ? "info" : "lock"} size={16} style={{ color: "var(--teal-brand)", flexShrink: 0, marginTop: 2 }} />
-                {accountMode === "own"
-                  ? "Meta reviews new campaigns before they run — usually within a day. We'll show it as “In review” until then."
-                  : "Buyers who click your ad land on the anonymous teaser page and request info through VetVet — you approve who learns your name."}
-              </div>
             </>
           )}
         </div>
+        {step === 2 && previewRail}
+        {step === 3 && (
+          <aside className="co-card pr-next-card">
+            <div className="co-card__head"><h3 className="co-card__title">What happens next</h3></div>
+            <ol className="pr-next__list">
+              <li><b>Submit your request to CareOwner.</b> Our ads team reviews your campaign and creative — usually within 1–2 business days.</li>
+              <li><b>Get approved by email.</b> Once your ads are approved, we'll email you a secure link to pay the one-time ${fmtInt(plan.price)}. Nothing is charged before then.</li>
+              <li><b>We launch and manage your ads.</b> After payment, the team launches your campaign from VetVet's ad account and manages it by hand for the full {plan.days} days. Results land on your Promotions page.</li>
+            </ol>
+          </aside>
+        )}
+        </div>
 
         <div className="pr-wizard__footer">
-          <button className="co-btn co-btn--ghost" onClick={back} disabled={launching}>{step === 1 ? "Cancel" : "Back"}</button>
-          {step < 5
+          <button className="co-btn co-btn--ghost" onClick={back} disabled={submitting}>Back</button>
+          {step < 3
             ? <button className="co-btn co-btn--primary" onClick={next} disabled={!canContinue}>Continue <Icon name="chevronRight" size={14} /></button>
-            : <button className="co-btn co-btn--primary" onClick={launch} disabled={launching || (accountMode === "own" && !ack)}>
-                <Icon name="send" size={14} className={launching ? "pr-pulse" : ""} /> {launching ? "Launching…" : accountMode === "own" ? "Submit for Meta review" : "Launch campaign"}
+            : <button className="co-btn co-btn--primary" onClick={submitRequest} disabled={submitting}>
+                <Icon name="send" size={14} className={submitting ? "pr-pulse" : ""} /> {submitting ? "Submitting…" : "Submit for review"}
               </button>}
         </div>
       </div>
@@ -954,7 +1175,7 @@ const FeaturedFlow = ({ onToast }) => {
         backAction={<button className="co-btn-outline" onClick={() => navigateTo("/practice/promotions")}><Icon name="x" /> Cancel</button>}
       />
       <div className="co-body">
-        <Stepper steps={FEATURED_STEPS} step={step} />
+        <Stepper steps={FEATURED_STEPS} step={step} onStepClick={setStep} />
 
         <div className="co-card">
           {step === 1 && (
@@ -1142,7 +1363,7 @@ const LocalAdsFlow = ({ onToast }) => {
         backAction={<button className="co-btn-outline" onClick={() => navigateTo("/practice/promotions")}><Icon name="x" /> Cancel</button>}
       />
       <div className="co-body">
-        <Stepper steps={LOCAL_STEPS} step={step} />
+        <Stepper steps={LOCAL_STEPS} step={step} onStepClick={setStep} />
 
         <div className="co-card">
           {step === 1 && (
@@ -1484,7 +1705,7 @@ const PrFlow = ({ onToast }) => {
         backAction={<button className="co-btn-outline" onClick={() => navigateTo("/practice/promotions")}><Icon name="x" /> Cancel</button>}
       />
       <div className="co-body">
-        <Stepper steps={PR_STEPS} step={step} />
+        <Stepper steps={PR_STEPS} step={step} onStepClick={setStep} />
 
         <div className="co-card">
           {step === 1 && (
@@ -1695,7 +1916,7 @@ const PrFlow = ({ onToast }) => {
 };
 
 // ─── Section router ───────────────────────────────────────────────────────────
-const PromoteView = ({ sub, onToast, onManageListing }) => {
+const PromoteView = ({ sub, tab, onToast, onManageListing }) => {
   const listing = useMyListing();
   if (listing.status !== "live") {
     return (
@@ -1711,7 +1932,8 @@ const PromoteView = ({ sub, onToast, onManageListing }) => {
   if (sub === "featured" && PROMO_FEATURED_ENABLED) return <FeaturedFlow onToast={onToast} />;
   if (sub === "local-ads" && PROMO_LOCALPUBS_ENABLED) return <LocalAdsFlow onToast={onToast} />;
   if (sub === "pr" && PROMO_PR_ENABLED) return <PrView onToast={onToast} />;
-  return <PromoteHub onToast={onToast} />;
+  if (sub === "dvm-buyers" && PROMO_DVM_ENABLED) return <DvmBuyersView onToast={onToast} />;
+  return <PromoteHub tab={tab} onToast={onToast} />;
 };
 
 Object.assign(window, { PromoteView, PromoShareCard });

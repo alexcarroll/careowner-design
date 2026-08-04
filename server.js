@@ -27,7 +27,12 @@ const TYPES = {
 function send(res, filePath) {
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); return res.end("Not found"); }
-    res.writeHead(200, { "Content-Type": TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream" });
+    // No-cache: the in-browser Babel setup re-fetches .jsx on every load, so
+    // without this the browser can serve a stale transpile after an edit.
+    res.writeHead(200, {
+      "Content-Type": TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream",
+      "Cache-Control": "no-store, must-revalidate",
+    });
     res.end(data);
   });
 }
