@@ -234,20 +234,23 @@ const RoiRow = ({ icon, iconCls, name, meta, metrics, hint, status, action }) =>
             <span><b>{fmtInt(metrics.inquiries)}</b> inquiries</span>
           </div>
         )
-        : <div className="pr-camp__stats"><span className="pr-camp__hint">{hint}</span></div>}
+        : <div className="pr-camp__stats pr-camp__stats--hint"><span className="pr-camp__hint">{hint}</span></div>}
       <span className={`co-badge ${b.cls}`}>{b.label}</span>
       {action}
     </div>
   );
 };
 
-// One unified ROI dashboard: every channel contributes rows + the KPI totals.
-const RoiStrip = ({ promo, listing, onToast }) => {
+// Results dashboard. Without `channel` every channel contributes rows and KPI
+// totals; with one (e.g. "meta_ads") it scopes to that channel so it can sit on
+// a channel tab and only report that channel's numbers.
+const RoiStrip = ({ promo, listing, onToast, channel }) => {
   const rows = [];
   const totals = { imp: 0, clk: 0, inq: 0 };
   const add = (m) => { if (m) { totals.imp += m.impressions || 0; totals.clk += m.clicks || 0; totals.inq += m.inquiries || 0; } };
+  const wants = (c) => !channel || channel === c;
 
-  promo.campaigns.forEach(c => {
+  if (wants("meta_ads")) promo.campaigns.forEach(c => {
     const m = c.status === "in_review" || c.status === "awaiting_payment" ? null : c.metrics;
     add(m);
     rows.push(
@@ -262,7 +265,7 @@ const RoiStrip = ({ promo, listing, onToast }) => {
     );
   });
 
-  const f = listing.featured;
+  const f = wants("featured") ? listing.featured : null;
   if (f) {
     const tier = FEATURED_TIERS.find(t => t.id === f.tier) || {};
     const m = f.status === "active" ? f.metrics : null;
@@ -283,7 +286,7 @@ const RoiStrip = ({ promo, listing, onToast }) => {
     );
   }
 
-  promo.placements.forEach(p => {
+  if (wants("local_pubs")) promo.placements.forEach(p => {
     const m = p.status === "live" || p.status === "completed" ? p.metrics : null;
     add(m);
     rows.push(
@@ -294,7 +297,7 @@ const RoiStrip = ({ promo, listing, onToast }) => {
     );
   });
 
-  if (promo.prCampaign) {
+  if (wants("pr") && promo.prCampaign) {
     const pr = promo.prCampaign;
     const published = pr.targets.filter(t => t.status === "published");
     const m = published.length ? published.reduce((acc, t) => ({
@@ -315,7 +318,9 @@ const RoiStrip = ({ promo, listing, onToast }) => {
     );
   }
 
-  const shareInquiries = promo.leads.length;
+  // Share-link inquiries aren't attributable to one channel, so they only roll
+  // into the unscoped (all-channel) view.
+  const shareInquiries = channel ? 0 : promo.leads.length;
   if (rows.length === 0) return null;
 
   return (
@@ -332,7 +337,7 @@ const RoiStrip = ({ promo, listing, onToast }) => {
         <div className="pr-result"><div className="pr-result__num">{fmtInt(totals.imp)}</div><div className="pr-result__label">Impressions</div></div>
         <div className="pr-result"><div className="pr-result__num">{fmtInt(totals.clk)}</div><div className="pr-result__label">Clicks</div></div>
         <div className="pr-result"><div className="pr-result__num">{fmtInt(totals.inq + shareInquiries)}</div><div className="pr-result__label">Buyer inquiries</div></div>
-        <div className="pr-result"><div className="pr-result__num">{rows.length}</div><div className="pr-result__label">Channels running</div></div>
+        <div className="pr-result"><div className="pr-result__num">{rows.length}</div><div className="pr-result__label">{channel ? (rows.length === 1 ? "Campaign" : "Campaigns") : "Channels running"}</div></div>
       </div>
       <div className="pr-camps">{rows}</div>
     </div>
@@ -617,6 +622,9 @@ const PromoteHub = ({ tab, onToast }) => {
           })}
         </div>
 
+        {/* Results live on the channel tab they belong to, scoped to that channel. */}
+        {activeTab === "meta" && <RoiStrip promo={promo} listing={listing} onToast={onToast} channel="meta_ads" />}
+
         {/* DVM Buyers is a live directory of every specialist on the platform,
             not a list of past promotions — it renders the shared panel instead. */}
         {activeTab === "dvm" && <TaSpecialistsPanel onToast={onToast} />}
@@ -626,8 +634,6 @@ const PromoteHub = ({ tab, onToast }) => {
         <section className="pr-section">
           <div className="pr-section__cols">
             <div>
-              <RoiStrip promo={promo} listing={listing} onToast={onToast} />
-
               <div className="pr-section__head">
                 <h2 className="pr-section__title">Create Promotions</h2>
                 <p className="pr-section__sub">Create paid campaigns, share a landing page with your network, or generate press coverage.</p>
@@ -953,8 +959,11 @@ const AdWizard = ({ onToast }) => {
           {step === 2 && (
             <>
               <div className="co-card__head">
-                <h3 className="co-card__title">Review your ad creative</h3>
-                {variants && !generating && <span className="co-card__meta">{variants.length} drafts · {editedCount} edited</span>}
+                <div>
+                  <h3 className="co-card__title">Review your ad creative</h3>
+                  <p className="co-card__subtitle">Review the generated ad creatives and make any suggested edits. Any changes are still subject to Meta’s guidelines and final CareOwner review.</p>
+                </div>
+                {variants && !generating && <span className="co-card__meta" style={{ whiteSpace: "nowrap" }}>{variants.length} drafts · {editedCount} edited</span>}
               </div>
               {generating ? (
                 <div className="pr-generating">

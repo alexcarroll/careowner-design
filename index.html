@@ -1636,12 +1636,15 @@
     .pr-camps { display:flex; flex-direction: column; }
     .pr-camp { display:flex; align-items:center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--stone-100); }
     .pr-camp__icon { width: 36px; height: 36px; border-radius: 8px; background: #EEF2FB; color: #3B5998; display:grid; place-items:center; flex-shrink: 0; }
-    .pr-camp__main { flex: 1; min-width: 0; }
+    /* The name column keeps a floor so long campaign names stay on one or two
+       lines; only the metrics/hint column gives ground when space is tight. */
+    .pr-camp__main { flex: 1 1 auto; min-width: 260px; }
     .pr-camp__name { font: 500 14px/1.3 "Inter"; }
     .pr-camp__meta { font: 400 13px/1.4 "Inter"; color: var(--stone-500); margin-top: 3px; }
     .pr-camp__stats { display:flex; gap: 18px; font: 400 13px/1.3 "Inter"; color: var(--stone-500); flex-shrink: 0; }
+    .pr-camp__stats--hint { flex: 0 1 auto; min-width: 0; justify-content: flex-end; text-align: right; }
     .pr-camp__stats b { font-weight: 600; color: var(--stone-900); }
-    .pr-camp__hint { font: 400 13px/1.3 "Inter"; color: var(--stone-500); font-style: italic; }
+    .pr-camp__hint { font: 400 13px/1.45 "Inter"; color: var(--stone-500); font-style: italic; }
 
     /* Wizard — audience cards */
     .pr-auds { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -1817,21 +1820,29 @@
     .pr-link:hover { text-decoration: underline; }
     .pr-link svg { flex-shrink: 0; }
 
-    /* Meta ad — overview (pre-flow) page: how-it-works card + pricing card */
+    /* Meta ad — overview (pre-flow) page: how-it-works card + pricing card.
+       Metrics follow Figma 265:18381. Both cards are grid siblings, so the
+       global `.co-card + .co-card` top margin has to be zeroed out or the
+       pricing column hangs below the left card instead of top-aligning. */
     .pr-adov { display:grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
-    .pr-adov__eyebrow { font: 600 12px/1 "Inter"; text-transform: uppercase; letter-spacing: 0.6px; color: var(--teal-brand); margin-bottom: 12px; }
-    .pr-adov__title { font: 600 17px/1.3 "Inter"; letter-spacing: -0.01em; color: var(--stone-900); margin: 0 0 8px; }
-    .pr-adov__lede { font: 400 14px/1.6 "Inter"; color: var(--stone-500); margin: 0 0 18px; }
+    .pr-adov > .co-card + .co-card { margin-top: 0; }
+    .pr-adov > .co-card { padding: 21px 25px; }
+    .pr-adov__eyebrow { font: 600 12px/12px "Inter"; text-transform: uppercase; letter-spacing: 0.6px; color: var(--teal-brand); margin-bottom: 7px; }
+    .pr-adov__title { font: 600 17px/22.1px "Inter"; letter-spacing: -0.17px; color: var(--stone-900); margin: 0 0 4px; }
+    .pr-adov__lede { font: 400 14px/20px "Inter"; color: var(--stone-500); margin: 0 0 18px; }
     .pr-adov__grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .pr-adov__item { border: 1px solid var(--stone-200); border-radius: 12px; padding: 18px; background: #fff; }
+    .pr-adov__item { border: 1px solid var(--stone-200); border-radius: 12px; padding: 19px; background: #fff; }
     .pr-adov__icon { width: 40px; height: 40px; border-radius: 10px; background: var(--teal-tint); color: var(--teal-brand); display:grid; place-items:center; }
-    .pr-adov__item h4 { font: 600 14px/1.3 "Inter"; color: var(--stone-900); margin: 12px 0 5px; }
-    .pr-adov__item p { font: 400 13.5px/1.55 "Inter"; color: var(--stone-500); margin: 0; }
+    .pr-adov__item h4 { font: 600 14px/18.2px "Inter"; color: var(--stone-900); margin: 12px 0 5px; }
+    .pr-adov__item p { font: 400 13.5px/20.93px "Inter"; color: var(--stone-500); margin: 0; }
     .pr-adov__price { align-self: start; }
-    .pr-adov__amount { font: 700 34px/1 "Inter"; letter-spacing: -0.02em; color: var(--stone-900); }
-    .pr-adov__list { margin-top: 16px; }
-    .pr-adov__cta { margin-top: 16px; padding: 16px; background: var(--stone-50); border: 1px solid var(--stone-100); border-radius: 10px; text-align: center; }
-    .pr-adov__cta-q { font: 600 14px/1.3 "Inter"; color: var(--stone-900); margin-bottom: 12px; }
+    /* The eyebrow's own gap is absorbed by the amount's padding, which also sets
+       the breathing room between $500 and the divider below it. */
+    .pr-adov__price .pr-adov__eyebrow { margin-bottom: 0; }
+    .pr-adov__amount { font: 700 34px/34px "Inter"; letter-spacing: -0.68px; color: var(--stone-900); padding: 12px 0 18px; }
+    .pr-adov__list { margin-top: 0; padding: 13px 0 16px; }
+    .pr-adov__cta { margin-top: 0; padding: 17px; background: var(--stone-50); border: 1px solid var(--stone-100); border-radius: 10px; text-align: center; }
+    .pr-adov__cta-q { font: 600 14px/18.2px "Inter"; color: var(--stone-900); margin-bottom: 12px; }
     .pr-adov__cta .co-btn { width: 100%; justify-content: center; }
 
     /* Ad wizard — Creative step preview rail */
