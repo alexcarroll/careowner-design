@@ -807,12 +807,14 @@ window.ACTIVITY = ACTIVITY;
 
 // ─── Promote Your Practice (spec v1.2) ────────────────────────────────────────
 // Data shapes (plain JS mirror of the product spec's types):
-//   PromoAudience  = "aspiring" | "expanding" (buyer ad sets; the creative pool
-//                     also keeps "corporate" | "other" angles for reuse)
+//   PromoAudience  = "aspiring" | "expanding" (buyer audiences; each gets three
+//                     ad drafts, one per message angle in PROMO_AD_ANGLES)
 //   AnonymityMode  = "anonymous" | "named" | "semi_anonymous"
 //   PromoChannel   = "meta_ads" | "share_link" | "featured" | "local_pubs" | "pr"
 //   ChannelMetrics  { impressions, clicks, inquiries }
-//   CreativeVariant { id, audience, headline, primaryText, cta, imageUrl, edited }
+//   CreativeVariant { id, audience, angleId, angleLabel, headline, primaryText,
+//                     cta, imageUrl, originalImageUrl, included, edited{}, changed{},
+//                     history[], hIdx, pIdx }
 //   AdCampaign      { id, listingId, audiences, variants, anonymityMode (always
 //                     "anonymous" — ads run from VetVet's Meta ad account),
 //                     plan ("starter" | "standard" | "max"), planLabel, price,
@@ -855,61 +857,85 @@ const PROMO_DVM_ENABLED = true;
 // shown verbatim on the wizard's Campaign Details step.
 const PROMO_AUDIENCES = [
   { id: "aspiring", label: "Aspiring practice owners", icon: "stethoscope", hint: "Recommended",
-    desc: "Veterinarians interested in acquiring an established practice and becoming an owner. VetVet uses veterinary-profession signals, buyer engagement, and similar-audience modeling to reach potential buyers." },
+    desc: "Ads will contain messaging for veterinarians interested in acquiring an established practice and becoming an owner." },
   { id: "expanding", label: "Expanding practice owners", icon: "building",
-    desc: "Existing veterinary practice owners who may want another location in or near your market. VetVet uses its practice-owner network and Meta's audience-matching tools to help reach qualified owners." },
+    desc: "Ads will contain messaging aimed at existing veterinary practice owners in your region who may want to expand with a new location." },
 ];
 
-// Canned creative per audience, each written to a distinct angle (aspiring =
-// "be your own boss", expanding = "bolt-on growth", corporate = "diligence-ready
-// asset"). generateCreative deals the first three per audience; "Regenerate"
-// cycles onward. All copy is anonymized — no practice name, street, city, or
-// owner name.
-const PROMO_CREATIVE_POOL = {
+// Canned creative per audience, organized by message angle. Each angle carries
+// a tab-label (`label`), a default image + CTA, and a few headline / primary-text
+// alternates that "Generate another option" deals through. generateCreative
+// seeds one ad per angle from the first three angles; the fourth is the spare
+// that "Try different angle" reaches for. All copy is anonymized — no practice
+// name, street, city, or owner name — and every primary text stays within
+// Meta's ~125-character feed recommendation so drafts start truncation-clean.
+const PROMO_AD_ANGLES = {
   aspiring: [
-    { headline: "Ready to be your own boss?", cta: "See the opportunity", imageUrl: assetUrl("assets/listings-images/image 9_2_img.png"),
-      primaryText: "An established suburban Midwest small-animal practice is for sale — $2M–$3M revenue, ~25% EBITDA margins, and a tenured team that stays. The retiring owner will mentor you through a hands-on transition." },
-    { headline: "Own the practice you'd build yourself", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 37_4_img.png"),
-      primaryText: "Skip the startup years. Step into a cash-flowing suburban practice with 1,200+ active clients, modern workflows, and an owner committed to a 2–3 year handoff." },
-    { headline: "From associate to owner — without the leap of faith", cta: "Get the details", imageUrl: assetUrl("assets/listings-images/image 7_4_img.png"),
-      primaryText: "The rare listing built for a first-time owner: verified financials, a loyal client base, and flexible deal structures on the table." },
-    { headline: "Your name on the door in 2026", cta: "Learn more", imageUrl: assetUrl("assets/listings-images/image 11_1_img.png"),
-      primaryText: "A profitable Midwest small-animal practice with a retiring owner is quietly looking for its next owner-DVM. Confidential until you inquire." },
+    { id: "ownership", label: "Ownership opportunity", cta: "Learn More", imageUrl: assetUrl("assets/listings-images/image 9_2_img.png"),
+      headlines: ["Ready to be your own boss?", "Your name on the door in 2026", "Step into practice ownership"],
+      primaries: [
+        "An established small-animal practice is quietly for sale. Own your schedule, your standards, and the upside you create.",
+        "Skip the startup years. Step into an established practice with loyal clients and a team that stays on.",
+        "From associate to owner — a confidential path to owning an established practice, without building one from scratch.",
+      ] },
+    { id: "foundation", label: "Established foundation", cta: "See Details", imageUrl: assetUrl("assets/listings-images/image 37_4_img.png"),
+      headlines: ["Built on two decades of trust", "An established practice, ready for you", "The groundwork is already done"],
+      primaries: [
+        "1,200+ active clients, a tenured team, and verified financials — a practice that runs well, ready for its next owner.",
+        "Two decades of community goodwill and steady demand. Take over a practice with real momentum behind it.",
+        "Consistent revenue, modern workflows, and a full appointment book — a foundation you can build on.",
+      ] },
+    { id: "transition", label: "Supported transition", cta: "Learn More", imageUrl: assetUrl("assets/listings-images/image 7_4_img.png"),
+      headlines: ["You won't transition alone", "Ownership, with a mentor", "A guided path to ownership"],
+      primaries: [
+        "The retiring owner will stay to mentor you — introductions, systems, and continuity for the team and clients.",
+        "Step in with support: a hands-on handoff, flexible deal structures, and a seller invested in your success.",
+        "Buy with confidence. The current owner is committed to a smooth, multi-year transition.",
+      ] },
+    { id: "numbers", label: "Proven performance", cta: "See Details", imageUrl: assetUrl("assets/listings-images/image 11_1_img.png"),
+      headlines: ["The numbers are verified", "Cash flow from day one", "A practice that performs"],
+      primaries: [
+        "$2M–$3M revenue, ~25% EBITDA margins, and +8% growth — financials reviewed and verified on CareOwner.",
+        "Verified performance, documented operations, and a diligence-ready snapshot the moment you inquire.",
+        "Strong margins and steady year-over-year growth, backed by platform-verified financials.",
+      ] },
   ],
   expanding: [
-    { headline: "Grow by acquisition — right in your backyard", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 6_3_img.png"),
-      primaryText: "A profitable small-animal practice near you is quietly for sale. $2M–$3M revenue, ~25% margins, and a full team in place — a clean bolt-on for a growing practice." },
-    { headline: "Add a second location without starting from zero", cta: "See the numbers", imageUrl: assetUrl("assets/listings-images/image 2_3_img.png"),
-      primaryText: "Established suburban practice with verified financials and a tenured support team. The owner is retiring and prefers a buyer who'll keep the culture intact." },
-    { headline: "A bolt-on opportunity in the suburban Midwest", cta: "Get the details", imageUrl: assetUrl("assets/listings-images/image 5_2_img.png"),
-      primaryText: "1,200+ active clients, 5 exam rooms, and +8% growth. Expand your footprint with a practice that already runs itself." },
-    { headline: "Your next location is closer than you think", cta: "Learn more", imageUrl: assetUrl("assets/listings-images/image 8_5_img.png"),
-      primaryText: "Quietly listed: a cash-flowing small-animal practice with room to consolidate services and grow. Anonymous until you request access." },
-  ],
-  corporate: [
-    { headline: "Verified suburban performer, ready to transact", cta: "Request the snapshot", imageUrl: assetUrl("assets/listings-images/image 18_8_img.png"),
-      primaryText: "$2M–$3M revenue, ~25% adjusted EBITDA margin, low staff turnover, and platform-verified financials. Owner open to a 2–3 year transition." },
-    { headline: "A clean add to your Midwest platform", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 28_9_img.png"),
-      primaryText: "Established small-animal GP with durable client economics, tenured staff, and modern facilities. Diligence-ready data room on request." },
-    { headline: "Suburban Midwest GP · +8% YoY", cta: "See the opportunity", imageUrl: assetUrl("assets/listings-images/image 13_1_img.png"),
-      primaryText: "Multi-doctor practice with consistent growth, verified EBITDA, and an owner who'll support integration. Anonymity protected until you connect." },
-    { headline: "Diligence-ready and quietly for sale", cta: "Get the details", imageUrl: assetUrl("assets/listings-images/image 35_5_img.png"),
-      primaryText: "Institutional-quality records meet neighborhood goodwill: verified financials, documented operations, and a motivated, flexible seller." },
-  ],
-  other: [
-    { headline: "A thriving veterinary practice is for sale", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 32_6_img.png"),
-      primaryText: "Established suburban Midwest small-animal practice — strong cash flow, loyal clients, and a retiring owner offering a smooth transition." },
-    { headline: "Know someone ready to own a practice?", cta: "Learn more", imageUrl: assetUrl("assets/listings-images/image 9_2_img.png"),
-      primaryText: "A profitable, well-staffed veterinary practice is quietly on the market. Pass it along — inquiries stay confidential." },
-    { headline: "Quietly for sale: a practice with deep roots", cta: "Get the details", imageUrl: assetUrl("assets/listings-images/image 11_1_img.png"),
-      primaryText: "Two decades of community trust, verified financials, and a team that stays. The right buyer gets a hands-on handoff." },
-    { headline: "An owner-ready practice, minus the guesswork", cta: "See the opportunity", imageUrl: assetUrl("assets/listings-images/image 6_3_img.png"),
-      primaryText: "Verified numbers, documented operations, and flexible deal structures. Confidential until you're ready to connect." },
+    { id: "boltOn", label: "Bolt-on growth", cta: "Learn More", imageUrl: assetUrl("assets/listings-images/image 6_3_img.png"),
+      headlines: ["Grow by acquisition", "Your next location, ready now", "Expansion without the build-out"],
+      primaries: [
+        "A profitable small-animal practice near you is quietly for sale — a clean bolt-on for a growing practice.",
+        "Add capacity, clients, and cash flow in one move. An established practice is ready to join yours.",
+        "Skip the build-out: acquire an operating practice with revenue from day one.",
+      ] },
+    { id: "turnkey", label: "Turnkey team", cta: "See Details", imageUrl: assetUrl("assets/listings-images/image 2_3_img.png"),
+      headlines: ["A team that stays on", "Fully staffed, fully running", "Add a location that runs itself"],
+      primaries: [
+        "Tenured DVMs and support staff in place — add a second location without a hiring scramble.",
+        "5 exam rooms, modern workflows, and a full appointment book, ready to fold into your group.",
+        "An established practice with low turnover and documented operations — built to keep running.",
+      ] },
+    { id: "market", label: "Local opportunity", cta: "Learn More", imageUrl: assetUrl("assets/listings-images/image 5_2_img.png"),
+      headlines: ["A practice near you is for sale", "Quietly for sale in your market", "Expand in a market you know"],
+      primaries: [
+        "Quietly listed: an established practice in a stable suburban market with room to grow services.",
+        "Strengthen your footprint with a practice whose clients and reputation are already in place.",
+        "A rare opening in a healthy market — anonymous until you request access.",
+      ] },
+    { id: "numbersEx", label: "Proven performance", cta: "See Details", imageUrl: assetUrl("assets/listings-images/image 8_5_img.png"),
+      headlines: ["The numbers hold up", "Verified financials, real growth", "A clean acquisition target"],
+      primaries: [
+        "$2M–$3M revenue, ~25% margins, +8% growth — verified on CareOwner and ready for diligence.",
+        "Documented operations and platform-verified financials make this a straightforward acquisition.",
+        "Consistent performance and clean records — the diligence-ready snapshot is one inquiry away.",
+      ] },
   ],
 };
 
-// CTA choices offered in the creative editor.
-const PROMO_CTA_OPTIONS = ["Request more info", "Learn more", "See the opportunity", "Get the details", "See the numbers", "Request the snapshot"];
+// CTA buttons offered in the creative editor — Meta-supported options only.
+// Persuasive phrasing ("See the opportunity") belongs in the headline or
+// primary text, never on the button.
+const PROMO_CTA_OPTIONS = ["Learn More", "See Details", "Contact Us"];
 
 // Pre-written captions for the Trusted Share link, one per audience. {url} is
 // replaced with the tokenized link carrying that audience's ?src= tag so mock
@@ -983,25 +1009,54 @@ const promoDelay = (ms) => new Promise(res => setTimeout(res, ms));
 const promoMockId = (prefix) => prefix + "_" + Math.random().toString(36).slice(2, 10);
 
 // TODO(api): replace with the real AI creative-generation endpoint.
-// Returns three CreativeVariant drafts per selected audience — one ad set with
-// three tailored ad versions, matching the pricing card's promise.
+// Returns three CreativeVariant drafts per selected audience — one per message
+// angle, matching the pricing card's "3 ad versions per audience" promise.
+// `edited` / `changed` track per-field state (headline · primaryText · cta ·
+// image): edited = the seller typed or picked it, changed = a generation
+// replaced it. `history` holds prior versions so generations can be undone.
 async function generateCreative(listing, audiences) {
   await promoDelay(1100 + Math.random() * 500);
   return audiences.flatMap(aud =>
-    (PROMO_CREATIVE_POOL[aud] || PROMO_CREATIVE_POOL.other).slice(0, 3).map((t, i) => ({
-      id: promoMockId("cr"), audience: aud, headline: t.headline, primaryText: t.primaryText,
-      cta: t.cta, imageUrl: t.imageUrl, edited: false, poolIdx: i,
+    (PROMO_AD_ANGLES[aud] || []).slice(0, 3).map(angle => ({
+      id: promoMockId("cr"), audience: aud,
+      angleId: angle.id, angleLabel: angle.label,
+      headline: angle.headlines[0], primaryText: angle.primaries[0],
+      cta: angle.cta, imageUrl: angle.imageUrl, originalImageUrl: angle.imageUrl,
+      included: true, edited: {}, changed: {}, history: [], hIdx: 0, pIdx: 0,
     }))
   );
 }
 
-// Mock "regenerate": deal the next canned variant for this audience.
-async function regenerateCreative(variant) {
-  await promoDelay(600 + Math.random() * 400);
-  const pool = PROMO_CREATIVE_POOL[variant.audience] || PROMO_CREATIVE_POOL.other;
-  const next = ((variant.poolIdx == null ? 0 : variant.poolIdx) + 1) % pool.length;
-  const t = pool[next];
-  return { ...variant, headline: t.headline, primaryText: t.primaryText, cta: t.cta, imageUrl: t.imageUrl, edited: false, poolIdx: next };
+// Mock "Generate another option": returns a content patch for one variant.
+// mode: "headline" | "primary" | "both" — deal the angle's next alternate(s);
+//       "angle" — move the ad to an angle no sibling ad is using (falls back to
+//       any other angle once the pool is exhausted), resetting copy + image.
+// The caller owns how the patch is applied — snapshotting for Undo, confirming
+// before manual edits are overwritten, and flagging regenerated fields.
+async function generateCreativeOption(variant, mode, usedAngleIds = []) {
+  await promoDelay(500 + Math.random() * 350);
+  const pool = PROMO_AD_ANGLES[variant.audience] || [];
+  if (mode === "angle") {
+    const next = pool.find(a => a.id !== variant.angleId && !usedAngleIds.includes(a.id))
+      || pool.find(a => a.id !== variant.angleId) || pool[0];
+    return {
+      angleId: next.id, angleLabel: next.label,
+      headline: next.headlines[0], primaryText: next.primaries[0],
+      cta: next.cta, imageUrl: next.imageUrl, originalImageUrl: next.imageUrl,
+      hIdx: 0, pIdx: 0,
+    };
+  }
+  const angle = pool.find(a => a.id === variant.angleId) || pool[0];
+  const patch = {};
+  if (mode === "headline" || mode === "both") {
+    patch.hIdx = ((variant.hIdx || 0) + 1) % angle.headlines.length;
+    patch.headline = angle.headlines[patch.hIdx];
+  }
+  if (mode === "primary" || mode === "both") {
+    patch.pIdx = ((variant.pIdx || 0) + 1) % angle.primaries.length;
+    patch.primaryText = angle.primaries[patch.pIdx];
+  }
+  return patch;
 }
 
 // Campaign requests go to CareOwner's ads desk, not straight to Meta: the team
@@ -1010,6 +1065,56 @@ async function regenerateCreative(variant) {
 // TODO(api): replace mockAdService with the real request/approval/checkout backend.
 const mockAdService = {
   async submitRequest(campaign) { await promoDelay(1400); return { campaignId: promoMockId("cmp") }; },
+};
+
+// ── Exclusions (ad-wizard step 2) ──
+// The CareOwner team list doubles as the campaign's automatic exclusion
+// audience: the owner, active team, and pending invites with a matchable email
+// or phone. Identifiers are shown masked — Meta receives the real ones only
+// when the approved campaign is prepared for launch. Team members can't be
+// removed from this list inside the ad flow; the Team section owns it.
+const AD_TEAM_EXCLUSIONS = [...MARKET_PROFILE_STAFF.doctors.members, ...MARKET_PROFILE_STAFF.support.members].map((m, i) => {
+  const status = m.owner ? "auto" : m.name === "Rosa Whitfield" ? "missing" : m.name === "Wes Carver" ? "duplicate" : "ready";
+  const contact = status === "missing" ? null
+    : i % 3 === 2 ? `•••-•••-01${String(40 + i).slice(-2)}`
+    : `${m.name[0].toLowerCase()}•••@animalcarevet.com`;
+  return { name: m.name, owner: !!m.owner, contact, status };
+});
+const AD_TEAM_STATUS = {
+  ready: { label: "Ready", cls: "co-badge--green" },
+  auto: { label: "Automatically included", cls: "co-badge--green" },
+  duplicate: { label: "Duplicate", cls: "co-badge--gray" },
+  missing: { label: "Missing contact information", cls: "co-badge--amber" },
+};
+
+// Mock CSV processing for "Upload contact list" — the numbers are canned (this
+// is a prototype); `ready` is already deduplicated against the file itself and
+// the team list. TODO(api): real parsing per the exclusions brief (normalize,
+// validate, dedupe, preserve valid rows, cap 10 MB / 50k records).
+const mockExclusionsService = {
+  async processCsv(filename) {
+    await promoDelay(1200);
+    return { filename, ready: 247, dupes: 12, teamDupes: 4, invalid: 6 };
+  },
+};
+
+// ── Payments (Pay & Submit step) ──
+// Submitting a campaign saves a payment method without charging it; VetVet
+// charges the flat rate only after the campaign is approved and ready to
+// launch. TODO(api): replace with the billing profile + the payment provider's
+// hosted fields (Stripe Payment Element + SetupIntent). The prototype form
+// stands in for the hosted fields — raw card data is never stored; only
+// brand + last4 survive, in memory.
+const SAVED_PAYMENT_METHODS = [
+  { id: "pm_4242", brand: "Visa", last4: "4242", exp: "08/27", name: "Maya Hollis" },
+];
+const mockPaymentService = {
+  async saveMethod(card) {
+    await promoDelay(900);
+    const digits = String(card.number || "").replace(/\D/g, "");
+    const brand = digits[0] === "4" ? "Visa" : digits[0] === "5" ? "Mastercard" : digits[0] === "3" ? "Amex" : "Card";
+    return { id: promoMockId("pm"), brand, last4: digits.slice(-4), exp: card.exp, name: card.name };
+  },
 };
 
 // ── Meta ads — one flat managed price ──
@@ -1517,10 +1622,12 @@ const mockPrService = {
 Object.assign(window, {
   PROMO_META_ENABLED, PROMO_SHARE_ENABLED, PROMO_FEATURED_ENABLED,
   PROMO_LOCALPUBS_ENABLED, PROMO_PR_ENABLED, PROMO_DVM_ENABLED,
-  PROMO_AUDIENCES, PROMO_CREATIVE_POOL, PROMO_CTA_OPTIONS,
+  PROMO_AUDIENCES, PROMO_AD_ANGLES, PROMO_CTA_OPTIONS,
   PROMO_SHARE_CAPTIONS, lintAnonymity, PROMO, updatePromo, usePromo,
   ensureNamedToken, promoShareUrl, addPromoLead, generateCreative,
-  regenerateCreative, mockAdService, mockCampaignMetrics, mockSmallMetrics,
+  generateCreativeOption, mockAdService, mockCampaignMetrics, mockSmallMetrics,
+  SAVED_PAYMENT_METHODS, mockPaymentService,
+  AD_TEAM_EXCLUSIONS, AD_TEAM_STATUS, mockExclusionsService,
   META_AD_PLAN, PROMO_HISTORY, PROMO_UPDATES, TA_SPECIALISTS,
   TA_PROVIDER_EXTRAS, PROVIDERS,
   FEATURED_TIERS, rotateFeatured, mockFeaturedService,
