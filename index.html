@@ -118,6 +118,10 @@
     .co-btn-outline { display:inline-flex; align-items:center; gap: 6px; height: 38px; padding: 0 20px; border-radius: 6px; border: 1px solid var(--stone-300); background: #fff; color: #57534E; font: 500 14px/1 "Inter"; cursor: pointer; }
     .co-btn-outline:hover { border-color: var(--stone-200); background: #FBFBF9; }
     .co-btn-outline svg { width: 14px; height: 14px; }
+    /* Text-style back/cancel link — creation-flow headers and the buyer-profile back link */
+    .co-btn-back { display:flex; align-items:center; gap: 10px; background: none; border: 0; padding: 0; font: 500 14px/1 "Inter"; color: var(--stone-500); cursor: pointer; }
+    .co-btn-back svg { width: 16px; height: 16px; }
+    .co-btn-back:hover { color: var(--stone-700); }
     .co-btn-outline-green { display:inline-flex; align-items:center; gap: 6px; height: 38px; padding: 0 20px; border-radius: 8px; border: 1.5px solid var(--teal-brand); background: #fff; color: var(--teal-brand); font: 500 14px/1 "Inter"; cursor: pointer; }
     .co-btn-outline-green:hover { background: var(--brand-hover); color: #fff; border-color: var(--brand-hover); }
     .co-btn-outline-green svg { width: 14px; height: 14px; }
@@ -628,6 +632,10 @@
       height: calc(100vh - var(--header-h)); overflow-y: auto;
     }
     .co-shell__main { flex: 1; min-width: 0; padding: 24px 32px 96px; }
+    /* Rail-less top-nav pages (Find Buyers, Requests, Messages, Meetings): no left
+       rail, but the content keeps the width it had beside the rail and centers on
+       the page. --page-max (1440) minus the 260px rail ≈ that column width. */
+    .co-shell__main--centered { max-width: calc(var(--page-max) - var(--nav-w)); margin: 0 auto; }
     .co-shell__nav .co-rail__brand { padding: 6px 10px 14px; border-bottom: 1px solid var(--stone-200); margin-bottom: 8px; }
     .co-rail__brand-name { font: 600 14px/1.3 "Inter"; color: var(--stone-900); }
     .co-rail__brand-loc { font: 400 12px/1.4 "Inter"; color: var(--stone-500); margin-top: 3px; }
@@ -1150,6 +1158,8 @@
     .bp-ro__label { font: 500 13px/1 "Inter"; color: var(--stone-500); }
     .bp-ro__val { font: 500 14px/1.4 "Inter"; color: var(--stone-900); }
     .bp-ro__pair { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    /* Provider profile variant — uppercase eyebrow labels (Figma 276:12076) */
+    .bp-ro--caps .bp-ro__label { font: 600 12px/1.15 "Inter"; text-transform: uppercase; letter-spacing: 0.4px; }
 
     /* Metric row */
     .bp-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px 24px; }
@@ -1820,30 +1830,43 @@
     .pr-link:hover { text-decoration: underline; }
     .pr-link svg { flex-shrink: 0; }
 
-    /* Meta ad — overview (pre-flow) page: how-it-works card + pricing card.
-       Metrics follow Figma 265:18381. Both cards are grid siblings, so the
-       global `.co-card + .co-card` top margin has to be zeroed out or the
-       pricing column hangs below the left card instead of top-aligning. */
-    .pr-adov { display:grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
-    .pr-adov > .co-card + .co-card { margin-top: 0; }
-    .pr-adov > .co-card { padding: 21px 25px; }
+    /* Meta ad — overview (pre-flow) page. One full-width card (Figma 272:4631):
+       a CTA bar on top, then the how-it-works section over a 2x2 grid of
+       borderless items. Metrics follow the Figma node. */
+    /* Meta ad overview (Figma 275:7694) — teal start banner, then How-it-works
+       card beside a fixed-width Pricing card */
+    .pr-start { display:flex; align-items:center; gap: 12px; padding: 13px 17px; background: var(--teal-tint); border: 1px solid #B8D9DC; border-radius: 10px; margin-bottom: 20px; }
+    .pr-start__icon { width: 28px; height: 28px; border-radius: 6px; background: var(--teal-brand); color: #fff; display:grid; place-items:center; flex-shrink: 0; }
+    .pr-start__q { flex: 1; min-width: 0; font: 500 14px/18.2px "Inter"; color: var(--stone-900); }
+    .pr-adov { display:flex; gap: 24px; align-items: flex-start; }
+    .pr-adov > .co-card { margin-top: 0; } /* defeat the global .co-card + .co-card gap so the columns top-align */
+    .pr-adov__main { flex: 1; min-width: 0; padding: 27px 30px 30px; }
     .pr-adov__eyebrow { font: 600 12px/12px "Inter"; text-transform: uppercase; letter-spacing: 0.6px; color: var(--teal-brand); margin-bottom: 7px; }
     .pr-adov__title { font: 600 17px/22.1px "Inter"; letter-spacing: -0.17px; color: var(--stone-900); margin: 0 0 4px; }
-    .pr-adov__lede { font: 400 14px/20px "Inter"; color: var(--stone-500); margin: 0 0 18px; }
-    .pr-adov__grid { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .pr-adov__item { border: 1px solid var(--stone-200); border-radius: 12px; padding: 19px; background: #fff; }
-    .pr-adov__icon { width: 40px; height: 40px; border-radius: 10px; background: var(--teal-tint); color: var(--teal-brand); display:grid; place-items:center; }
-    .pr-adov__item h4 { font: 600 14px/18.2px "Inter"; color: var(--stone-900); margin: 12px 0 5px; }
-    .pr-adov__item p { font: 400 13.5px/20.93px "Inter"; color: var(--stone-500); margin: 0; }
-    .pr-adov__price { align-self: start; }
-    /* The eyebrow's own gap is absorbed by the amount's padding, which also sets
-       the breathing room between $500 and the divider below it. */
-    .pr-adov__price .pr-adov__eyebrow { margin-bottom: 0; }
-    .pr-adov__amount { font: 700 34px/34px "Inter"; letter-spacing: -0.68px; color: var(--stone-900); padding: 12px 0 18px; }
-    .pr-adov__list { margin-top: 0; padding: 13px 0 16px; }
-    .pr-adov__cta { margin-top: 0; padding: 17px; background: var(--stone-50); border: 1px solid var(--stone-100); border-radius: 10px; text-align: center; }
-    .pr-adov__cta-q { font: 600 14px/18.2px "Inter"; color: var(--stone-900); margin-bottom: 12px; }
-    .pr-adov__cta .co-btn { width: 100%; justify-content: center; }
+    .pr-adov__lede { font: 400 14px/20px "Inter"; color: var(--stone-500); margin: 0; }
+    .pr-adov__grid { display:grid; grid-template-columns: 1fr 1fr; column-gap: 24px; row-gap: 32px; padding: 24px 0; }
+    .pr-adov__item { display:flex; gap: 12px; align-items: flex-start; }
+    .pr-adov__num { width: 30px; height: 30px; border-radius: 999px; background: var(--teal-tint); color: var(--teal-brand); font: 600 14px/1 "Inter"; display:grid; place-items:center; flex-shrink: 0; }
+    .pr-adov__item h4 { font: 600 14px/18.2px "Inter"; color: var(--stone-900); margin: 6px 0 5px; }
+    .pr-adov__item p { font: 400 13.5px/19px "Inter"; color: var(--stone-500); margin: 0; }
+    .pr-adov__fine { font: italic 400 11px/1.3 "Inter"; color: var(--stone-500); margin: 0; }
+    .pr-price { width: 356px; flex-shrink: 0; padding: 25px 31px; border-radius: 12px; }
+    .pr-price__row { display:flex; align-items: baseline; gap: 6px; margin-top: 10px; }
+    .pr-price__amt { font: 700 24px/28px "Inter"; letter-spacing: -0.28px; color: var(--stone-900); }
+    .pr-price__per { font: 600 14px/1 "Inter"; color: var(--stone-600); }
+    .pr-price__sub { font: 500 13px/19px "Inter"; color: var(--stone-500); margin: 8px 0 13px; }
+    .pr-price .pr-tier__list { padding-bottom: 12px; }
+    .pr-wizard__footer--end { justify-content: flex-end; }
+    .pr-wizard__footer-group { display:flex; align-items:center; gap: 10px; }
+    /* Campaign Details step (Figma 275:8232) — info column beside stacked audience cards */
+    .pr-audsplit { display:flex; gap: 50px; align-items: flex-start; }
+    .pr-audsplit__info { width: 420px; flex-shrink: 0; }
+    .pr-audsplit__title { font: 600 16px/1.2 "Inter"; color: var(--stone-900); margin: 0 0 6px; }
+    .pr-audsplit__desc { font: 400 13px/19.5px "Inter"; color: var(--stone-500); margin: 0; }
+    .pr-auds--stack { display:flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+    .pr-aud--lead { padding: 18px; }
+    .pr-aud--lead .pr-aud__check { position: static; flex-shrink: 0; }
+    .pr-aud--lead.is-selected { background: #F3F9F9; }
 
     /* Ad wizard — Creative step preview rail */
     .pr-step-cols { display:grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
@@ -1913,7 +1936,10 @@
     .ta-cell { display:flex; align-items:center; gap: 12px; }
     .ta-avatar { display:grid; place-items:center; border-radius: 50%; color: #fff; font-weight: 600; font-family: "Inter"; flex-shrink: 0; }
     .ta-foot { display:flex; align-items:center; gap: 7px; font: 400 13px/1.5 "Inter"; color: var(--stone-500); margin: 12px 2px 0; }
+    /* Compact single-row header (Figma 278:12752) */
+    .ta-slideout .co-slideout__header { padding: 10px 24px; align-items: center; }
     .ta-slideout .co-slideout__header h2 { font: 600 12px/1 "Inter"; text-transform: uppercase; letter-spacing: 0.5px; color: var(--stone-500); align-self: center; }
+    .ta-slideout .co-slideout__header button { align-self: center; }
     .ta-prof { display:flex; gap: 14px; align-items:flex-start; }
     .ta-prof h3 { font: 600 17px/1.25 "Inter"; color: var(--stone-900); margin: 0; display:flex; align-items:center; gap: 8px; flex-wrap: wrap; }
     .ta-prof__sub { font: 400 14px/1.4 "Inter"; color: var(--stone-700); margin-top: 3px; }
@@ -1931,6 +1957,13 @@
     .ta-sent__icon { color: var(--success-700); }
     .ta-sent h3 { font: 600 16px/1.3 "Inter"; margin: 10px 0 6px; }
     .ta-sent p { font: 400 14px/1.6 "Inter"; color: var(--stone-500); margin: 0 auto; max-width: 360px; }
+
+    /* Providers page — "Open to" badges + testimonial quotes in the profile slideout */
+    .pv-open { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .pv-open__badge { display:inline-flex; align-items:center; gap: 6px; font: 600 12px/1 "Inter"; color: var(--success-800); background: var(--success-100); border: 1px solid #99E8DC; border-radius: 999px; padding: 7px 12px; }
+    .pv-quote { margin: 10px 0 0; padding: 12px 14px; background: var(--stone-50); border: 1px solid var(--stone-100); border-left: 3px solid var(--teal-button); border-radius: 8px; }
+    .pv-quote p { font: 400 14px/1.55 "Inter"; color: var(--stone-700); margin: 0; }
+    .pv-quote footer { font: 500 12px/1.4 "Inter"; color: var(--stone-500); margin-top: 7px; }
 
     /* Featured Listing — tier cards + preview */
     .pr-tiers { display:grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -1982,9 +2015,17 @@
     .pr-pipe:first-of-type { border-top: 0; }
     .pr-pipe__main { flex: 1; min-width: 0; }
 
+    /* The overview's fixed 356px pricing column and the Campaign Details 420px
+       info column need more room than the left-railed shell leaves at laptop
+       widths — stack them well before the generic 900px collapse. */
+    @media (max-width: 1240px) {
+      .pr-adov, .pr-audsplit { flex-direction: column; }
+      .pr-price, .pr-audsplit__info { width: 100%; }
+    }
     @media (max-width: 900px) {
       .pr-channels, .pr-auds, .pr-var-grid, .pr-share-grid, .pr-anon-cols, .pr-results,
-      .pr-tiers, .pr-featprev, .pr-findbar, .pr-interview, .pr-section__cols { grid-template-columns: 1fr; }
+      .pr-tiers, .pr-featprev, .pr-findbar, .pr-interview, .pr-section__cols,
+      .pr-adov__grid { grid-template-columns: 1fr; }
     }
 
     /* ===================== Marketplace — Featured Practices carousel ===================== */
@@ -2147,6 +2188,7 @@
   <script type="text/babel" src="views/listing-editor.jsx"></script>
   <script type="text/babel" src="views/promote.jsx"></script>
   <script type="text/babel" src="views/dvm-buyers.jsx"></script>
+  <script type="text/babel" src="views/providers.jsx"></script>
   <script type="text/babel" src="views/promo-landing.jsx"></script>
   <script type="text/babel" src="app.jsx"></script>
 </body>

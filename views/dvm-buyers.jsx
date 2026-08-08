@@ -2,11 +2,13 @@
 //   /practice/promotions/dvm-buyers → "Find DVM Buyers" promotion channel
 //   /buyers#specialists             → Find Buyers' "Talent Specialists" tab
 // Recruiters who place DVMs in practices every day — and therefore know which
-// veterinarians in their networks are quietly exploring ownership. CareOwner
-// pays the specialist a referral fee when their intro leads to a sale; the
-// seller pays nothing extra. Contact happens ONLY through CareOwner Messages
-// (the compose below writes into THREADS) so every conversation — and any
-// eventual referral credit — is tracked on-platform end to end.
+// veterinarians in their networks are quietly exploring ownership. Only firms
+// open to Referring DVM Buyers are listed. CareOwner pays the specialist a
+// referral fee when their intro leads to a sale; the seller pays nothing extra.
+// Rows open a compact PREVIEW slideout whose CTA deep-links to the full
+// Providers-page profile (/providers#<id>), where messaging happens — through
+// CareOwner Messages only, so every conversation and any eventual referral
+// credit is tracked on-platform end to end.
 (() => {
 
 const TA_AVATAR_COLORS = {
@@ -45,51 +47,23 @@ const TA_STATUS = {
   connected: { label: "Connected", cls: "co-badge--green", dot: "live" },
 };
 
-// Pre-filled note — anonymized on purpose: it describes the practice the way the
-// public teaser does, never by name, so the seller stays in control of identity.
-const defaultIntro = (t) =>
-  `Hi ${taFirstName(t)} — I own a ${PRACTICE.type.toLowerCase()} in the suburban Midwest, listed anonymously on CareOwner ` +
-  `(“${MY_LISTING.title}”). I'm looking for a DVM buyer and thought of your network. ` +
-  `Do you know any veterinarians who are exploring ownership right now? Happy to share more here on CareOwner.`;
+// Only specialists whose firms opted into Referring DVM Buyers belong on this
+// channel — the tag is assumed for everyone listed, so the preview never shows it.
+const taReferrers = () =>
+  TA_SPECIALISTS.filter(t => ((TA_PROVIDER_EXTRAS[t.id] || {}).openTo || {}).buyers);
 
-// ─── Profile slideout ─────────────────────────────────────────────────────────
-const TaProfileSlideout = ({ t, onClose, onToast }) => {
-  const [composing, setComposing] = React.useState(false);
-  const [msg, setMsg] = React.useState(() => defaultIntro(t));
-  const [sent, setSent] = React.useState(false);
-
+// ─── Profile preview slideout ─────────────────────────────────────────────────
+// A teaser of the full Providers-page profile: name, role, location, bio, and
+// network size, then a single CTA into /providers#<id>. Messaging lives on the
+// full profile.
+const TaProfileSlideout = ({ t, onClose }) => {
   React.useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // TODO(api): create a real thread; for now write into the in-memory THREADS
-  // store so the conversation shows up in Messages like any buyer thread.
-  // Re-messaging the same specialist appends to their existing thread.
-  const send = () => {
-    if (!msg.trim()) return;
-    const existing = THREADS.find(th => th.id === "ta-thread-" + t.id);
-    if (existing) {
-      existing.messages.push({ from: "me", text: msg.trim(), time: "Just now" });
-      Object.assign(existing, { last: msg.trim(), time: "now" });
-    } else {
-      THREADS.unshift({
-        id: "ta-thread-" + t.id, name: t.name, initials: t.initials,
-        last: msg.trim(), time: "now", unread: 0,
-        messages: [{ from: "me", text: msg.trim(), time: "Just now" }],
-      });
-    }
-    setSent(true);
-    onToast(`Message sent to ${t.name}`);
-  };
-
-  const stats = [
-    { num: t.dvmNetwork, label: "DVMs in network" },
-    { num: t.buyerReady, label: "Exploring ownership" },
-    { num: t.placements, label: "Placements made" },
-    { num: t.avgResponse, label: "Avg response" },
-  ];
+  const viewProfile = () => { onClose(); navigateTo("/providers#" + t.id); };
 
   return (
     <>
@@ -104,37 +78,23 @@ const TaProfileSlideout = ({ t, onClose, onToast }) => {
           <div className="ta-prof">
             <TaAvatar t={t} size={52} font={17} />
             <div>
-              <h3>{t.name} {t.verified && <span className="co-badge co-badge--blue">Vetted partner</span>}</h3>
+              <h3>{t.name}</h3>
               <div className="ta-prof__sub">{t.title} · {t.agency}</div>
               <div className="ta-prof__loc"><Icon name="mapPin" size={13} /> {t.location}</div>
             </div>
           </div>
 
-          <div className="ta-stats">
-            {stats.map(s => (
-              <div key={s.label} className="ta-stat">
-                <div className="ta-stat__num">{s.num}</div>
-                <div className="ta-stat__label">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
           <div className="ta-section">
-            <div className="mc-group-title">About</div>
+            <div className="mc-group-title">Bio</div>
             <p>{t.about}</p>
           </div>
 
           <div className="ta-section">
-            <div className="mc-group-title">Typically works with</div>
-            <div className="pl-chiprow">
-              {t.worksWith.map(w => <span key={w} className="pl-chip"><Icon name="check" size={12} /> {w}</span>)}
-            </div>
-          </div>
-
-          <div className="ta-section">
-            <div className="mc-group-title">Coverage</div>
-            <div className="pl-chiprow">
-              {t.regions.map(r => <span key={r} className="pl-chip"><Icon name="mapPin" size={12} /> {r}</span>)}
+            <div className="bp-ro bp-ro--caps">
+              <div className="bp-ro__row">
+                <span className="bp-ro__label">DVMs in team's network</span>
+                <span className="bp-ro__val">{t.dvmNetwork}</span>
+              </div>
             </div>
           </div>
 
@@ -142,57 +102,18 @@ const TaProfileSlideout = ({ t, onClose, onToast }) => {
             <Icon name="info" size={15} />
             <div>
               <b>How referrals work.</b> If {taFirstName(t)} connects you with a DVM who ends up buying your practice,
-              CareOwner pays {taFirstName(t)}'s referral fee — you pay nothing extra. Keep every conversation here in
-              CareOwner Messages so the referral (and your anonymity) stays protected and tracked.
+              CareOwner pays {taFirstName(t)}'s referral fee — you pay nothing extra. View {taFirstName(t)}'s full
+              profile to message them, and keep every conversation in CareOwner Messages so the referral (and your
+              anonymity) stays protected and tracked.
             </div>
           </div>
-
-          {composing && !sent && (
-            <div className="ta-section">
-              <div className="co-field">
-                <label>Your message to {taFirstName(t)}</label>
-                <textarea rows={6} value={msg} onChange={e => setMsg(e.target.value)} />
-              </div>
-              <div className="pr-tip" style={{ marginTop: 8 }}>
-                <Icon name="lock" size={13} /> Sent through CareOwner Messages — your name stays hidden until you choose to share it.
-              </div>
-            </div>
-          )}
-
-          {sent && (
-            <div className="ta-sent">
-              <span className="ta-sent__icon"><Icon name="checkCircle" size={26} /></span>
-              <h3>Message sent</h3>
-              <p>Your note is on its way to {taFirstName(t)}. Replies land in Messages — typical response time is {t.avgResponse.replace("~", "about ")}.</p>
-            </div>
-          )}
         </div>
 
         <div className="co-slideout__footer">
-          {!composing && !sent && (
-            <>
-              <button className="co-btn co-btn--ghost" onClick={onClose}>Close</button>
-              <button className="co-btn co-btn--primary" onClick={() => setComposing(true)}>
-                <Icon name="message" size={14} /> Message {taFirstName(t)}
-              </button>
-            </>
-          )}
-          {composing && !sent && (
-            <>
-              <button className="co-btn co-btn--ghost" onClick={() => setComposing(false)}>Back</button>
-              <button className="co-btn co-btn--primary" onClick={send} disabled={!msg.trim()}>
-                <Icon name="send" size={14} /> Send message
-              </button>
-            </>
-          )}
-          {sent && (
-            <>
-              <button className="co-btn co-btn--ghost" onClick={onClose}>Done</button>
-              <button className="co-btn co-btn--primary" onClick={() => navigateTo("/messages")}>
-                <Icon name="message" size={14} /> Open Messages
-              </button>
-            </>
-          )}
+          <button className="co-btn co-btn--ghost" onClick={onClose}>Close</button>
+          <button className="co-btn co-btn--primary" onClick={viewProfile}>
+            View Full Profile <Icon name="chevronRight" size={14} />
+          </button>
         </div>
       </div>
     </>
@@ -209,16 +130,17 @@ const TaSpecialistsPanel = ({ onToast, showHeader = true }) => {
   const [status, setStatus] = React.useState("all");
   const [detail, setDetail] = React.useState(null);
 
-  const focusOptions = ["all", ...Array.from(new Set(TA_SPECIALISTS.map(t => t.focus)))];
-  const countBy = (s) => TA_SPECIALISTS.filter(t => taConnection(t) === s).length;
+  const specialists = taReferrers();
+  const focusOptions = ["all", ...Array.from(new Set(specialists.map(t => t.focus)))];
+  const countBy = (s) => specialists.filter(t => taConnection(t) === s).length;
   const statusTabs = [
-    { id: "all", label: "All", n: TA_SPECIALISTS.length },
+    { id: "all", label: "All", n: specialists.length },
     { id: "open", label: "Open", n: countBy("open") },
     { id: "sent", label: "Sent", n: countBy("sent") },
     { id: "connected", label: "Connected", n: countBy("connected") },
   ];
 
-  const filtered = TA_SPECIALISTS.filter(t => {
+  const filtered = specialists.filter(t => {
     if (status !== "all" && taConnection(t) !== status) return false;
     if (focus !== "all" && t.focus !== focus) return false;
     if (q) {
@@ -330,7 +252,7 @@ const TaSpecialistsPanel = ({ onToast, showHeader = true }) => {
           never your practice name — until you choose to share it.
         </p>
 
-      {detail && <TaProfileSlideout t={detail} onClose={() => setDetail(null)} onToast={onToast} />}
+      {detail && <TaProfileSlideout t={detail} onClose={() => setDetail(null)} />}
     </>
   );
 };
@@ -342,7 +264,7 @@ const DvmBuyersView = ({ onToast }) => (
     <SubHeader
       title="Find DVM Buyers"
       subtitle="Message a Talent Acquisition Specialist to see if a DVM in their network wants to buy your practice."
-      backAction={<button className="co-btn-outline" onClick={() => navigateTo("/practice/promotions")}><Icon name="chevronRight" style={{ transform: "rotate(180deg)" }} /> Back to Promotions</button>}
+      backAction={<button className="co-btn-back" onClick={() => navigateTo("/practice/promotions")}><Icon name="chevronRight" style={{ transform: "rotate(180deg)" }} /> Back to Promotions</button>}
     />
     <div className="co-body">
       <TaSpecialistsPanel onToast={onToast} showHeader={false} />

@@ -807,7 +807,8 @@ window.ACTIVITY = ACTIVITY;
 
 // ─── Promote Your Practice (spec v1.2) ────────────────────────────────────────
 // Data shapes (plain JS mirror of the product spec's types):
-//   PromoAudience  = "neighbor_practice" | "individual_dvm" | "corporate" | "other"
+//   PromoAudience  = "aspiring" | "expanding" (buyer ad sets; the creative pool
+//                     also keeps "corporate" | "other" angles for reuse)
 //   AnonymityMode  = "anonymous" | "named" | "semi_anonymous"
 //   PromoChannel   = "meta_ads" | "share_link" | "featured" | "local_pubs" | "pr"
 //   ChannelMetrics  { impressions, clicks, inquiries }
@@ -850,23 +851,22 @@ const PROMO_LOCALPUBS_ENABLED = true;
 const PROMO_PR_ENABLED = true;
 const PROMO_DVM_ENABLED = true;
 
+// The two buyer audiences a Meta campaign can target (Figma 275:8232). Copy is
+// shown verbatim on the wizard's Campaign Details step.
 const PROMO_AUDIENCES = [
-  { id: "individual_dvm",   label: "Individual DVMs",      icon: "stethoscope", hint: "Recommended",
-    desc: "An associate or DVM ready to own." },
-  { id: "neighbor_practice", label: "Nearby practices",     icon: "building",
-    desc: "Local practices looking to expand." },
-  { id: "corporate",         label: "Corporate / group",    icon: "briefcase",
-    desc: "A corporate or group buyer." },
-  { id: "other",             label: "Other",                icon: "users", freeText: true,
-    desc: "Someone else — enter details." },
+  { id: "aspiring", label: "Aspiring practice owners", icon: "stethoscope", hint: "Recommended",
+    desc: "Veterinarians interested in acquiring an established practice and becoming an owner. VetVet uses veterinary-profession signals, buyer engagement, and similar-audience modeling to reach potential buyers." },
+  { id: "expanding", label: "Expanding practice owners", icon: "building",
+    desc: "Existing veterinary practice owners who may want another location in or near your market. VetVet uses its practice-owner network and Meta's audience-matching tools to help reach qualified owners." },
 ];
 
-// Canned creative per audience, each written to a distinct angle (DVM = "be your
-// own boss", neighbor = "bolt-on growth", corporate = "diligence-ready asset").
-// generateCreative deals the first two per audience; "Regenerate" cycles onward.
-// All copy is anonymized — no practice name, street, city, or owner name.
+// Canned creative per audience, each written to a distinct angle (aspiring =
+// "be your own boss", expanding = "bolt-on growth", corporate = "diligence-ready
+// asset"). generateCreative deals the first three per audience; "Regenerate"
+// cycles onward. All copy is anonymized — no practice name, street, city, or
+// owner name.
 const PROMO_CREATIVE_POOL = {
-  individual_dvm: [
+  aspiring: [
     { headline: "Ready to be your own boss?", cta: "See the opportunity", imageUrl: assetUrl("assets/listings-images/image 9_2_img.png"),
       primaryText: "An established suburban Midwest small-animal practice is for sale — $2M–$3M revenue, ~25% EBITDA margins, and a tenured team that stays. The retiring owner will mentor you through a hands-on transition." },
     { headline: "Own the practice you'd build yourself", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 37_4_img.png"),
@@ -876,7 +876,7 @@ const PROMO_CREATIVE_POOL = {
     { headline: "Your name on the door in 2026", cta: "Learn more", imageUrl: assetUrl("assets/listings-images/image 11_1_img.png"),
       primaryText: "A profitable Midwest small-animal practice with a retiring owner is quietly looking for its next owner-DVM. Confidential until you inquire." },
   ],
-  neighbor_practice: [
+  expanding: [
     { headline: "Grow by acquisition — right in your backyard", cta: "Request more info", imageUrl: assetUrl("assets/listings-images/image 6_3_img.png"),
       primaryText: "A profitable small-animal practice near you is quietly for sale. $2M–$3M revenue, ~25% margins, and a full team in place — a clean bolt-on for a growing practice." },
     { headline: "Add a second location without starting from zero", cta: "See the numbers", imageUrl: assetUrl("assets/listings-images/image 2_3_img.png"),
@@ -983,11 +983,12 @@ const promoDelay = (ms) => new Promise(res => setTimeout(res, ms));
 const promoMockId = (prefix) => prefix + "_" + Math.random().toString(36).slice(2, 10);
 
 // TODO(api): replace with the real AI creative-generation endpoint.
-// Returns two CreativeVariant drafts per selected audience.
+// Returns three CreativeVariant drafts per selected audience — one ad set with
+// three tailored ad versions, matching the pricing card's promise.
 async function generateCreative(listing, audiences) {
   await promoDelay(1100 + Math.random() * 500);
   return audiences.flatMap(aud =>
-    (PROMO_CREATIVE_POOL[aud] || PROMO_CREATIVE_POOL.other).slice(0, 2).map((t, i) => ({
+    (PROMO_CREATIVE_POOL[aud] || PROMO_CREATIVE_POOL.other).slice(0, 3).map((t, i) => ({
       id: promoMockId("cr"), audience: aud, headline: t.headline, primaryText: t.primaryText,
       cta: t.cta, imageUrl: t.imageUrl, edited: false, poolIdx: i,
     }))
@@ -1018,14 +1019,20 @@ const mockAdService = {
 // there's nothing to "select" mid-flow. We deliberately don't surface an included
 // ad-spend figure — the gap between price and delivered spend is our management fee,
 // and itemizing it just prompts "where's the rest going?" questions.
+// `price` covers the first 30 days (including the one-time `setup`); each
+// additional 30 days renews at `renew`.
 // TODO(api): checkout happens via the emailed payment link after CareOwner approves.
 const META_AD_PLAN = {
-  price: 500, days: 30,
+  price: 1200, days: 30, setup: 250, renew: 950,
   benefits: [
-    "30-day campaign on Facebook & Instagram",
-    "Ads built, launched, and managed for you",
-    "Est. 8K–15K impressions in your target market",
-    "End-of-campaign results report",
+    "30-day Meta advertising campaign",
+    "Ad spend + management included",
+    "Up to 2 buyer audiences",
+    "3 ad versions per audience",
+    "Your practice name and exact address are not shown",
+    "Buyer inquiries sent to your email and CareOwner inbox",
+    "Meta-optimized delivery may include Facebook, Instagram, Messenger, WhatsApp, and Threads",
+    "Performance report every 30 days",
   ],
 };
 
@@ -1036,12 +1043,12 @@ const META_AD_PLAN = {
 // `channel` keys each row to its dashboard tab (meta_ads | dvm | featured |
 // local_pubs | pr) so a tab can filter to just its own promotions.
 const PROMO_HISTORY = [
-  { id: "hist-1", channel: "meta_ads", icon: "facebook", name: "Facebook & Instagram — Individual DVMs + Nearby practices",
+  { id: "hist-1", channel: "meta_ads", icon: "facebook", name: "Meta buyer campaign — Aspiring + Expanding practice owners",
     type: "Meta Ads", status: "awaiting_payment", created: "Jul 28, 2026",
-    window: "Starts after payment", amount: "$500", path: "/practice/promotions/ads" },
-  { id: "hist-2", channel: "meta_ads", icon: "facebook", name: "Facebook & Instagram — Individual DVMs",
+    window: "Starts after payment", amount: "$1,200", path: "/practice/promotions/ads" },
+  { id: "hist-2", channel: "meta_ads", icon: "facebook", name: "Meta buyer campaign — Aspiring practice owners",
     type: "Meta Ads", status: "completed", created: "Jun 2, 2026",
-    window: "Jun 5 → Jul 5", amount: "$500", path: "/practice/promotions/ads" },
+    window: "Jun 5 → Jul 5", amount: "$1,200", path: "/practice/promotions/ads" },
   { id: "hist-3", channel: "featured", icon: "star", name: "Featured Listing — 14 days",
     type: "Featured Listing", status: "expired", created: "May 2, 2026",
     window: "May 2 → May 16", amount: "$99", path: "/practice/promotions/featured" },
@@ -1209,61 +1216,61 @@ const TA_SPECIALISTS = [
     focus: "Small animal GP", worksWith: ["Associate DVMs", "GP practice owners", "New graduates"],
     dvmNetwork: 240, buyerReady: 7, placements: 31, avgResponse: "~3 hours", verified: true,
     connection: "connected", unread: 1,
-    about: "Twelve years placing associates across Chicagoland general practices. Keeps a running shortlist of DVMs who ask about ownership on every placement call — several are actively looking to buy in the suburbs." },
+    about: "Twelve years placing associates across Chicagoland general practices. I keep a running shortlist of DVMs who ask about ownership on every placement call — several are actively looking to buy in the suburbs." },
   { id: "ta-2", name: "Maria Santos", initials: "MS", color: "amber", agency: "Heartland Vet Recruiting",
     title: "Principal Recruiter", location: "Madison, WI", regions: ["Wisconsin", "Minnesota", "Iowa"],
     focus: "Small animal GP", worksWith: ["Associate DVMs", "Practice managers", "Relief veterinarians"],
     dvmNetwork: 185, buyerReady: 5, placements: 24, avgResponse: "~1 day", verified: true,
     connection: "connected", unread: 0,
-    about: "Runs the upper Midwest's largest relief-DVM network. Relief vets see dozens of practices a year — the ones ready to settle down often want to buy, and Maria knows who they are." },
+    about: "I run the upper Midwest's largest relief-DVM network. Relief vets see dozens of practices a year — the ones ready to settle down often want to buy, and I know who they are." },
   { id: "ta-3", name: "Devon Clarke", initials: "DC", color: "indigo", agency: "Clarke & Associates",
     title: "Veterinary Search Consultant", location: "Indianapolis, IN", regions: ["Indiana", "Ohio", "Kentucky", "Illinois"],
     focus: "Emergency & specialty", worksWith: ["Specialty DVMs", "ER veterinarians", "Medical directors"],
     dvmNetwork: 150, buyerReady: 3, placements: 19, avgResponse: "~5 hours", verified: true,
     connection: "connected", unread: 0,
-    about: "Places specialty and emergency clinicians across the lower Midwest. Works with several medical directors leaving corporate medicine who want to own an independent practice instead." },
+    about: "I place specialty and emergency clinicians across the lower Midwest, and work with several medical directors leaving corporate medicine who want to own an independent practice instead." },
   { id: "ta-4", name: "Priya Raman", initials: "PR", color: "violet", agency: "NextChapter Veterinary",
     title: "Founder & Lead Recruiter", location: "Minneapolis, MN", regions: ["Minnesota", "Wisconsin", "National (remote)"],
     focus: "Corporate-exit DVMs", worksWith: ["Corporate associates", "Regional medical directors", "Practice buyers"],
     dvmNetwork: 320, buyerReady: 11, placements: 42, avgResponse: "~2 hours", verified: true,
     connection: "sent", unread: 0,
-    about: "Specializes in DVMs leaving consolidator groups — the single richest pool of ownership-minded buyers. Maintains an ownership-interest waitlist she re-verifies every quarter." },
+    about: "I specialize in DVMs leaving consolidator groups — the single richest pool of ownership-minded buyers — and maintain an ownership-interest waitlist I re-verify every quarter." },
   { id: "ta-5", name: "Sam Whitaker", initials: "SW", color: "green", agency: "Prairie State Talent",
     title: "DVM Recruiter", location: "Springfield, IL", regions: ["Illinois", "Missouri"],
     focus: "Rural & mixed animal", worksWith: ["Mixed-animal DVMs", "Rural practice owners", "New graduates"],
     dvmNetwork: 95, buyerReady: 2, placements: 12, avgResponse: "~2 days", verified: false,
     connection: "open", unread: 0,
-    about: "Covers downstate Illinois and Missouri farm country. Smaller network, deep roots — knows the handful of mixed-animal DVMs serious about taking over a rural practice." },
+    about: "I cover downstate Illinois and Missouri farm country. Smaller network, deep roots — I know the handful of mixed-animal DVMs serious about taking over a rural practice." },
   { id: "ta-6", name: "Elaine Foster", initials: "EF", color: "rose", agency: "Foster Veterinary Search",
     title: "Executive Recruiter", location: "Columbus, OH", regions: ["Ohio", "Michigan", "Pennsylvania"],
     focus: "Multi-doctor practices", worksWith: ["Senior associates", "Practice partners", "Buying groups"],
     dvmNetwork: 210, buyerReady: 6, placements: 28, avgResponse: "~4 hours", verified: true,
     connection: "open", unread: 0,
-    about: "Twenty years recruiting for multi-doctor hospitals. Works with senior associates assembling partner groups to buy larger practices — a strong match for listings above $2M revenue." },
+    about: "Twenty years recruiting for multi-doctor hospitals. I work with senior associates assembling partner groups to buy larger practices — a strong match for listings above $2M revenue." },
   { id: "ta-7", name: "Marcus Webb", initials: "MW", color: "teal", agency: "Great Lakes Vet Search",
     title: "Senior Recruiter", location: "Detroit, MI", regions: ["Michigan", "Ohio", "Indiana"],
     focus: "Small animal GP", worksWith: ["Associate DVMs", "Practice managers"],
     dvmNetwork: 165, buyerReady: 4, placements: 22, avgResponse: "~6 hours", verified: true,
     connection: "sent", unread: 0,
-    about: "Covers the Great Lakes corridor with a focus on associates in their first five years of practice — the group most likely to be weighing ownership for the first time." },
+    about: "I cover the Great Lakes corridor with a focus on associates in their first five years of practice — the group most likely to be weighing ownership for the first time." },
   { id: "ta-8", name: "Alicia Nunez", initials: "AN", color: "amber", agency: "Bright Path Veterinary",
     title: "Talent Partner", location: "St. Louis, MO", regions: ["Missouri", "Illinois", "Kansas"],
     focus: "Small animal GP", worksWith: ["Associate DVMs", "New graduates", "Relief veterinarians"],
     dvmNetwork: 140, buyerReady: 3, placements: 17, avgResponse: "~1 day", verified: true,
     connection: "sent", unread: 0,
-    about: "Places new and early-career graduates across the lower Midwest, and keeps in touch long after placement — several of her alumni are now shopping for their first practice." },
+    about: "I place new and early-career graduates across the lower Midwest and keep in touch long after placement — several of my alumni are now shopping for their first practice." },
   { id: "ta-9", name: "Grant Halloway", initials: "GH", color: "indigo", agency: "Halloway Veterinary Talent",
     title: "Managing Director", location: "Nashville, TN", regions: ["Tennessee", "Kentucky", "Georgia"],
     focus: "Multi-doctor practices", worksWith: ["Senior associates", "Medical directors", "Buying groups"],
     dvmNetwork: 230, buyerReady: 8, placements: 35, avgResponse: "~3 hours", verified: true,
     connection: "open", unread: 0,
-    about: "Recruits leadership for multi-doctor hospitals across the Southeast, and regularly advises medical directors who want equity rather than another salaried role." },
+    about: "I recruit leadership for multi-doctor hospitals across the Southeast and regularly advise medical directors who want equity rather than another salaried role." },
   { id: "ta-10", name: "Nina Petrova", initials: "NP", color: "violet", agency: "Summit Vet Recruiting",
     title: "Principal Recruiter", location: "Denver, CO", regions: ["Colorado", "Utah", "New Mexico"],
     focus: "Corporate-exit DVMs", worksWith: ["Corporate associates", "Regional medical directors"],
     dvmNetwork: 275, buyerReady: 9, placements: 38, avgResponse: "~2 hours", verified: true,
     connection: "open", unread: 0,
-    about: "Built her desk on consolidator burnout — she talks with Mountain West DVMs leaving corporate groups every week, and many say ownership is the only thing that would keep them in clinical practice." },
+    about: "I built my desk on consolidator burnout — I talk with Mountain West DVMs leaving corporate groups every week, and many say ownership is the only thing that would keep them in clinical practice." },
   { id: "ta-11", name: "Terrence Boyd", initials: "TB", color: "green", agency: "Boyd & Kline Search",
     title: "Veterinary Search Consultant", location: "Columbus, OH", regions: ["Ohio", "West Virginia", "Pennsylvania"],
     focus: "Emergency & specialty", worksWith: ["ER veterinarians", "Specialty DVMs"],
@@ -1275,31 +1282,176 @@ const TA_SPECIALISTS = [
     focus: "Small animal GP", worksWith: ["Associate DVMs", "Practice owners", "New graduates"],
     dvmNetwork: 295, buyerReady: 10, placements: 44, avgResponse: "~4 hours", verified: true,
     connection: "open", unread: 0,
-    about: "Runs the largest independent veterinary recruiting practice in Texas. Maintains a private ownership-interest list she refreshes twice a year." },
+    about: "I run the largest independent veterinary recruiting practice in Texas and maintain a private ownership-interest list I refresh twice a year." },
   { id: "ta-13", name: "Owen Fitzgerald", initials: "OF", color: "teal", agency: "Northlight Talent Group",
     title: "DVM Recruiter", location: "Minneapolis, MN", regions: ["Minnesota", "North Dakota", "Wisconsin"],
     focus: "Rural & mixed animal", worksWith: ["Mixed-animal DVMs", "Rural practice owners"],
     dvmNetwork: 110, buyerReady: 3, placements: 14, avgResponse: "~2 days", verified: false,
     connection: "open", unread: 0,
-    about: "Specializes in hard-to-fill rural and mixed-animal roles across the northern plains, where succession is the number one reason a practice comes to market." },
+    about: "I specialize in hard-to-fill rural and mixed-animal roles across the northern plains, where succession is the number one reason a practice comes to market." },
   { id: "ta-14", name: "Claire Dunn", initials: "CD", color: "amber", agency: "Dunn Veterinary Partners",
     title: "Executive Recruiter", location: "Philadelphia, PA", regions: ["Pennsylvania", "New Jersey", "Delaware"],
     focus: "Multi-doctor practices", worksWith: ["Senior associates", "Practice partners"],
     dvmNetwork: 190, buyerReady: 5, placements: 26, avgResponse: "~5 hours", verified: true,
     connection: "open", unread: 0,
-    about: "Places partner-track associates into multi-doctor hospitals along the eastern corridor, and often ends up brokering the partnership conversation herself." },
+    about: "I place partner-track associates into multi-doctor hospitals along the eastern corridor, and often end up brokering the partnership conversation myself." },
   { id: "ta-15", name: "Rafael Ortiz", initials: "RO", color: "indigo", agency: "Pacific Vet Talent",
     title: "Senior Recruiter", location: "Portland, OR", regions: ["Oregon", "Washington", "Idaho"],
     focus: "Small animal GP", worksWith: ["Associate DVMs", "Relief veterinarians", "New graduates"],
     dvmNetwork: 205, buyerReady: 6, placements: 29, avgResponse: "~6 hours", verified: true,
     connection: "open", unread: 0,
-    about: "Covers the Pacific Northwest, where high practice values push many associates to look for ownership in more affordable Midwest markets." },
+    about: "I cover the Pacific Northwest, where high practice values push many associates to look for ownership in more affordable Midwest markets." },
   { id: "ta-16", name: "Sofia Marchetti", initials: "SM", color: "violet", agency: "Marchetti Search",
     title: "Talent Acquisition Lead", location: "Kansas City, MO", regions: ["Missouri", "Kansas", "Nebraska", "Iowa"],
     focus: "Corporate-exit DVMs", worksWith: ["Corporate associates", "Practice managers"],
     dvmNetwork: 175, buyerReady: 7, placements: 21, avgResponse: "~1 day", verified: true,
     connection: "open", unread: 0,
-    about: "Focused on the heartland's consolidated markets. Most of her candidates have already worked inside a corporate group and know exactly what they'd do differently as owners." },
+    about: "I focus on the heartland's consolidated markets. Most of my candidates have already worked inside a corporate group and know exactly what they'd do differently as owners." },
+];
+
+// ── Providers directory ──
+// Providers-page profile extensions for TA_SPECIALISTS, keyed by specialist id:
+// recruiting-team size, last-year placements per recruiter, client testimonials,
+// and which referral modes each firm opted into on their own profile —
+//   hires  → open to Recruiting DVM Hires (staffing the seller's practice)
+//   buyers → open to Referring DVM Buyers (introducing ownership-minded DVMs)
+const TA_PROVIDER_EXTRAS = {
+  "ta-1": { team: 6, recruitedPerRecruiter: 14, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Jordan found us two associates in a quarter we'd spent a year trying to fill.", author: "Dr. E. Marsh, Practice Owner · Naperville, IL" },
+      { quote: "The intro he made became our buyer. Professional start to finish.", author: "Retiring owner · Chicagoland (sold 2025)" },
+    ] },
+  "ta-2": { team: 4, recruitedPerRecruiter: 11, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Maria's relief network kept us staffed through our entire sale process.", author: "Dr. P. Okafor, Practice Owner · Madison, WI" },
+    ] },
+  "ta-3": { team: 3, recruitedPerRecruiter: 9, openTo: { hires: true, buyers: false },
+    testimonials: [
+      { quote: "Devon placed our medical director in six weeks — a search two national firms had dropped.", author: "Hospital administrator · Indianapolis, IN" },
+    ] },
+  "ta-4": { team: 8, recruitedPerRecruiter: 16, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Priya's ownership waitlist is real. Three serious, funded candidates in the first month.", author: "Dr. S. Whitman, Seller · Twin Cities, MN" },
+      { quote: "She understood exactly what leaving corporate medicine looks like — and who's ready to buy.", author: "DVM buyer · placed 2025" },
+    ] },
+  "ta-5": { team: 1, recruitedPerRecruiter: 8, openTo: { hires: false, buyers: true },
+    testimonials: [
+      { quote: "Sam knows every mixed-animal DVM south of I-80. Our buyer came from his network.", author: "Retiring owner · Springfield, IL" },
+    ] },
+  "ta-6": { team: 5, recruitedPerRecruiter: 12, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Elaine assembled the three-DVM partner group that bought our hospital.", author: "Dr. R. Calloway, Seller · Columbus, OH" },
+    ] },
+  "ta-7": { team: 4, recruitedPerRecruiter: 10, openTo: { hires: true, buyers: false },
+    testimonials: [
+      { quote: "Two early-career hires in one summer, both still with us today.", author: "Practice manager · Ann Arbor, MI" },
+    ] },
+  "ta-8": { team: 3, recruitedPerRecruiter: 12, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Alicia stays close to her alumni — one of them became our associate-turned-buyer.", author: "Dr. L. Herrera, Practice Owner · St. Louis, MO" },
+    ] },
+  "ta-9": { team: 7, recruitedPerRecruiter: 13, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Grant recruits leaders, not résumés. Our new medical director wants equity — exactly as promised.", author: "Multi-doctor hospital owner · Nashville, TN" },
+    ] },
+  "ta-10": { team: 6, recruitedPerRecruiter: 15, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Nina introduced us to a corporate-exit DVM who closed in 90 days.", author: "Seller · Front Range, CO (sold 2026)" },
+    ] },
+  "ta-11": { team: 2, recruitedPerRecruiter: 7, openTo: { hires: true, buyers: false },
+    testimonials: [
+      { quote: "Terrence filled our overnight ER rotation when nobody else could.", author: "ER hospital administrator · Columbus, OH" },
+    ] },
+  "ta-12": { team: 9, recruitedPerRecruiter: 17, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Hannah's team staffed all three of our locations — and sourced the buyer for the fourth.", author: "Dr. M. Nguyen, Owner · Austin, TX" },
+      { quote: "The most responsive recruiter we've worked with in twenty years of practice.", author: "Practice owner · San Antonio, TX" },
+    ] },
+  "ta-13": { team: 2, recruitedPerRecruiter: 6, openTo: { hires: false, buyers: true },
+    testimonials: [
+      { quote: "Owen found the one DVM in the region willing to take over a rural mixed practice — ours.", author: "Retiring owner · northern MN" },
+    ] },
+  "ta-14": { team: 5, recruitedPerRecruiter: 11, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Claire brokered our partnership conversation as deftly as the search itself.", author: "Dr. A. Feldman, Partner · Philadelphia, PA" },
+    ] },
+  "ta-15": { team: 4, recruitedPerRecruiter: 12, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Rafael placed two associates with us and flagged a Midwest listing to a third who wanted to own.", author: "Practice owner · Portland, OR" },
+    ] },
+  "ta-16": { team: 3, recruitedPerRecruiter: 13, openTo: { hires: true, buyers: true },
+    testimonials: [
+      { quote: "Sofia's candidates all came from corporate groups and hit the ground running.", author: "Dr. J. Adeyemi, Owner · Kansas City, MO" },
+    ] },
+};
+
+// Non-recruiter providers on the Providers page — attorneys, CPAs, and financial
+// advisors a seller assembles around a deal. `kind` keys the Type filter; the
+// Talent Acquisition rows come from TA_SPECIALISTS (kind "ta") at render time.
+const PROVIDERS = [
+  { id: "pv-a1", kind: "attorney", name: "Rachel Kim", initials: "RK", color: "indigo",
+    firm: "Kim & Associates Veterinary Law", title: "Partner", location: "Chicago, IL",
+    regions: ["Illinois", "Wisconsin"], focus: "Practice sale & transition law",
+    credentials: "JD · Illinois Bar", yearsExp: 14, clientsServed: 120, avgResponse: "~4 hours",
+    verified: true, connection: "connected", unread: 0,
+    about: "I handle purchase agreements, leases, and non-competes for independent veterinary practice sales across Chicagoland, with flat-fee packages for CareOwner sellers.",
+    testimonials: [{ quote: "Rachel caught a lease clause that would have killed the deal at closing.", author: "Dr. T. Nowak, Seller · Chicago, IL" }] },
+  { id: "pv-a2", kind: "attorney", name: "Daniel Osei", initials: "DO", color: "teal",
+    firm: "Osei Legal Group", title: "Managing Attorney", location: "Milwaukee, WI",
+    regions: ["Wisconsin", "Illinois"], focus: "Contracts & entity structuring",
+    credentials: "JD · Wisconsin & Illinois Bar", yearsExp: 11, clientsServed: 85, avgResponse: "~1 day",
+    verified: true, connection: "open", unread: 0,
+    about: "I structure asset vs. stock sales and untangle multi-owner entities before a listing goes live — the cleanup that keeps diligence short.",
+    testimonials: [{ quote: "Daniel restructured our two-owner S-corp in three weeks so we could list clean.", author: "Practice owner · Milwaukee, WI" }] },
+  { id: "pv-a3", kind: "attorney", name: "Meredith Lawson", initials: "ML", color: "rose",
+    firm: "Lawson Transition Law", title: "Founder", location: "Indianapolis, IN",
+    regions: ["Indiana", "Ohio"], focus: "Succession & employment law",
+    credentials: "JD · Indiana Bar", yearsExp: 18, clientsServed: 140, avgResponse: "~6 hours",
+    verified: true, connection: "open", unread: 0,
+    about: "Succession planning and post-sale employment agreements — including the 2–3 year owner-stay arrangements common in DVM-to-DVM sales.",
+    testimonials: [{ quote: "Meredith drafted an owner-stay agreement both sides actually liked.", author: "Retiring owner · Indianapolis, IN (sold 2025)" }] },
+  { id: "pv-c1", kind: "cpa", name: "Alan Pruitt", initials: "AP", color: "green",
+    firm: "Pruitt & Co. CPAs", title: "Partner", location: "Naperville, IL",
+    regions: ["Illinois"], focus: "Practice valuations & tax planning",
+    credentials: "CPA · ABV", yearsExp: 20, clientsServed: 200, avgResponse: "~5 hours",
+    verified: true, connection: "connected", unread: 0,
+    about: "Valuations and pre-sale tax planning for veterinary practices. I prepare the adjusted-EBITDA story buyers and lenders actually underwrite.",
+    testimonials: [{ quote: "Alan's adjusted-EBITDA workup added six figures to our valuation conversation.", author: "Dr. K. Boyle, Seller · Naperville, IL" }] },
+  { id: "pv-c2", kind: "cpa", name: "Grace Lin", initials: "GL", color: "amber",
+    firm: "Lin Veterinary Accounting", title: "Principal", location: "Madison, WI",
+    regions: ["Wisconsin", "Minnesota"], focus: "Quality of earnings & diligence",
+    credentials: "CPA", yearsExp: 12, clientsServed: 95, avgResponse: "~1 day",
+    verified: true, connection: "sent", unread: 0,
+    about: "Sell-side quality-of-earnings reviews that surface issues before the buyer's accountant does. I work alongside your existing bookkeeper.",
+    testimonials: [{ quote: "Grace found the payroll misclassification before the buyer's QoE did. Worth every penny.", author: "Practice owner · Madison, WI" }] },
+  { id: "pv-c3", kind: "cpa", name: "Victor Ramos", initials: "VR", color: "violet",
+    firm: "Ramos Practice Advisors", title: "CPA · Partner", location: "St. Louis, MO",
+    regions: ["Missouri", "Illinois"], focus: "Deal structuring & after-tax proceeds",
+    credentials: "CPA · CVA", yearsExp: 16, clientsServed: 110, avgResponse: "~8 hours",
+    verified: false, connection: "open", unread: 0,
+    about: "I model what each offer actually nets after taxes — allocation, earn-outs, and installment structures compared side by side.",
+    testimonials: [{ quote: "Victor showed us the after-tax difference between two offers — we picked the ‘smaller’ one and netted more.", author: "Seller · St. Louis, MO" }] },
+  { id: "pv-f1", kind: "advisor", name: "Susan Hale", initials: "SH", color: "teal",
+    firm: "Hale Wealth Partners", title: "Senior Advisor", location: "Oak Brook, IL",
+    regions: ["Illinois"], focus: "Sale proceeds & retirement planning",
+    credentials: "CFP", yearsExp: 22, clientsServed: 180, avgResponse: "~1 day",
+    verified: true, connection: "sent", unread: 0,
+    about: "I turn a once-in-a-lifetime practice sale into a retirement plan — sequencing, investing, and protecting the proceeds.",
+    testimonials: [{ quote: "Susan turned our sale proceeds into a plan we actually understand.", author: "Dr. R. Calder, Retired owner · Oak Brook, IL" }] },
+  { id: "pv-f2", kind: "advisor", name: "Marcus Bell", initials: "MB", color: "indigo",
+    firm: "Bell Financial Group", title: "Founder", location: "Columbus, OH",
+    regions: ["Ohio", "Michigan"], focus: "Owner exit planning",
+    credentials: "CFP · CEPA", yearsExp: 15, clientsServed: 130, avgResponse: "~2 days",
+    verified: true, connection: "open", unread: 0,
+    about: "Exit planning that starts before the listing: readiness scoring, target-proceeds math, and coordinating your CPA and attorney around one plan.",
+    testimonials: [{ quote: "Marcus had our CPA and attorney rowing in the same direction for the first time.", author: "Practice owner · Columbus, OH" }] },
+  { id: "pv-f3", kind: "advisor", name: "Angela Torres", initials: "AT", color: "rose",
+    firm: "Torres Private Wealth", title: "Managing Partner", location: "Denver, CO",
+    regions: ["Colorado", "Utah"], focus: "Post-sale wealth management",
+    credentials: "CFA", yearsExp: 17, clientsServed: 150, avgResponse: "~1 day",
+    verified: false, connection: "open", unread: 0,
+    about: "I manage post-sale portfolios for practice sellers, with an emphasis on income replacement in the first five years after closing.",
+    testimonials: [{ quote: "Angela's income plan let us retire eighteen months earlier than we'd budgeted.", author: "Retired owners · Denver, CO" }] },
 ];
 
 // ── Press & PR ──
@@ -1370,6 +1522,7 @@ Object.assign(window, {
   ensureNamedToken, promoShareUrl, addPromoLead, generateCreative,
   regenerateCreative, mockAdService, mockCampaignMetrics, mockSmallMetrics,
   META_AD_PLAN, PROMO_HISTORY, PROMO_UPDATES, TA_SPECIALISTS,
+  TA_PROVIDER_EXTRAS, PROVIDERS,
   FEATURED_TIERS, rotateFeatured, mockFeaturedService,
   PLACEMENT_TYPE_LABELS, PLACEMENT_CANDIDATES, mockLocalPubsService, localAdCreative,
   PR_INTERVIEW_QUESTIONS, mockPrService,

@@ -459,13 +459,9 @@ const BuyerProfileView = ({ buyer, onBack, onMessage, onAsk }) => {
 
   return (
     <div className="co-body">
-      <div className="co-crumb" style={{ marginBottom: 16 }}>
-        <Icon name="home" size={14} />
-        <Icon name="chevronRight" size={12} />
-        <a href="#" onClick={(e) => { e.preventDefault(); onBack(); }}>Find Buyers</a>
-        <Icon name="chevronRight" size={12} />
-        <span className="co-crumb__current">{buyer.name}</span>
-      </div>
+      <button className="co-btn-back" style={{ marginBottom: 16 }} onClick={onBack}>
+        <Icon name="chevronRight" style={{ transform: "rotate(180deg)" }} /> Back
+      </button>
 
       <div className="bp-head">
         <div className="bp-head__avatar">{bpInitials(buyer.name)}</div>

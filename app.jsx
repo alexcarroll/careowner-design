@@ -40,9 +40,13 @@ const App = () => {
   const props = { section, sub, tab, onSection, onEdit, onNav, onToast: showToast, onManageListing };
   const isMarketCheck = area === "practice" && section === "market-check";
   const isPromotions = area === "practice" && section === "promotions";
-  // The Marketplace is a top-level buyer-facing area with its own filter sidebar,
-  // so it renders full-width without the practice-specific left rail.
-  const showRail = area !== "marketplace";
+  // The practice-specific left rail only belongs to the practice workspace.
+  // Marketplace and these top-nav areas render without it: Marketplace goes
+  // full-width (its own filter sidebar), while the rest keep their content width
+  // but centered on the page (co-shell__main--centered).
+  const railless = ["marketplace", "buyers", "providers", "requests", "inquiries", "messages", "meetings"];
+  const showRail = !railless.includes(area);
+  const centeredMain = !showRail && area !== "marketplace";
 
   // Public promo landing pages (/l/:listingId and /l/s/:token) render standalone —
   // buyers see a VetVet-style marketing page, never the seller app shell.
@@ -60,13 +64,14 @@ const App = () => {
       <TopNav active={area} onNav={onNav} textSize={textSize} onTextSize={setTextSize} />
       <div className="co-shell">
         {showRail && <LeftRail />}
-        <div className="co-shell__main">
+        <div className={"co-shell__main" + (centeredMain ? " co-shell__main--centered" : "")}>
           {area === "home" && <HomeView {...props} />}
           {area === "marketplace" && <MarketplaceView {...props} />}
           {area === "practice" && !isMarketCheck && !isPromotions && <PracticeView pub={pub} onTogglePub={onTogglePub} {...props} />}
           {isMarketCheck && <MarketCheckView pub={pub} onTogglePub={onTogglePub} {...props} />}
           {isPromotions && <PromoteView {...props} />}
           {area === "buyers" && <BuyersView {...props} />}
+          {area === "providers" && <ProvidersView {...props} />}
           {(area === "requests" || area === "inquiries") && <RequestsView {...props} />}
           {area === "offers" && <OffersView {...props} />}
           {area === "messages" && <MessagesView {...props} />}

@@ -13,7 +13,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = __dirname;
-const PORT = process.argv[2] || 4173;
+const PORT = process.argv[2] || process.env.PORT || 4173;
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
