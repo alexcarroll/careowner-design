@@ -221,15 +221,75 @@ const loadSaved = () => {
 
 // ---------- Small pieces ----------
 
-const ObHeader = () => (
-  <div className="ob-header">
+// The logo sits in the middle column of a 3-column grid so it stays centered on
+// the page whether or not the left slot holds a "Return to Snapshot" button.
+const ObHeader = ({ onReturn, wide }) => (
+  <div className={"ob-header" + (wide ? " ob-header--wide" : "")}>
+    {onReturn && (
+      <button className="ob-header__back" onClick={onReturn}>
+        <Icon name="arrowLeft" size={16} /> Return to Snapshot
+      </button>
+    )}
     <img src={assetUrl("assets/careowner-logo-lightbg.svg")} alt="CareOwner" />
   </div>
 );
 
-const ObLater = () => (
+const ObLater = ({ onClick }) => (
   <div className="ob-later">
-    <button onClick={() => navigateTo("/practice")}>I'll do this later</button>
+    <button onClick={onClick}>I'll do this later</button>
+  </div>
+);
+
+// Shared closing note on every end-of-flow screen.
+const ObCloseFoot = () => (
+  <div className="ob-cardfoot">
+    <div className="ob-cardfoot__close">
+      <div className="ob-cardfoot__close-title">You can close this tab now.</div>
+      <p>Everything you entered is saved to your account. The link in your approval email will take you straight to your dashboard.</p>
+    </div>
+  </div>
+);
+
+// The "what to gather" checklist, shared by the completed and saved-progress
+// screens. Items name the seller's own tools once they've told us about them,
+// stay generic while those questions are unanswered, and drop entirely when an
+// answer rules them out (an accountant handles the books, no PIMS in use).
+const buildGatherItems = (answers) => {
+  const acct = answers.accounting || {};
+  const pims = answers.pims || {};
+  const building = answers.building || {};
+  const acctName = acct.id === "quickbooks" ? "QuickBooks" : acct.id === "another" ? (acct.platform || "").trim() : null;
+  const pimsName = NAMED_PIMS[pims.id] || (pims.id === "different" ? (pims.platform || "").trim() : null);
+
+  const items = [];
+  if (acct.id !== "accountant") {
+    items.push(acctName
+      ? <><b>Login access to {acctName}</b> — connecting it will just take a few clicks</>
+      : <><b>Login access to your accounting software</b> — connecting it will just take a few clicks</>);
+  }
+  if (pims.id !== "none") {
+    items.push(pimsName
+      ? <><b>Login access to {pimsName}</b> — this fills in your clients, services, and production automatically</>
+      : <><b>Login access to your practice management software</b> — this fills in your clients, services, and production automatically</>);
+  }
+  items.push(<><b>Your last 2–3 years of financial statements and tax returns</b></>);
+  items.push(
+    building.id === "rent"
+      ? <><b>Your lease details for the building</b></>
+      : (building.id === "personal" || building.id === "business")
+        ? <><b>Your mortgage or ownership details for the building</b></>
+        : <><b>Your lease or mortgage details for the building</b></>
+  );
+  items.push(<><b>The name and email of anyone helping you</b> — your accountant, bookkeeper, or office manager</>);
+  items.push(<><b>A few photos of your practice</b> — buyers look at these first</>);
+  return items;
+};
+
+const ObGather = ({ items }) => (
+  <div className="ob-gather">
+    {items.map((g, i) => (
+      <div key={i} className="ob-gather__item"><span className="ob-gather__box" /> <span>{g}</span></div>
+    ))}
   </div>
 );
 
@@ -278,7 +338,7 @@ const ObSteps = ({ qIndex }) => {
 
 // ---------- Screens ----------
 
-const StartScreen = ({ onBegin }) => (
+const StartScreen = ({ onBegin, onLater }) => (
   <div className="ob-wrap">
     <div className="ob-banner">
       <span className="ob-banner__check"><Icon name="check" size={12} /></span>
@@ -299,11 +359,11 @@ const StartScreen = ({ onBegin }) => (
         <div className="ob-cardfoot__note">Your answers save automatically — you can leave and pick up where you left off anytime.</div>
       </div>
     </div>
-    <ObLater />
+    <ObLater onClick={onLater} />
   </div>
 );
 
-const QuestionScreen = ({ qIndex, answers, setAnswer, onPrev, onNext }) => {
+const QuestionScreen = ({ qIndex, answers, setAnswer, onPrev, onNext, onLater }) => {
   const q = QUESTIONS[qIndex];
   const a = answers[q.id] || {};
   const followRef = React.useRef(null);
@@ -524,12 +584,12 @@ const QuestionScreen = ({ qIndex, answers, setAnswer, onPrev, onNext }) => {
           </aside>
         </div>
       </div>
-      <ObLater />
+      <ObLater onClick={onLater} />
     </div>
   );
 };
 
-const ComingSoonScreen = ({ answers, optIn, setOptIn, onPrev, onComplete }) => {
+const ComingSoonScreen = ({ answers, optIn, setOptIn, onPrev, onComplete, onLater }) => {
   const optLabel = (qid, oid) => {
     const q = QUESTIONS.find(x => x.id === qid);
     const o = q && q.options.find(x => x.id === oid);
@@ -610,7 +670,7 @@ const ComingSoonScreen = ({ answers, optIn, setOptIn, onPrev, onComplete }) => {
           </div>
         </div>
       </div>
-      <ObLater />
+      <ObLater onClick={onLater} />
     </div>
   );
 };
@@ -619,7 +679,6 @@ const ConfirmScreen = ({ answers, optIn }) => {
   const acct = answers.accounting || {};
   const pims = answers.pims || {};
   const payroll = answers.payroll || {};
-  const building = answers.building || {};
 
   const acctName = acct.id === "quickbooks" ? "QuickBooks" : acct.id === "another" ? (acct.platform || "").trim() : null;
   const pimsName = NAMED_PIMS[pims.id] || (pims.id === "different" ? (pims.platform || "").trim() : null);
@@ -634,22 +693,6 @@ const ConfirmScreen = ({ answers, optIn }) => {
   const nextStep2 = connectParts.length
     ? `When you're back, we'll help you ${connectParts.join(", and ")} so your profile can begin taking shape.`
     : "When you're back, we'll help you gather everything you need so your profile can begin taking shape.";
-
-  // "What to gather" is dynamic: skip login items when a provider handles that
-  // system, and match the lease/mortgage line to their building answer.
-  const gather = [];
-  if (acctName && acct.id !== "accountant") gather.push(<><b>Login access to {acctName}</b> — connecting it will just take a few clicks</>);
-  if (pimsName) gather.push(<><b>Login access to {pimsName}</b> — this fills in your clients, services, and production automatically</>);
-  gather.push(<><b>Your last 2–3 years of financial statements and tax returns</b></>);
-  gather.push(
-    building.id === "rent"
-      ? <><b>Your lease details for the building</b></>
-      : (building.id === "personal" || building.id === "business")
-        ? <><b>Your mortgage or ownership details for the building</b></>
-        : <><b>Your lease or mortgage details for the building</b></>
-  );
-  gather.push(<><b>The name and email of anyone helping you</b> — your accountant, bookkeeper, or office manager</>);
-  gather.push(<><b>A few photos of your practice</b> — buyers look at these first</>);
 
   return (
     <div className="ob-wrap">
@@ -678,26 +721,48 @@ const ConfirmScreen = ({ answers, optIn }) => {
           <div className="ob-confirm__section">
             <h3>What to gather before you come back</h3>
             <p className="ob-confirm__lede">None of this is required to get started, but having it handy makes your next visit much faster.</p>
-            <div className="ob-gather">
-              {gather.map((g, i) => (
-                <div key={i} className="ob-gather__item"><span className="ob-gather__box" /> <span>{g}</span></div>
-              ))}
-            </div>
+            <ObGather items={buildGatherItems(answers)} />
           </div>
         </div>
-        <div className="ob-cardfoot">
-          <div className="ob-cardfoot__note" style={{ marginTop: 0 }}>Everything you entered is saved to your account. The link in your approval email will take you straight to your dashboard.</div>
-        </div>
+        <ObCloseFoot />
       </div>
     </div>
   );
 };
 
+// Early exit — "I'll do this later" from any question. Same closing furniture as
+// the completed screen, but the stepper stays visible so the seller can see how
+// far they got, and the card widens to hold it.
+const SavedScreen = ({ answers, qIndex }) => (
+  <div className="ob-wrap ob-wrap--question">
+    <div className="ob-card">
+      <ObSteps qIndex={qIndex} />
+      <div className="ob-confirm ob-confirm--saved">
+        <div className="ob-confirm__head">
+          <h1>Your snapshot progress has been saved</h1>
+          <p>Every answer you've given so far has been captured and saved to your practice profile. You can return any time to pick up right where you left off and finish your snapshot.</p>
+        </div>
+
+        <div className="ob-confirm__optin">
+          <ObNote>Your account is being reviewed - we'll email you the moment your account is approved. You can return any time to continue filling out your practice snapshot.</ObNote>
+        </div>
+
+        <div className="ob-confirm__section">
+          <h3>What to start gathering for your full practice profile</h3>
+          <p className="ob-confirm__lede">None of this is needed to finish your snapshot. You'll need these items once your account is approved and you start completing your full practice profile to launch your listing.</p>
+          <ObGather items={buildGatherItems(answers)} />
+        </div>
+      </div>
+      <ObCloseFoot />
+    </div>
+  </div>
+);
+
 // ---------- Root ----------
 
 const OnboardingView = () => {
   const saved = React.useMemo(loadSaved, []);
-  const [screen, setScreen] = React.useState("start"); // start | q | coming-soon | confirm
+  const [screen, setScreen] = React.useState("start"); // start | q | coming-soon | saved | confirm
   const [qIndex, setQIndex] = React.useState(typeof saved.qIndex === "number" ? saved.qIndex : 0);
   const [answers, setAnswers] = React.useState(saved.answers || {});
   const [optIn, setOptIn] = React.useState(!!saved.optIn);
@@ -722,8 +787,11 @@ const OnboardingView = () => {
 
   return (
     <div className="ob-page">
-      <ObHeader />
-      {screen === "start" && <StartScreen onBegin={begin} />}
+      <ObHeader
+        wide={screen === "saved"}
+        onReturn={screen === "saved" ? () => setScreen("q") : null}
+      />
+      {screen === "start" && <StartScreen onBegin={begin} onLater={() => navigateTo("/practice")} />}
       {screen === "q" && (
         <QuestionScreen
           qIndex={qIndex}
@@ -731,6 +799,7 @@ const OnboardingView = () => {
           setAnswer={setAnswer}
           onPrev={() => setQIndex(i => Math.max(0, i - 1))}
           onNext={() => (qIndex < QUESTIONS.length - 1 ? setQIndex(qIndex + 1) : setScreen("coming-soon"))}
+          onLater={() => setScreen("saved")}
         />
       )}
       {screen === "coming-soon" && (
@@ -740,8 +809,10 @@ const OnboardingView = () => {
           setOptIn={setOptIn}
           onPrev={() => { setScreen("q"); setQIndex(QUESTIONS.length - 1); }}
           onComplete={() => setScreen("confirm")}
+          onLater={() => setScreen("saved")}
         />
       )}
+      {screen === "saved" && <SavedScreen answers={answers} qIndex={qIndex} />}
       {screen === "confirm" && <ConfirmScreen answers={answers} optIn={optIn} />}
     </div>
   );
