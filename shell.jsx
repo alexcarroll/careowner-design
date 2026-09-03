@@ -1,6 +1,16 @@
 // Shell components: TopNav, SubHeader, LeftRail, RightRail, Modal, Toast, Switch
 
 const TopNav = ({ active, onNav, textSize, onTextSize }) => {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const menuRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [menuOpen]);
   const items = [
     { id: "home", label: "Home", icon: "home" },
     { id: "marketplace", label: "Marketplace", icon: "store" },
@@ -23,10 +33,24 @@ const TopNav = ({ active, onNav, textSize, onTextSize }) => {
         ))}
       </div>
       <div className="co-nav__right">
-        <button className="co-avatar-chip">
-          <span className="co-avatar">DS</span>
-          <Icon name="chevronDown" size={14} />
-        </button>
+        <div className="co-avatar-menu" ref={menuRef}>
+          <button className="co-avatar-chip" onClick={() => setMenuOpen(o => !o)} aria-haspopup="menu" aria-expanded={menuOpen}>
+            <span className="co-avatar">DS</span>
+            <Icon name="chevronDown" size={14} />
+          </button>
+          {menuOpen && (
+            <div className="co-avatar-menu__pop" role="menu">
+              <button
+                className="co-avatar-menu__item"
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); window.open(assetUrl("onboarding"), "_blank"); }}
+              >
+                Onboarding
+                <Icon name="externalLink" size={14} />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );

@@ -14,7 +14,7 @@
 // for unknown paths (SPA fallback). In-app navigation (pushState) works regardless.
 
 // "inquiries" is kept as a legacy alias for "requests" so older deep links resolve.
-const ROUTE_AREAS = ["home", "marketplace", "practice", "buyers", "providers", "requests", "inquiries", "offers", "messages", "meetings", "l"];
+const ROUTE_AREAS = ["home", "marketplace", "practice", "buyers", "providers", "requests", "inquiries", "offers", "messages", "meetings", "l", "onboarding"];
 const DEFAULT_AREA = "practice";
 const DEFAULT_SECTION = "overview";
 

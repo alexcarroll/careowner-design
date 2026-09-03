@@ -48,6 +48,17 @@ const App = () => {
   const showRail = !railless.includes(area);
   const centeredMain = !showRail && area !== "marketplace";
 
+  // The seller onboarding interview (/onboarding) renders standalone — a simple
+  // logo header with the flow card centered on the page, no app shell.
+  if (area === "onboarding") {
+    return (
+      <>
+        <OnboardingView onToast={showToast} />
+        {toast && <Toast message={toast} />}
+      </>
+    );
+  }
+
   // Public promo landing pages (/l/:listingId and /l/s/:token) render standalone —
   // buyers see a VetVet-style marketing page, never the seller app shell.
   if (area === "l") {
