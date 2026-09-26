@@ -818,8 +818,8 @@ window.ACTIVITY = ACTIVITY;
 //   AdCampaign      { id, listingId, audiences, variants, anonymityMode (always
 //                     "anonymous" — ads run from VetVet's Meta ad account),
 //                     plan ("starter" | "standard" | "max"), planLabel, price,
-//                     durationDays, status ("in_review" → CareOwner review →
-//                     "awaiting_payment" → paid → "active" | "completed"),
+//                     durationDays, status ("in_review" → "scheduled" → "live" →
+//                     "completed"; also "changes_requested", "payment_failed"…),
 //                     landingUrl, metrics?, createdAt }
 //   FeaturedPromotion { id, listingId, tier ("featured_14" | "featured_30" | "featured_60"),
 //                     startAt, endAt, status ("active" | "expired" | "cancelled"),
@@ -857,9 +857,9 @@ const PROMO_DVM_ENABLED = true;
 // shown verbatim on the wizard's Campaign Details step.
 const PROMO_AUDIENCES = [
   { id: "aspiring", label: "Aspiring practice owners", icon: "stethoscope", hint: "Recommended",
-    desc: "Ads will contain messaging for veterinarians interested in acquiring an established practice and becoming an owner." },
+    desc: "Veterinarians interested in acquiring and owning an established practice." },
   { id: "expanding", label: "Expanding practice owners", icon: "building",
-    desc: "Ads will contain messaging aimed at existing veterinary practice owners in your region who may want to expand with a new location." },
+    desc: "Existing veterinary practice owners who may want to expand with a new location." },
 ];
 
 // Canned creative per audience, organized by message angle. Each angle carries
@@ -1130,13 +1130,13 @@ const mockPaymentService = {
 const META_AD_PLAN = {
   price: 1200, days: 30, setup: 250, renew: 950,
   benefits: [
-    "30-day Meta advertising campaign",
+    "30-day Facebook & Instagram ad campaign",
     "Ad spend + management included",
     "Up to 2 buyer audiences",
     "3 ad versions per audience",
     "Your practice name and exact address are not shown",
     "Buyer inquiries sent to your email and CareOwner inbox",
-    "Meta-optimized delivery may include Facebook, Instagram, Messenger, WhatsApp, and Threads",
+    "Your ads may also appear on Messenger, WhatsApp, and Threads",
     "Performance report every 30 days",
   ],
 };
@@ -1148,10 +1148,10 @@ const META_AD_PLAN = {
 // `channel` keys each row to its dashboard tab (meta_ads | dvm | featured |
 // local_pubs | pr) so a tab can filter to just its own promotions.
 const PROMO_HISTORY = [
-  { id: "hist-1", channel: "meta_ads", icon: "facebook", name: "Meta buyer campaign — Aspiring + Expanding practice owners",
-    type: "Meta Ads", status: "awaiting_payment", created: "Jul 28, 2026",
-    window: "Starts after payment", amount: "$1,200", path: "/practice/promotions/ads" },
-  { id: "hist-2", channel: "meta_ads", icon: "facebook", name: "Meta buyer campaign — Aspiring practice owners",
+  { id: "hist-1", channel: "meta_ads", icon: "facebook", name: "Buyer ad campaign — Aspiring + Expanding practice owners",
+    type: "Meta Ads", status: "payment_failed", created: "Jul 28, 2026",
+    window: "Starts after approval", amount: "$1,200", path: "/practice/promotions/ads" },
+  { id: "hist-2", channel: "meta_ads", icon: "facebook", name: "Buyer ad campaign — Aspiring practice owners",
     type: "Meta Ads", status: "completed", created: "Jun 2, 2026",
     window: "Jun 5 → Jul 5", amount: "$1,200", path: "/practice/promotions/ads" },
   { id: "hist-3", channel: "featured", icon: "star", name: "Featured Listing — 14 days",
@@ -1170,8 +1170,8 @@ const PROMO_HISTORY = [
 // pulls the item to the top styling-wise (something needs the owner's action).
 // TODO(api): replace with the real notifications stream.
 const PROMO_UPDATES = [
-  { id: "up-1", icon: "dollarSign", tint: "amber", attention: true,
-    text: "<b>Meta ads campaign approved</b> — pay to launch your 30-day campaign.",
+  { id: "up-1", icon: "checkCircle", tint: "teal",
+    text: "<b>Buyer ad campaign approved</b> — your campaign is being scheduled.",
     time: "2h ago", path: "/practice/promotions#meta" },
   { id: "up-2", icon: "message", tint: "teal",
     text: "<b>Priya Raman</b> replied about a DVM who's ready to buy.",

@@ -208,15 +208,33 @@ const PromoteLocked = ({ onManageListing }) => (
 const STATUS_BADGE = {
   active:    { cls: "co-badge--green", label: "Active",    dot: "live" },
   in_review: { cls: "co-badge--amber", label: "In review", dot: "pending" },
-  awaiting_payment: { cls: "co-badge--blue", label: "Awaiting payment", short: "Payment due", dot: "attention" },
+  changes_requested: { cls: "co-badge--blue", label: "Changes requested", short: "Changes req.", dot: "attention" },
+  scheduled: { cls: "co-badge--blue",  label: "Scheduled", dot: "pending" },
+  payment_failed: { cls: "co-badge--rose", label: "Payment failed", dot: "attention" },
   submitted: { cls: "co-badge--amber", label: "Submitted", dot: "pending" },
   live:      { cls: "co-badge--green", label: "Live",      dot: "live" },
   paused:    { cls: "co-badge--gray",  label: "Paused",    dot: "muted" },
   completed: { cls: "co-badge--gray",  label: "Completed", dot: "muted" },
   cancelled: { cls: "co-badge--gray",  label: "Cancelled", dot: "muted" },
+  canceled:  { cls: "co-badge--gray",  label: "Canceled",  dot: "muted" },
   expired:   { cls: "co-badge--gray",  label: "Expired",   dot: "muted" },
   draft:     { cls: "co-badge--gray",  label: "Draft",     dot: "muted" },
 };
+
+// Meta campaign status notes — shown in the results strip in place of metrics
+// until a campaign has numbers to report (copy: UX Copy Master §1.3).
+const META_STATUS_NOTES = {
+  draft: "Finish setting up your campaign to submit it for review",
+  in_review: "In CareOwner review — your saved card is charged only after approval",
+  changes_requested: "CareOwner requested changes — review and approve them to continue",
+  scheduled: "Approved and scheduled — we’ll notify you when your ads go live",
+  live: "Your ads are live — your first performance report arrives after 30 days",
+  paused: "Your campaign is paused — ads aren’t running",
+  canceled: "This campaign was canceled — you won’t be charged for future cycles",
+  payment_failed: "We couldn’t charge your card — update your payment method to launch your campaign",
+};
+// Statuses where nothing has run yet — no metrics, schedule shows "Starts after approval".
+const META_PRELAUNCH = ["draft", "in_review", "changes_requested", "scheduled", "payment_failed"];
 
 const RoiRow = ({ icon, iconCls, name, meta, metrics, hint, status, action }) => {
   const b = STATUS_BADGE[status] || STATUS_BADGE.draft;
@@ -252,16 +270,14 @@ const RoiStrip = ({ promo, listing, onToast, channel }) => {
   const wants = (c) => !channel || channel === c;
 
   if (wants("meta_ads")) promo.campaigns.forEach(c => {
-    const m = c.status === "in_review" || c.status === "awaiting_payment" ? null : c.metrics;
+    const m = META_PRELAUNCH.includes(c.status) ? null : c.metrics;
     add(m);
     rows.push(
       <RoiRow key={c.id} icon="facebook" iconCls="pr-camp__icon--fb"
-        name={`Meta buyer campaign — ${c.audiences.map(a => audienceMeta(a).label).join(" + ")}`}
+        name={`Buyer ad campaign — ${c.audiences.map(a => audienceMeta(a).label).join(" + ")}`}
         meta={`Submitted ${c.createdAt} · $${fmtInt(c.price)} flat rate · VetVet's ad account`}
         metrics={m}
-        hint={c.status === "in_review"
-          ? "In CareOwner review — your saved card is charged only after approval"
-          : c.status === "awaiting_payment" ? "Approved — pay via the link in your email to launch" : "Metrics appear once your ads launch"}
+        hint={META_STATUS_NOTES[c.status] || META_STATUS_NOTES.scheduled}
         status={c.status} />
     );
   });
@@ -353,10 +369,9 @@ const createdRows = (promo, listing) => {
   const rows = [];
   promo.campaigns.forEach(c => rows.push({
     id: c.id, channel: "meta_ads", icon: "facebook",
-    name: `Meta buyer campaign — ${c.audiences.map(a => audienceMeta(a).label).join(" + ")}`,
+    name: `Buyer ad campaign — ${c.audiences.map(a => audienceMeta(a).label).join(" + ")}`,
     type: "Meta Ads", status: c.status, created: c.createdAt,
-    window: c.status === "in_review" || c.status === "awaiting_payment"
-      ? "Starts after payment" : `${c.durationDays} days`,
+    window: META_PRELAUNCH.includes(c.status) ? "Starts after approval" : `${c.durationDays} days`,
     amount: `$${fmtInt(c.price)}`,
     path: "/practice/promotions/ads",
   }));
@@ -442,8 +457,8 @@ const PromotionsTable = ({ rows, onToast }) => (
               <td style={{ color: "var(--stone-500)", whiteSpace: "nowrap" }}>{r.window}</td>
               <td style={{ whiteSpace: "nowrap" }}>{r.amount}</td>
               <td className="pr-table__cta" onClick={e => e.stopPropagation()}>
-                {r.status === "awaiting_payment"
-                  ? <button className="pr-cta" onClick={() => onToast("Secure checkout opened (mock) — same link as the one in your email")}>Pay now</button>
+                {r.status === "payment_failed"
+                  ? <button className="pr-cta" onClick={() => onToast("Secure checkout opened — same link as the one in your email")}>Pay now</button>
                   : <Icon name="chevronRight" size={14} style={{ color: "var(--stone-400)" }} />}
               </td>
             </tr>
@@ -519,7 +534,7 @@ const PromoteHub = ({ tab, onToast }) => {
   const channels = [
     {
       id: "meta_ads", flag: PROMO_META_ENABLED, icon: "facebook", title: "Facebook & Instagram Ads",
-      desc: "Audience-targeted ads that never reveal your practice. We build and run them for you for one flat rate — no Facebook account needed.",
+      desc: "Audience-targeted ads that keep your practice name and location private. We build and run them for you for one flat rate — no Facebook account needed.",
       meta: "Always anonymous · AI-drafted creative", cta: "Build an ad campaign", path: "/practice/promotions/ads",
     },
     {
@@ -712,7 +727,7 @@ const Stepper = ({ steps, step, onStepClick }) => (
 // approved and ready, VetVet charges the saved card and launches from its Meta
 // ad account. Progress — creative edits, exclusions, payment consents —
 // autosaves to localStorage so a half-built campaign survives leaving the flow.
-const AD_STEPS = ["Audience", "Exclusions", "Ad Creative", "Pay & Submit"];
+const AD_STEPS = ["Audience", "Exclusions", "Ad creative", "Review & submit"];
 
 // TODO(api): replace with a server-side draft on the campaign request.
 const AD_DRAFT_KEY = "co.metaAdDraft";
@@ -726,18 +741,59 @@ const normalizeAdVariant = (v) => ({
   originalImageUrl: v.imageUrl, ...v,
 });
 
-// Overview "How it works" — numbered walkthrough (Figma 275:7694). The 4th step
-// restates the confidentiality guarantee so the overview stands on its own.
-const AD_HOW_IT_WORKS = [
-  { title: "Choose your buyer audiences",
-    desc: "Reach veterinarians interested in becoming owners, existing practice owners looking to expand, or both. Each selected audience receives three tailored ad versions, each written to a different message angle." },
-  { title: "Review and approve every ad",
-    desc: "CareOwner drafts audience-specific copy for you. Edit every word, choose what practice details can be shared, and approve each ad before it is submitted." },
-  { title: "We run and optimize your campaign",
-    desc: "Ads run from our account with ad spend and management included. Meta optimizes delivery across eligible placements based on expected performance. We monitor the campaign and provide a performance report every 30 days." },
-  { title: "Keep your opportunity confidential*",
-    desc: "Your practice name and exact address remain hidden from public view. You can add contact exclusions to reduce delivery to employees or other specified contacts, and you decide which buyers receive identifying information." },
+// Overview "How it works" — a short 4-step progress row; the detail lives in
+// the Common questions accordion below it (copy: UX Copy Master §2.3–2.4).
+const AD_HOW_STEPS = ["Choose your target audience", "Review and approve your ads", "We launch and run the campaign for you", "Receive responses from potential buyers"];
+const AD_META_TIP = "Facebook and Instagram are owned by the same company, Meta, along with Messenger, WhatsApp, and Threads. That’s why your ads can appear on any of these apps.";
+
+// TODO(copy): §2.4 is still under separate review — swap in approved answers when signed off.
+const AD_FAQ = [
+  { q: "What is Meta?", a: AD_META_TIP },
+  { q: "Do I need a Facebook or Instagram account?",
+    a: "No. CareOwner creates, runs, and manages your ads for you. You don’t need an account or any experience with advertising." },
+  { q: "Who will see my ads?",
+    a: "Veterinarians who may want to buy a practice. You can choose aspiring owners (veterinarians who want to own their first practice), expanding owners (practice owners who want to add a location), or both. CareOwner sets the exact area each ad reaches and adjusts it as the campaign runs to reach the best buyers." },
+  { q: "Will people know it’s my practice?",
+    a: "No. Your practice name and exact address are never shown in the ads. The ads appear as coming from VetVet, the company behind CareOwner. Because some details in an ad may hint at your practice, you can also keep specific people from seeing your ads." },
+  { q: "Can I keep my employees from seeing the ads?",
+    a: "Yes. Everyone on your CareOwner team is left out automatically, and you can add other people you want left out, like former employees or other known contacts. Facebook and Instagram can only leave out people they can match by email or phone number, so we can’t promise that someone will never see an ad." },
+  { q: "Who writes the ads?",
+    a: "CareOwner writes three versions of your ad for each audience you choose. You can read every ad, make changes, and pick which ones to use. CareOwner then checks every ad before it goes live." },
+  { q: "What happens when a buyer is interested?",
+    a: "Interested buyers are taken to your CareOwner teaser page, which describes your practice without naming it. Their messages are sent to your email and your CareOwner inbox. You decide which buyers learn your practice’s name and location." },
+  { q: "How much does it cost?",
+    a: "$1,200 for the first 30 days. This includes a one-time $250 setup fee, the cost of the ads, and our team managing your campaign. If you continue, each additional 30 days is $950." },
+  { q: "When will I be charged?",
+    a: "Not today. CareOwner reviews your campaign first, which usually takes 1–2 business days. Your card is charged only after your campaign is approved and ready to launch." },
+  { q: "What happens after 30 days?",
+    a: "You choose. Your campaign can end after 30 days, and you can restart it later. Or it can continue automatically for $950 every 30 days until you pause or cancel." },
+  { q: "How will I know how my campaign is doing?",
+    a: "We send you a report every 30 days that shows how many people saw your ads, how many clicked, and how many buyers reached out." },
 ];
+
+// Single-open accordion — one answer at a time keeps the column short.
+const AdFaq = () => {
+  const [open, setOpen] = React.useState(null);
+  return (
+    <div className="pr-faq">
+      <div className="pr-adov__eyebrow pr-adov__eyebrow--center">Common questions</div>
+      <div className="pr-faq__list">
+        {AD_FAQ.map((f, i) => {
+          const on = open === i;
+          return (
+            <div key={f.q} className={`pr-faq__item ${on ? "is-open" : ""}`}>
+              <button type="button" className="pr-faq__q" aria-expanded={on} aria-controls={`pr-faq-${i}`} onClick={() => setOpen(on ? null : i)}>
+                <span>{f.q}</span>
+                <Icon name="chevronDown" size={16} />
+              </button>
+              {on && <p id={`pr-faq-${i}`} className="pr-faq__a">{f.a}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const LintWarning = ({ hits }) => hits.length === 0 ? null : (
   <div className="pr-lint">
@@ -1045,7 +1101,7 @@ const AudienceAdSet = ({ aud, index, total, list, updateVariant, onToast }) => {
                           <Icon name="image" size={14} /> Choose another CareOwner image
                         </button>
                         <button className="mk-menu__item" onClick={() => { setImgMenu(false); fileRef.current && fileRef.current.click(); }}>
-                          <Icon name="upload" size={14} /> Upload an approved image
+                          <Icon name="upload" size={14} /> Upload your own image (reviewed by CareOwner)
                         </button>
                         <button className="mk-menu__item" disabled={v.imageUrl === v.originalImageUrl} onClick={restoreImage}>
                           <Icon name="refreshCw" size={14} style={{ transform: "scaleX(-1)" }} /> Restore the original image
@@ -1058,7 +1114,7 @@ const AudienceAdSet = ({ aud, index, total, list, updateVariant, onToast }) => {
                     </>
                   )}
                 </div>
-                <p>Used across every placement — Meta crops it automatically per format.</p>
+                <p>Used across every placement — the ad platform crops it automatically per format.</p>
               </div>
             </div>
             {imgPanel === "picker" && (
@@ -1216,7 +1272,7 @@ const ExclusionsStep = ({ excl, setExcl, onToast }) => {
             {c.teamMissing > 0 && (
               <div className="pr-warn" style={{ marginTop: 14 }}>
                 <Icon name="alertTriangle" size={16} />
-                <div><b>Some team members may not be excluded.</b> Meta needs an email address or phone number to match a contact. Update the missing information in your Team section to improve exclusion coverage.</div>
+                <div><b>Some team members may not be excluded.</b> The ad platform needs an email address or phone number to match a contact. Update the missing information in your Team section to improve exclusion coverage.</div>
               </div>
             )}
             <div className="pr-excl__foot">
@@ -1270,11 +1326,11 @@ const ExclusionsStep = ({ excl, setExcl, onToast }) => {
               {c.dupesRemoved > 0 && <div className="pr-paysum__row"><span>Duplicates removed</span><span>{c.dupesRemoved}</span></div>}
               <div className="pr-paysum__row pr-paysum__row--total"><span>Total unique contacts</span><span>{fmtInt(c.totalUnique)}</span></div>
             </div>
-            <p className="pr-paysum__note">VetVet will use these contacts to create an exclusion audience when your campaign is approved and prepared for launch. Meta's eventual match rate may be lower.</p>
+            <p className="pr-paysum__note">CareOwner will use these contacts to create an exclusion audience when your campaign is approved and prepared for launch. The ad platform may not be able to match every contact, so actual exclusions may be fewer than listed here.</p>
           </div>
           <div className="co-card">
             <div className="co-card__head"><h3 className="co-card__title"><Icon name="info" />How exclusions work</h3></div>
-            <p className="pr-excl__sub" style={{ margin: 0 }}>VetVet securely provides the approved contact identifiers to Meta so it can attempt to match and exclude those people. Someone may still encounter the ad if Meta cannot match their information, they use different contact details, or the ad is shared with them.</p>
+            <p className="pr-excl__sub" style={{ margin: 0 }}>CareOwner securely provides the approved contact identifiers to the ad platform so it can attempt to match and exclude those people. Someone may still encounter the ad if the ad platform cannot match their information, they use different contact details, or the ad is shared with them.</p>
           </div>
         </aside>
       </div>
@@ -1303,7 +1359,7 @@ const ExclusionsStep = ({ excl, setExcl, onToast }) => {
                 <input inputMode="tel" value={contact.phone} className={contactErr ? "is-invalid" : ""} onChange={e => setContact(x => ({ ...x, phone: e.target.value }))} />
               </div>
               {contactErr
-                ? <p className="pr-payform__err">Provide at least an email address or phone number — Meta needs one to match the contact.</p>
+                ? <p className="pr-payform__err">Provide at least an email address or phone number — the ad platform needs one to match the contact.</p>
                 : <p className="pr-excl__note" style={{ margin: 0 }}>Provide at least an email address or phone number.</p>}
             </div>
             <div className="pr-modal__foot">
@@ -1366,7 +1422,7 @@ const ExclusionsStep = ({ excl, setExcl, onToast }) => {
                     <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} />
                     <span>I confirm that I am authorized to provide and use this contact information for advertising exclusions.</span>
                   </label>
-                  <p className="pr-excl__note" style={{ margin: "6px 0 0 26px" }}>Contact information will be used to help Meta identify people who should not receive this campaign.</p>
+                  <p className="pr-excl__note" style={{ margin: "6px 0 0 26px" }}>Contact information will be used to help the ad platform identify people who should not receive this campaign.</p>
                 </>
               )}
             </div>
@@ -1406,7 +1462,6 @@ const AdWizard = ({ onToast }) => {
     draft && draft.pay ? draft.pay.selected : (SAVED_PAYMENT_METHODS[0] ? SAVED_PAYMENT_METHODS[0].id : null));
   const [renewal, setRenewal] = React.useState(draft && draft.pay ? draft.pay.renewal || "end" : "end"); // "end" | "auto"
   const [authCharge, setAuthCharge] = React.useState(draft && draft.pay ? !!draft.pay.authCharge : false);
-  const [authRenew, setAuthRenew] = React.useState(draft && draft.pay ? !!draft.pay.authRenew : false);
   const [payFormOpen, setPayFormOpen] = React.useState(false);
   const [card, setCard] = React.useState({ name: "", number: "", exp: "", cvc: "", zip: "" });
   const [cardError, setCardError] = React.useState(false);
@@ -1467,7 +1522,6 @@ const AdWizard = ({ onToast }) => {
   const submitReqs = [
     !payMethod && "select or add a payment method",
     !authCharge && `confirm the $${fmtInt(plan.price)} charge authorization`,
-    renewal === "auto" && !authRenew && "confirm the renewal authorization",
     !variants && "finish generating your ad creative",
   ].filter(Boolean);
   const canSubmit = submitReqs.length === 0;
@@ -1496,7 +1550,7 @@ const AdWizard = ({ onToast }) => {
         // and their consent records persist here.
         excl,
         // Payment: selection + consents only — raw card fields are never stored.
-        pay: { selected: paySelected, renewal, authCharge, authRenew },
+        pay: { selected: paySelected, renewal, authCharge },
       }));
     } catch (e) {}
   };
@@ -1506,7 +1560,7 @@ const AdWizard = ({ onToast }) => {
     setSaveState("saving");
     const t = setTimeout(() => { writeDraft(); setSaveState("saved"); }, 600);
     return () => clearTimeout(t);
-  }, [started, step, audKey, variants, excl, paySelected, renewal, authCharge, authRenew]);
+  }, [started, step, audKey, variants, excl, paySelected, renewal, authCharge]);
 
   const saveDraft = () => { writeDraft(); onToast("Draft saved"); };
   // Header action: stash progress and return to the Promotions dashboard.
@@ -1538,11 +1592,11 @@ const AdWizard = ({ onToast }) => {
     });
   };
 
-  const subtitle = "We create and manage confidential ads that promote your opportunity without naming your practice.";
+  const subtitle = "We create and manage confidential ads that promote your practice without naming any identifiers.";
 
   // ── Overview (pre-flow) — no stepper; the flat price is shown up front ──
   if (!started) {
-    const startLabel = draft ? "Resume Draft" : "Get Started";
+    const startLabel = draft ? "Resume draft" : "Set up campaign";
     const startBtn = (
       <button className="co-btn co-btn--primary" onClick={() => setStarted(true)}>
         {startLabel} <Icon name="chevronRight" size={14} />
@@ -1551,39 +1605,36 @@ const AdWizard = ({ onToast }) => {
     return (
       <>
         <SubHeader
-          title="Create a Meta buyer campaign"
+          title="Buyer ad campaign"
           subtitle={subtitle}
           backAction={<button className="co-btn-back" onClick={() => navigateTo("/practice/promotions")}><Icon name="chevronRight" style={{ transform: "rotate(180deg)" }} /> Cancel</button>}
         />
         <div className="co-body">
-          <div className="pr-start">
-            <span className="pr-start__icon"><Icon name="sparkles" size={16} /></span>
-            <div className="pr-start__q">{draft ? "Pick up your buyer ad campaign where you left off" : "Start setting up your buyer ad campaign"}</div>
-            {startBtn}
-          </div>
-
           <div className="pr-adov">
             <div className="co-card pr-adov__main">
               <div className="pr-adov__intro">
                 <div className="pr-adov__introtext">
-                  <div className="pr-adov__eyebrow">How it works</div>
-                  <h3 className="pr-adov__title">Reach more qualified buyers with a managed Meta campaign</h3>
-                  <p className="pr-adov__lede">CareOwner creates, launches, and manages a confidential 30-day campaign that sends interested buyers to your CareOwner teaser page.</p>
+                  <div>
+                    <h3 className="pr-adov__title">Reach more qualified buyers with managed{" "}
+                      <span className="co-tip pr-adov__term" data-tip={AD_META_TIP} data-tip-wrap="" data-tip-pos="bottom" tabIndex={0}>Facebook & Instagram</span>{" "}ads</h3>
+                    <p className="pr-adov__lede">CareOwner creates, launches, and manages a confidential 30-day campaign that sends interested buyers to your practice teaser page.</p>
+                  </div>
+                  {startBtn}
                 </div>
                 <img className="pr-adov__mock" src={assetUrl("assets/careowner-ads-mockup.png")} alt="Example Facebook and Instagram ads for an anonymous practice listing" />
               </div>
-              <div className="pr-adov__grid">
-                {AD_HOW_IT_WORKS.map((s, i) => (
-                  <div key={s.title} className="pr-adov__item">
-                    <span className="pr-adov__num">{i + 1}</span>
-                    <div>
-                      <h4>{s.title}</h4>
-                      <p>{s.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="pr-adov__fine">*Contact exclusions depend on Meta's ability to match the information provided and cannot guarantee that specified contacts will never encounter an ad.</p>
+              <section className="pr-howsec">
+                <div className="pr-adov__eyebrow pr-adov__eyebrow--center">How it works</div>
+                <ol className="pr-howsteps">
+                  {AD_HOW_STEPS.map((label, i) => (
+                    <li key={label} className="pr-howsteps__step">
+                      <span className="pr-howsteps__node"><span className="pr-howsteps__num">{i + 1}</span></span>
+                      <span className="pr-howsteps__label">{label}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+              <AdFaq />
             </div>
 
             <aside className="co-card pr-price">
@@ -1596,11 +1647,11 @@ const AdWizard = ({ onToast }) => {
               <ul className="pr-tier__list">
                 {plan.benefits.map(b => <li key={b}><Icon name="check" size={12} /> {b}</li>)}
               </ul>
-              <p className="pr-adov__fine" style={{ marginTop: 12 }}>Delivery varies by audience size, geography, and Meta's advertising auction.</p>
+              <p className="pr-price__note">All five apps are owned by Meta, so one campaign can reach people on each of them.</p>
+              <p className="pr-adov__fine" style={{ marginTop: 12 }}>Delivery varies by audience size, geography, and the ad platform's auction.</p>
+              <div className="pr-price__cta">{startBtn}</div>
             </aside>
           </div>
-
-          <div className="pr-wizard__footer pr-wizard__footer--end">{startBtn}</div>
         </div>
       </>
     );
@@ -1609,38 +1660,57 @@ const AdWizard = ({ onToast }) => {
   return (
     <>
       <SubHeader
-        title="Create a Meta buyer campaign"
+        title="Buyer ad campaign"
         subtitle={subtitle}
         backAction={<button className="co-btn-back" onClick={() => navigateTo("/practice/promotions")}><Icon name="chevronRight" style={{ transform: "rotate(180deg)" }} /> Cancel</button>}
-        actions={<button className="co-btn co-btn--ghost" style={{ whiteSpace: "nowrap" }} onClick={saveAndExit} disabled={submitting}>Save & Exit</button>}
+        actions={<button className="co-btn co-btn--ghost" style={{ whiteSpace: "nowrap" }} onClick={saveAndExit} disabled={submitting}>Save & exit</button>}
       />
       <div className="co-body">
-        <Stepper steps={AD_STEPS} step={step} onStepClick={setStep} />
+        <div className="pr-adsteps"><Stepper steps={AD_STEPS} step={step} onStepClick={setStep} /></div>
 
         {step === 1 && (
-        <div className="co-card">
-          <div className="pr-audsplit">
-              <div className="pr-audsplit__info">
-                <h3 className="pr-audsplit__title">Buyer audience(s)</h3>
-                <p className="pr-audsplit__desc">Your campaign includes up to two buyer audiences at no additional cost. Ad copy will be generated with audience-specific messaging in a later step.</p>
-                <p className="pr-audsplit__desc">Don't want your team members or competitors to see your ads? Even though your practice's details will not be revealed, it may be possible for people to deduct your practice name based on other context clues. You can review and add audiences to exclude on the next step.</p>
+          <>
+            <div className="pr-stephead">
+              <div className="pr-stephead__row">
+                <h2 className="pr-stephead__title">Define your target audience</h2>
               </div>
-              <div className="pr-auds pr-auds--stack">
-                {PROMO_AUDIENCES.map(a => {
-                  const on = audiences.includes(a.id);
-                  return (
-                    <button key={a.id} type="button" className={`pr-aud pr-aud--lead ${on ? "is-selected" : ""}`} onClick={() => toggleAudience(a.id)}>
-                      <span className="pr-aud__check"><Icon name="check" size={12} /></span>
-                      <span className="pr-aud__text">
-                        <span className="pr-aud__label">{a.label}{a.hint && <span className="pr-aud__hint">{a.hint}</span>}</span>
-                        <span className="pr-aud__desc">{a.desc}</span>
-                      </span>
-                    </button>
-                  );
-                })}
+              <p className="pr-stephead__sub">Select the type of buyer that you want your ad creative to attract.</p>
+            </div>
+            <div className="co-card pr-audstep">
+              <div className="pr-audsplit">
+                <div className="pr-audsplit__info">
+                  <div className="pr-audsplit__eyebrow">Choose Your Audience</div>
+                  <h3 className="pr-audsplit__title">Which type of buyer do you want to address?</h3>
+                  <p className="pr-audsplit__desc">The audience you choose determines the language and messaging that will be used in the ads.</p>
+                  <p className="pr-audsplit__desc">Note: the ad platform does not allow targeting individuals by job titles or other personal situations. Targeting will be defined by geographic area, with distances adjusted as the campaign is optimized.</p>
+                </div>
+                <div className="pr-audpick">
+                  <div className="pr-audpick__head">
+                    <span className="pr-audpick__title">Select one or both audience types:</span>
+                    <span className="pr-audpick__meta">3 ads per audience · {audiences.length * 3} total ads</span>
+                  </div>
+                  <div className="pr-auds pr-auds--stack">
+                    {PROMO_AUDIENCES.map(a => {
+                      const on = audiences.includes(a.id);
+                      return (
+                        <button key={a.id} type="button" className={`pr-aud pr-aud--lead ${on ? "is-selected" : ""}`} aria-pressed={on} onClick={() => toggleAudience(a.id)}>
+                          <span className="pr-aud__check"><Icon name="check" size={12} /></span>
+                          <span className="pr-aud__text">
+                            <span className="pr-aud__label">{a.label}{a.hint && <span className="pr-aud__hint">{a.hint}</span>}</span>
+                            <span className="pr-aud__desc">{a.desc}</span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-          </div>
-        </div>
+            </div>
+            <div className="pr-audnote">
+              <Icon name="info" size={14} />
+              <p><b>Worried about team members or competitors recognizing your practice in the ads?</b> You can tell us who we should tell the ad platform to exclude in the next step. Your practice details will always stay hidden, but context clues can sometimes give it away.</p>
+            </div>
+          </>
         )}
 
         {step === 2 && (
@@ -1652,8 +1722,8 @@ const AdWizard = ({ onToast }) => {
                   {saveState === "saving" ? "Saving…" : <><Icon name="check" size={12} /> All exclusions saved</>}
                 </span>
               </div>
-              <p className="pr-stephead__sub">We'll automatically use your CareOwner team list to reduce the chance that employees receive your ads. You can also add other contacts you want excluded.</p>
-              <p className="pr-stephead__fine">Meta can only exclude contacts it is able to match. Exclusions reduce the likelihood that someone receives an ad, but they cannot guarantee complete confidentiality.</p>
+              <p className="pr-stephead__sub">We’ll automatically exclude your CareOwner team to minimize the chance that employees receive your ads. You can also add other contacts you want excluded.</p>
+              <p className="pr-stephead__fine">The ad platform can only exclude contacts it is able to match. Exclusions reduce the likelihood that someone receives an ad, but they cannot guarantee complete confidentiality.</p>
             </div>
             <ExclusionsStep excl={excl} setExcl={setExcl} onToast={onToast} />
           </>
@@ -1663,14 +1733,14 @@ const AdWizard = ({ onToast }) => {
           <>
             <div className="pr-stephead">
               <div className="pr-stephead__row">
-                <h2 className="pr-stephead__title">Ad Creative</h2>
+                <h2 className="pr-stephead__title">Ad creative</h2>
                 {variants && !generating && (
                   <span className="co-card__meta pr-autosave">
                     {saveState === "saving" ? "Saving…" : <><Icon name="check" size={12} /> Autosaved</>}
                   </span>
                 )}
               </div>
-              <p className="pr-stephead__sub">Review and suggest edits to your ad sets. CareOwner will review your campaign for accuracy, confidentiality, and Meta compliance before launching.</p>
+              <p className="pr-stephead__sub">Review and edit your ads. CareOwner will review your campaign for accuracy, confidentiality, and ad platform policy compliance before launching.</p>
             </div>
             {generating ? (
               <div className="co-card">
@@ -1846,8 +1916,8 @@ const AdWizard = ({ onToast }) => {
                   <ol className="pr-next__list">
                     <li><b>CareOwner reviews your campaign.</b> Review usually takes 1–2 business days.</li>
                     <li><b>You approve any requested changes.</b> If CareOwner makes material changes, the campaign is returned to you before payment.</li>
-                    <li><b>Your payment method is charged.</b> Once the campaign is approved and ready to launch, VetVet charges ${fmtInt(plan.price)}.</li>
-                    <li><b>VetVet schedules your campaign.</b> You'll be notified when the campaign is scheduled and when the ads go live.</li>
+                    <li><b>Your payment method is charged.</b> Once the campaign is approved and ready to launch, CareOwner charges ${fmtInt(plan.price)}.</li>
+                    <li><b>CareOwner schedules your campaign.</b> You'll be notified when the campaign is scheduled and when the ads go live.</li>
                   </ol>
                 </div>
               </div>
@@ -1864,14 +1934,10 @@ const AdWizard = ({ onToast }) => {
                   </div>
                   <label className="pr-ack pr-ack--top" style={{ marginTop: 16 }}>
                     <input type="checkbox" checked={authCharge} onChange={e => setAuthCharge(e.target.checked)} />
-                    <span>I authorize VetVet to charge my payment method ${fmtInt(plan.price)} <span className="pr-ack__hl">after my campaign is approved</span> and ready to launch. I understand that I will not be charged today.</span>
+                    {renewal === "auto"
+                      ? <span>I authorize CareOwner to charge my payment method ${fmtInt(plan.price)} <span className="pr-ack__hl">after my campaign is approved</span> and ready to launch, and ${fmtInt(plan.renew)} every {plan.days} days after that until I pause or cancel. I understand that I will not be charged today.</span>
+                      : <span>I authorize CareOwner to charge my payment method ${fmtInt(plan.price)} <span className="pr-ack__hl">after my campaign is approved</span> and ready to launch. I understand that I will not be charged today.</span>}
                   </label>
-                  {renewal === "auto" && (
-                    <label className="pr-ack pr-ack--top" style={{ marginTop: 10 }}>
-                      <input type="checkbox" checked={authRenew} onChange={e => setAuthRenew(e.target.checked)} />
-                      <span>I authorize VetVet to charge ${fmtInt(plan.renew)} for each additional {plan.days}-day campaign cycle until I pause or cancel.</span>
-                    </label>
-                  )}
                   {!canSubmit && (
                     <div className="pr-reqs">
                       <Icon name="alertTriangle" size={13} />
@@ -1880,7 +1946,7 @@ const AdWizard = ({ onToast }) => {
                   )}
                   <div className="pr-paysub">
                     <button className="co-btn co-btn--primary" onClick={submitRequest} disabled={submitting || !canSubmit}>
-                      <Icon name="send" size={14} className={submitting ? "pr-pulse" : ""} /> {submitting ? "Submitting…" : "Submit for Review"}
+                      <Icon name="send" size={14} className={submitting ? "pr-pulse" : ""} /> {submitting ? "Submitting…" : "Submit for review"}
                     </button>
                     <span className="pr-paysub__note">You will not be charged today</span>
                   </div>
@@ -1904,7 +1970,7 @@ const AdWizard = ({ onToast }) => {
             {step < 4
               ? <button className="co-btn co-btn--primary" onClick={next} disabled={!canContinue}>Continue <Icon name="chevronRight" size={14} /></button>
               : <button className="co-btn co-btn--primary" onClick={submitRequest} disabled={submitting || !canSubmit}>
-                  <Icon name="send" size={14} className={submitting ? "pr-pulse" : ""} /> {submitting ? "Submitting…" : "Submit for Review"}
+                  <Icon name="send" size={14} className={submitting ? "pr-pulse" : ""} /> {submitting ? "Submitting…" : "Submit for review"}
                 </button>}
           </div>
           {step === 4 && <span className="pr-footnote pr-footnote--line">You will not be charged today</span>}
