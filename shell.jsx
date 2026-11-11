@@ -48,6 +48,14 @@ const TopNav = ({ active, onNav, textSize, onTextSize }) => {
                 Onboarding
                 <Icon name="externalLink" size={14} />
               </button>
+              <button
+                className="co-avatar-menu__item"
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); navigateTo("/pulse"); }}
+              >
+                Owner version
+                <Icon name="arrowRight" size={14} />
+              </button>
             </div>
           )}
         </div>

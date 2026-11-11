@@ -9,12 +9,13 @@
 //   /practice/market-check/new                             → New Request flow
 //   /practice/promotions[/ads|/share]                      → Promote Your Practice
 //   /l/:listingId  ·  /l/s/:token                          → public landing pages (no app shell)
+//   /pulse[/:page]                                         → Owner (non-seller) version, own shell
 //
 // Note: deep-link refresh of /practice/... requires the static host to serve index.html
 // for unknown paths (SPA fallback). In-app navigation (pushState) works regardless.
 
 // "inquiries" is kept as a legacy alias for "requests" so older deep links resolve.
-const ROUTE_AREAS = ["home", "marketplace", "practice", "buyers", "providers", "requests", "inquiries", "offers", "messages", "meetings", "l", "onboarding"];
+const ROUTE_AREAS = ["home", "marketplace", "practice", "buyers", "providers", "requests", "inquiries", "offers", "messages", "meetings", "l", "onboarding", "pulse"];
 const DEFAULT_AREA = "practice";
 const DEFAULT_SECTION = "overview";
 
@@ -32,7 +33,7 @@ function parseLocation() {
   let area = segs[0] || DEFAULT_AREA;
   if (!ROUTE_AREAS.includes(area)) area = DEFAULT_AREA;
 
-  const section = area === "practice" ? (segs[1] || DEFAULT_SECTION) : area === "l" ? (segs[1] || null) : null;
+  const section = area === "practice" ? (segs[1] || DEFAULT_SECTION) : (area === "l" || area === "pulse") ? (segs[1] || null) : null;
   const sub = (area === "practice" || area === "l") ? (segs[2] || null) : null;
   const tab = hash || null;
 

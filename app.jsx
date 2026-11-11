@@ -59,6 +59,17 @@ const App = () => {
     );
   }
 
+  // The Owner (non-seller) version lives at /pulse with its own simplified shell
+  // and navigation — see views/pulse.jsx.
+  if (area === "pulse") {
+    return (
+      <>
+        <PulseApp section={section} onToast={showToast} />
+        {toast && <Toast message={toast} />}
+      </>
+    );
+  }
+
   // Public promo landing pages (/l/:listingId and /l/s/:token) render standalone —
   // buyers see a VetVet-style marketing page, never the seller app shell.
   if (area === "l") {
